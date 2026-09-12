@@ -78,7 +78,7 @@ Under the **Local Government Code (RA 7160, secs. 152–186)** a barangay may
 only collect a fee fixed by a **duly enacted barangay revenue ordinance**.
 Collecting without one is **illegal exaction**.
 
-The amounts in `Services/FeeSchedule.cs` are typical Philippine ranges used so
+The amounts in `Domain/Services/FeeSchedule.cs` are typical Philippine ranges used so
 the program runs. **Replace them with the actual Magugpo Poblacion ordinance
 rates.** They are all declared as constants at the top of that one file for
 exactly that reason.
@@ -118,36 +118,54 @@ Oath of Undertaking that receiving agencies (NBI, PSA, BIR) look for.
 
 ## Project layout
 
+Three projects. The dependency arrow points **inward** — UI knows Domain,
+Domain knows nobody.
+
 ```
 BarangayDocumentSystem/
-├── BarangayDocumentSystem.sln     ← open this in Visual Studio
+├── BarangayDocumentSystem.sln          ← open this in Visual Studio
 ├── README.md
 ├── docs/
-│   ├── 01-system-design.md        Design rationale & class model
-│   └── screenshots/               put your screenshots here
-└── src/BarangayDocumentSystem/
-    ├── Program.cs                 entry point + message loop
-    ├── Models/
-    │   ├── Resident.cs            registry record
-    │   ├── DocumentRequest.cs     request + guarded status transitions
-    │   └── Enums.cs               DocumentType, RequestStatus, …
-    ├── Services/
-    │   ├── FeeSchedule.cs         ALL fee rules and exemptions
-    │   └── DocumentPrinter.cs     certificate text generation
-    ├── Data/
-    │   └── BarangayRepository.cs  in-memory store (swap for MySQL later)
-    └── Forms/
-        ├── MainForm.cs            three-tab shell
-        ├── ResidentForm.cs        register / edit
-        ├── RequestForm.cs         file a request, live fee assessment
-        ├── PaymentForm.cs         record payment + O.R.
-        ├── DocumentPreviewForm.cs preview, save, print
-        └── Prompt.cs              code-built input dialog
+│   ├── 01-system-design.md             domain rules & workflow
+│   ├── 04-refactor-notes.md            DRY / SOLID write-up
+│   └── screenshots/                    put your screenshots here
+└── src/
+    ├── BarangayDocumentSystem.Domain/           net8.0 — no UI reference
+    │   ├── Abstractions/
+    │   │   ├── IBarangayRepository.cs   storage contract + ResidentDetails
+    │   │   └── IDocumentTemplate.cs     one-document contract + BarangayProfile
+    │   ├── Entities/
+    │   │   ├── Resident.cs              registry record
+    │   │   ├── DocumentRequest.cs       request + guarded status transitions
+    │   │   └── Enums.cs                 DocumentType, RequestStatus, …
+    │   ├── Services/
+    │   │   ├── FeeSchedule.cs           ALL fee rules and exemptions
+    │   │   └── DocumentRenderer.cs      page layout, written once
+    │   └── Templates/                   one class per document (7)
+    │
+    ├── BarangayDocumentSystem.Infrastructure/   net8.0
+    │   └── InMemoryBarangayRepository.cs        swap for MySQL later
+    │
+    └── BarangayDocumentSystem.UI/               net8.0-windows ← WinForms only here
+        ├── Program.cs                   composition root — wires everything
+        ├── MainShell.cs                 sidebar + content + status bar
+        ├── Theme/AppTheme.cs            every colour, font, spacing value
+        ├── Common/
+        │   ├── Dialog.cs                all message boxes (6 methods)
+        │   ├── InputValidator.cs        reusable field validation
+        │   ├── UiFactory.cs             themed control construction
+        │   └── NavigationSidebar.cs     left nav rail
+        ├── Views/                       Dashboard / Residents / Requests
+        └── Forms/                       modal dialogs
 ```
 
-**No fee arithmetic and no status rules live in the forms.** They sit in
-`FeeSchedule` and `DocumentRequest`, so they hold regardless of what the UI
-does — and can be tested without clicking anything.
+**`Domain` targets `net8.0`, not `net8.0-windows`, and references no other
+project.** Using a WinForms type there is a compile error, not a code-review
+note — Dependency Inversion enforced by the build.
+
+**No fee arithmetic and no status rules live in the UI.** They sit in
+`FeeSchedule` and `DocumentRequest`, so they hold regardless of what the
+interface does — and can be tested without clicking anything.
 
 ---
 
@@ -196,12 +214,22 @@ it and explains why. Then try **Jose** — it goes through, free of charge.
 - **Live fee assessment** — the fee and its legal basis update as the document
   type changes, before anything is committed
 - **`TryParse`, never `Parse`**, and `KeyPress` filtering on numeric fields
-- **RadioButtons scoped by GroupBox** — grouping is by *container*, not name
-- **The `CheckedChanged` double-fire guard** — changing a radio raises the
-  event twice; `if (sender is RadioButton { Checked: true })` filters it
 - **`PrintDocument`** for real printing — framework only, no NuGet package
 - **`Prompt.cs`** built entirely in code — proof the designer is a
   convenience, not a requirement
+
+Added in the v2 refactor:
+
+- **Two interfaces** (`IBarangayRepository`, `IDocumentTemplate`) — the UI
+  names a concrete storage class in exactly one place, `Program.cs`
+- **One template class per document** — adding an eighth certificate means
+  adding a file and one line, never editing the renderer
+- **`Dialog` / `InputValidator` / `UiFactory`** — 18 raw `MessageBox.Show`
+  calls reduced to 0; validation reads as a chain of conditions
+- **`AppTheme`** — every colour, font and spacing value in one file
+- **System fonts only** (Segoe UI, Consolas). A font that is not installed
+  does not error; Windows substitutes different metrics and the layout
+  silently breaks on the grader's machine
 
 ---
 
@@ -209,21 +237,26 @@ it and explains why. Then try **Jose** — it goes through, free of charge.
 
 Honest scope notes:
 
-- **No database.** `BarangayRepository` is in-memory; data is lost on exit.
-  It is the only class that knows where data lives, so swapping in MySQL means
-  changing one class, not the forms.
+- **No database.** `InMemoryBarangayRepository` holds everything in memory and
+  data is lost on exit. It is the only class that knows where data lives, so a
+  MySQL version implements `IBarangayRepository` and is selected by one line
+  in `Program.cs` — no view or form changes.
 - **No login or user roles.** A real deployment needs at least clerk vs.
   captain separation.
 - **No photo or biometric capture** for barangay IDs.
-- **Punong Barangay name is a placeholder** in `DocumentPrinter.cs`.
+- **Punong Barangay name is a placeholder** — set it in
+  `BarangayProfile.MagugpoPoblacion` (`Domain/Abstractions/IDocumentTemplate.cs`).
 - **No blotter/case module** — a real clearance checks for pending cases;
   here that is asserted, not verified.
+- **No unit tests.** The refactor makes them possible — `IBarangayRepository`
+  can now be faked — but none are written yet.
 
 ---
 
 ## Before submitting
 
 - [ ] Replace the fee constants with the real Magugpo Poblacion ordinance rates
-- [ ] Set the actual Punong Barangay name in `DocumentPrinter.cs`
+- [ ] Set the actual Punong Barangay name in `BarangayProfile.MagugpoPoblacion`
+      (`Domain/Abstractions/IDocumentTemplate.cs`)
 - [ ] Screenshot the interface and a completed transaction
 - [ ] Push to GitHub — **keep it private** until the module ends

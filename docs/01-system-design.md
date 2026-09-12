@@ -19,13 +19,22 @@ rather than depending on whether the clerk on duty remembers them.
 
 ## 2. Classes
 
-| Class | Responsibility |
-|---|---|
-| `Resident` | A registry record. Name, demographics, address, classifications |
-| `DocumentRequest` | One request for one document, with guarded status transitions |
-| `FeeSchedule` | **All** fee rules and statutory exemptions |
-| `DocumentPrinter` | Generates the printable certificate text |
-| `BarangayRepository` | Data store (in-memory; swappable for MySQL) |
+| Class | Layer | Responsibility |
+|---|---|---|
+| `Resident` | Domain | A registry record. Name, demographics, address, classifications |
+| `DocumentRequest` | Domain | One request for one document, with guarded status transitions |
+| `FeeSchedule` | Domain | **All** fee rules and statutory exemptions |
+| `DocumentRenderer` | Domain | Page layout — letterhead, title, footer. Written once |
+| `IDocumentTemplate` | Domain | Contract for one document's wording (7 implementations) |
+| `IBarangayRepository` | Domain | Storage contract — the UI never names a concrete store |
+| `InMemoryBarangayRepository` | Infrastructure | In-memory implementation |
+| `MainShell` | UI | Window chrome and view switching |
+| `ViewBase` → 3 views | UI | Dashboard / Residents / Requests |
+
+> **v2 note.** v1 had a single 310-line `DocumentPrinter` with a `switch` over
+> every document type, and a concrete `BarangayRepository` constructed directly
+> by the form. Those became `DocumentRenderer` + seven templates, and an
+> interface. See [`04-refactor-notes.md`](04-refactor-notes.md).
 
 ### Relationship
 
@@ -42,9 +51,10 @@ address later changes.
 
 ## 3. Why the fee logic is separate
 
-`FeeSchedule` contains every rule about money. `MainForm` never computes a
-fee — it calls `Assess(resident, documentType)` and displays what comes back,
-including the **basis**.
+`FeeSchedule` contains every rule about money. No view computes a fee — each
+calls `Assess(resident, documentType)` and displays what comes back, including
+the **basis**. Since `FeeSchedule` lives in the Domain project, which cannot
+reference WinForms, this separation is enforced by the compiler.
 
 Three payoffs:
 
@@ -137,8 +147,8 @@ bypassed by pasting.
 
 ## 7. Known limitations
 
-- **No persistence.** Data is lost on exit. `BarangayRepository` is the only
-  class that knows where data lives, so adding MySQL means changing one class.
+- **No persistence.** Data is lost on exit. `InMemoryBarangayRepository` is the
+  only class that knows where data lives (see §8).
 - **No authentication or roles.**
 - **No blotter module.** A clearance asserts "no pending case" rather than
   verifying it against records.
@@ -149,8 +159,18 @@ bypassed by pasting.
 
 ## 8. Moving to MySQL
 
-1. Extract `IBarangayRepository` from the current class
-2. Implement `MySqlBarangayRepository` against a `residents` / `document_requests` schema
-3. Change one line in `MainForm`
+Step 1 is already done — `IBarangayRepository` exists in
+`Domain/Abstractions/`. What remains:
 
-No form changes. That is what the layering buys.
+1. Add `MySqlBarangayRepository : IBarangayRepository` in the Infrastructure
+   project, backed by a `residents` / `document_requests` schema
+2. Change one line in `Program.cs`:
+
+```csharp
+// from
+IBarangayRepository repository = new InMemoryBarangayRepository(feeSchedule);
+// to
+IBarangayRepository repository = new MySqlBarangayRepository(connectionString, feeSchedule);
+```
+
+No view, form, or template changes. That is what the layering buys.
