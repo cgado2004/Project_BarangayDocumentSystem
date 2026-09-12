@@ -9,14 +9,22 @@ certificate.
 
 ---
 
+> **v2 — refactored.** Split into three projects for SOLID, duplication
+> removed for DRY, and the TabControl replaced with a sidebar shell.
+> Full write-up: [`docs/04-refactor-notes.md`](docs/04-refactor-notes.md).
+
 ## Running it
 
-**Visual Studio 2022:** open `BarangayDocumentSystem.sln`, press **F5**.
+**Visual Studio 2022:** open `BarangayDocumentSystem.sln`, set
+**BarangayDocumentSystem.UI** as the startup project, press **F5**.
 
 **Command line:**
 ```bash
-dotnet run --project src/BarangayDocumentSystem
+dotnet run --project src/BarangayDocumentSystem.UI
 ```
+
+> Three projects now, so the startup project matters. Domain and
+> Infrastructure are class libraries and cannot be launched.
 
 Requires the **.NET 8 SDK** and the **".NET desktop development"** workload.
 Sample data loads automatically — no database needed.

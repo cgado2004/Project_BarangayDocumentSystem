@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>BarangayDocumentSystem.UI</RootNamespace>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BarangayDocumentSystem.Domain\BarangayDocumentSystem.Domain.csproj" />
+    <ProjectReference Include="..\BarangayDocumentSystem.Infrastructure\BarangayDocumentSystem.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

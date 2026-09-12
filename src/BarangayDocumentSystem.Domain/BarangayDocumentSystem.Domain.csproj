@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>BarangayDocumentSystem.Domain</RootNamespace>
+  </PropertyGroup>
+  <!-- NOTE: targets plain net8.0, NOT net8.0-windows, and references nothing.
+       The compiler therefore makes it IMPOSSIBLE to use WinForms here.
+       That is the Dependency Inversion Principle enforced by the build. -->
+</Project>
