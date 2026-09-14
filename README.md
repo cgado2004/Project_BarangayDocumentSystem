@@ -274,12 +274,3 @@ Honest scope notes:
   here that is asserted, not verified.
 - **No unit tests.** The refactor makes them possible — `IBarangayRepository`
   can now be faked — but none are written yet.
-
----
-
-## Before submitting
-
-- [ ] Replace the fee constants with the real Magugpo Poblacion ordinance rates
-- [ ] Set the actual Punong Barangay name in `BarangayProfile.MagugpoPoblacion`
-      (`Domain/Abstractions/IDocumentTemplate.cs`)
-- [ ] Push to GitHub — **keep it private** until the module ends
