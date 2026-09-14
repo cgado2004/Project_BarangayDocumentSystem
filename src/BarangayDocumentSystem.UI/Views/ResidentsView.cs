@@ -183,7 +183,7 @@ public class ResidentsView : ViewBase
         RequestFiled?.Invoke(this, EventArgs.Empty);
 
         string fee = request.Fee > 0
-            ? $"Fee: PHP {request.Fee:N2}"
+            ? $"Fee: ₱{request.Fee:N2}"
             : $"FREE — {request.FeeBasis}";
 
         SetStatus($"Filed {request.GetReferenceNumber()} — {request.GetDocumentName()}. {fee}");

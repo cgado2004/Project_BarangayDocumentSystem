@@ -137,7 +137,7 @@ public class DocumentRenderer
 
         if (request.Fee > 0)
         {
-            sb.AppendLine($"Fee Paid      : PHP {request.Fee:N2}");
+            sb.AppendLine($"Fee Paid      : ₱{request.Fee:N2}");
             sb.AppendLine($"O.R. Number   : {request.OfficialReceiptNo}");
         }
         else

@@ -148,7 +148,7 @@ public class RequestsView : ViewBase
                 r.Purpose,
                 Requested = r.DateRequested.ToString("yyyy-MM-dd"),
                 Status    = r.Status.ToString(),
-                Fee       = r.Fee > 0 ? $"PHP {r.Fee:N2}" : "FREE",
+                Fee       = r.Fee > 0 ? $"₱{r.Fee:N2}" : "FREE",
                 Paid      = r.Fee > 0 ? (r.IsPaid ? "Yes" : "No") : "—"
             })
             .ToList();
@@ -210,7 +210,7 @@ public class RequestsView : ViewBase
         {
             request.RecordPayment(dialog.OfficialReceiptNo);
             RefreshData();
-            SetStatus($"Recorded PHP {request.Fee:N2} for {request.GetReferenceNumber()} " +
+            SetStatus($"Recorded ₱{request.Fee:N2} for {request.GetReferenceNumber()} " +
                       $"(O.R. {request.OfficialReceiptNo}).");
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)

@@ -46,13 +46,15 @@ Sample data loads automatically — no database needed.
 
 ## What it does
 
-### Residents tab
+Three destinations in the left sidebar.
+
+### Residents
 Register, edit, search, and delete residents. Tracks name, birth date, gender,
 civil status, purok, address, contact, occupation, voter status, date of
 residency, and **classifications** (senior citizen, PWD, indigent, student,
 solo parent).
 
-### Document Requests tab
+### Document Requests
 File a request, then move it through the workflow:
 
 ```
@@ -63,7 +65,7 @@ Pending → Processing → Ready for Release → Released
 Record payment against an official receipt number, and view or print the
 finished document.
 
-### Dashboard tab
+### Dashboard
 Resident counts, request counts by status, revenue collected, documents issued
 free of charge, and breakdowns by document type and purok.
 
@@ -200,20 +202,30 @@ it and explains why. Then try **Jose** — it goes through, free of charge.
 
 ---
 
-## Verified behaviour
+## Expected behaviour
 
-| Test | Expected | Result |
+> **These are design intentions, not test results.** The project has **not been
+> compiled or run** — the environment it was written in could not install the
+> .NET SDK — and there are **no automated tests**. The fee and eligibility
+> logic was checked by porting it to a scratch script and running the cases
+> below; the rules were then written into C# to match. Everything here should
+> be confirmed by actually running the app.
+
+| Scenario | Expected outcome | Enforced by |
 |---|---|---|
-| Senior requests clearance | ₱0, cites RA 9994 | ✅ |
-| PWD requests clearance | ₱0, cites RA 10754 | ✅ |
-| Indigent requests clearance | ₱0 | ✅ |
-| Ordinary resident, clearance | ₱50 | ✅ |
-| Senior requests **business** clearance | **₱200** — not waived | ✅ |
-| Jose (14 mo) → jobseeker cert | Allowed, free | ✅ |
-| Carlo (2 mo) → jobseeker cert | **Blocked** — under 6 months | ✅ |
-| Already availed → jobseeker cert | **Blocked** — once only | ✅ |
-| Release unpaid fee-bearing doc | **Blocked** until paid | ✅ |
-| Reject a released document | **Blocked** | ✅ |
+| Senior requests clearance | ₱0, cites RA 9994 | `FeeSchedule.Assess` |
+| PWD requests clearance | ₱0, cites RA 10754 | `FeeSchedule.Assess` |
+| Indigent requests clearance | ₱0 | `FeeSchedule.Assess` |
+| Ordinary resident, clearance | ₱50 | `FeeSchedule.Assess` |
+| Senior requests **business** clearance | **₱200** — not waived | `FeeSchedule.Assess` (checked before personal exemptions) |
+| Jose (14 mo) → jobseeker cert | Allowed, free | `CanIssueJobseekerCertificate` |
+| Carlo (2 mo) → jobseeker cert | **Blocked** — under 6 months | `CanIssueJobseekerCertificate` |
+| Already availed → jobseeker cert | **Blocked** — once only | `HasAvailedFirstTimeJobseeker` |
+| Release unpaid fee-bearing doc | **Blocked** until paid | `DocumentRequest.Release` |
+| Reject a released document | **Blocked** | `DocumentRequest.Reject` |
+
+Each row names the method that enforces it, so any claim can be checked
+against the source.
 
 ---
 

@@ -57,7 +57,7 @@ public class DashboardView : ViewBase
         _cards.Controls.Add(StatCard("Ready for Release", stats.ReadyForRelease.ToString(),
                                      AppTheme.Accent));
         _cards.Controls.Add(StatCard("Released", stats.Released.ToString(), AppTheme.Success));
-        _cards.Controls.Add(StatCard("Total Collected", $"PHP {stats.TotalCollected:N2}",
+        _cards.Controls.Add(StatCard("Total Collected", $"₱{stats.TotalCollected:N2}",
                                      AppTheme.Success));
         _cards.Controls.Add(StatCard("Issued Free", stats.IssuedFreeOfCharge.ToString(),
                                      AppTheme.TextSecondary));
