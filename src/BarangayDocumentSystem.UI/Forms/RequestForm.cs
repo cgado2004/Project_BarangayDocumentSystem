@@ -133,9 +133,8 @@ public partial class RequestForm : Form
 
         if (string.IsNullOrWhiteSpace(cmbPurpose.Text))
         {
-            Dialog.Warn("Please state the purpose of the request.
-
-It is printed on the document.");
+            Dialog.Warn("Please state the purpose of the request.\n\n"
+                      + "It is printed on the document.");
             cmbPurpose.Focus();
             return;
         }

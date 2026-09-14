@@ -49,16 +49,13 @@ public partial class DocumentPreviewForm : Form
         try
         {
             File.WriteAllText(dialog.FileName, _documentText);
-            Dialog.Info($"Saved to:
-{dialog.FileName}", "Saved");
+            Dialog.Info($"Saved to:\n\n{dialog.FileName}", "Saved");
         }
         catch (Exception ex)
         {
             // File I/O can fail for many reasons (permissions, disk full,
             // path too long) — report rather than crash.
-            Dialog.Error($"Could not save the file.
-
-{ex.Message}", "Save failed");
+            Dialog.Error($"Could not save the file.\n\n{ex.Message}", "Save failed");
         }
     }
 
@@ -84,11 +81,9 @@ public partial class DocumentPreviewForm : Form
         }
         catch (Exception ex)
         {
-            Dialog.Warn($"Could not open the print preview.
-
-{ex.Message}
-
-This usually means no printer is installed on this machine.", "Print failed");
+            Dialog.Warn($"Could not open the print preview.\n\n{ex.Message}\n\n"
+                      + "This usually means no printer is installed on this machine.",
+                        "Print failed");
         }
     }
 
