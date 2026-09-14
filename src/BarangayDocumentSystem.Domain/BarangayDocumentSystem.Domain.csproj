@@ -8,4 +8,28 @@
   <!-- NOTE: targets plain net8.0, NOT net8.0-windows, and references nothing.
        The compiler therefore makes it IMPOSSIBLE to use WinForms here.
        That is the Dependency Inversion Principle enforced by the build. -->
+
+  <ItemGroup>
+    <!-- ── ASSEMBLY BOUNDARY ────────────────────────────────────────────
+         Several domain members are deliberately `internal`:
+
+           DocumentRequest(...)        the constructor
+           DocumentRequest.Fee         internal set
+           DocumentRequest.FeeBasis    internal set
+           Resident.AddRequest(...)
+
+         They are internal so that NO caller can forge a request or
+         overwrite a fee behind FeeSchedule's back. Requests may only be
+         born through IBarangayRepository.CreateRequest.
+
+         When this was one single project, "internal" meant "the whole
+         application" and the repository could reach them. Splitting the
+         solution into three assemblies made internal mean "Domain only",
+         which locked the repository out.
+
+         Widening them to public would hand that power to the UI as well
+         and destroy the invariant. Instead we grant access to exactly one
+         trusted assembly. The UI still cannot touch them. -->
+    <InternalsVisibleTo Include="BarangayDocumentSystem.Infrastructure" />
+  </ItemGroup>
 </Project>
