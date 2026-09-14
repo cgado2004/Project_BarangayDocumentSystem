@@ -9,6 +9,19 @@ certificate.
 
 ---
 
+## Group Members
+
+| Name |
+|---|
+| Dagamac, Emmanuelle Philippe |
+| Del Rosario, Jonathan |
+| Gado, Clint Wood |
+| Raborar, Frent Dhieniel |
+
+> Roles and task assignments: **TBD**.
+
+---
+
 > **v2 — refactored.** Split into three projects for SOLID, duplication
 > removed for DRY, and the TabControl replaced with a sidebar shell.
 > Full write-up: [`docs/04-refactor-notes.md`](docs/04-refactor-notes.md).
@@ -127,8 +140,7 @@ BarangayDocumentSystem/
 ├── README.md
 ├── docs/
 │   ├── 01-system-design.md             domain rules & workflow
-│   ├── 04-refactor-notes.md            DRY / SOLID write-up
-│   └── screenshots/                    put your screenshots here
+│   └── 04-refactor-notes.md            DRY / SOLID write-up
 └── src/
     ├── BarangayDocumentSystem.Domain/           net8.0 — no UI reference
     │   ├── Abstractions/
@@ -258,5 +270,4 @@ Honest scope notes:
 - [ ] Replace the fee constants with the real Magugpo Poblacion ordinance rates
 - [ ] Set the actual Punong Barangay name in `BarangayProfile.MagugpoPoblacion`
       (`Domain/Abstractions/IDocumentTemplate.cs`)
-- [ ] Screenshot the interface and a completed transaction
 - [ ] Push to GitHub — **keep it private** until the module ends
