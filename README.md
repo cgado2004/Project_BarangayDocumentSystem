@@ -13,7 +13,7 @@ certificate.
 
 | Name |
 |---|
-| Dagamac, Emmanuelle Philippe |
+| Dagamac, Emmanuelle Philippe M. |
 | Del Rosario, Jonathan, F |
 | Gado, Clint Wood |
 | Raborar, Frent Dhieniel |
