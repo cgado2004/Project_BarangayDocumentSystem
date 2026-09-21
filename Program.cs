@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
+using BarangayDocumentSystem.Forms;
 
 namespace BarangayDocumentSystem
 {
@@ -13,7 +14,7 @@ namespace BarangayDocumentSystem
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            Application.Run(new MainForm());
         }
     }
 }
