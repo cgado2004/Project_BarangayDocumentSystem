@@ -6,14 +6,7 @@ namespace BarangayDocumentSystem.Infrastructure;
 
 /// <summary>
 /// In-memory implementation of <see cref="IBarangayRepository"/>.
-///
 /// ── DEPENDENCY INVERSION ────────────────────────────────────────────────
-/// This class lives in Infrastructure and implements an interface owned by
-/// Domain. The dependency arrow points INWARD: Infrastructure → Domain.
-/// Domain knows nothing about it.
-///
-/// A MySqlBarangayRepository would sit beside this file, implement the same
-/// interface, and be selected by changing one line in Program.cs.
 /// </summary>
 public class InMemoryBarangayRepository : IBarangayRepository
 {
