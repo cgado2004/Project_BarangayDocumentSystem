@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup />
+  <ItemGroup>
+    <Compile Update="DashboardView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="DocumentPreviewForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="MainShell.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="NavigationSidebar.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="PaymentForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="RequestForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="RequestsView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="ResidentForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="ResidentsView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="ViewBase.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+  </ItemGroup>
+</Project>

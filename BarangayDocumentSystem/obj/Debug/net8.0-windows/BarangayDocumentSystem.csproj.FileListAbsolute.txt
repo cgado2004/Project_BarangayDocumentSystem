@@ -1,0 +1,14 @@
+C:\Users\rabor\OneDrive\Desktop\BarangayDocumentSystem_restructured\BarangayDocumentSystem\bin\Debug\net8.0-windows\BarangayDocumentSystem.exe
+C:\Users\rabor\OneDrive\Desktop\BarangayDocumentSystem_restructured\BarangayDocumentSystem\bin\Debug\net8.0-windows\BarangayDocumentSystem.deps.json
+C:\Users\rabor\OneDrive\Desktop\BarangayDocumentSystem_restructured\BarangayDocumentSystem\bin\Debug\net8.0-windows\BarangayDocumentSystem.runtimeconfig.json
+C:\Users\rabor\OneDrive\Desktop\BarangayDocumentSystem_restructured\BarangayDocumentSystem\bin\Debug\net8.0-windows\BarangayDocumentSystem.dll
+C:\Users\rabor\OneDrive\Desktop\BarangayDocumentSystem_restructured\BarangayDocumentSystem\bin\Debug\net8.0-windows\BarangayDocumentSystem.pdb
+C:\Users\rabor\OneDrive\Desktop\BarangayDocumentSystem_restructured\BarangayDocumentSystem\obj\Debug\net8.0-windows\BarangayDocumentSystem.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\rabor\OneDrive\Desktop\BarangayDocumentSystem_restructured\BarangayDocumentSystem\obj\Debug\net8.0-windows\BarangayDocumentSystem.AssemblyInfoInputs.cache
+C:\Users\rabor\OneDrive\Desktop\BarangayDocumentSystem_restructured\BarangayDocumentSystem\obj\Debug\net8.0-windows\BarangayDocumentSystem.AssemblyInfo.cs
+C:\Users\rabor\OneDrive\Desktop\BarangayDocumentSystem_restructured\BarangayDocumentSystem\obj\Debug\net8.0-windows\BarangayDocumentSystem.csproj.CoreCompileInputs.cache
+C:\Users\rabor\OneDrive\Desktop\BarangayDocumentSystem_restructured\BarangayDocumentSystem\obj\Debug\net8.0-windows\BarangayDocumentSystem.dll
+C:\Users\rabor\OneDrive\Desktop\BarangayDocumentSystem_restructured\BarangayDocumentSystem\obj\Debug\net8.0-windows\refint\BarangayDocumentSystem.dll
+C:\Users\rabor\OneDrive\Desktop\BarangayDocumentSystem_restructured\BarangayDocumentSystem\obj\Debug\net8.0-windows\BarangayDocumentSystem.pdb
+C:\Users\rabor\OneDrive\Desktop\BarangayDocumentSystem_restructured\BarangayDocumentSystem\obj\Debug\net8.0-windows\BarangayDocumentSystem.genruntimeconfig.cache
+C:\Users\rabor\OneDrive\Desktop\BarangayDocumentSystem_restructured\BarangayDocumentSystem\obj\Debug\net8.0-windows\ref\BarangayDocumentSystem.dll
