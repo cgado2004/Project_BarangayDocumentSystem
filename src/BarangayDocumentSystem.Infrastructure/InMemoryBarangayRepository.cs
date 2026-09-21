@@ -1,7 +1,6 @@
 using BarangayDocumentSystem.Domain.Abstractions;
 using BarangayDocumentSystem.Domain.Entities;
 using BarangayDocumentSystem.Domain.Services;
-
 namespace BarangayDocumentSystem.Infrastructure;
 
 /// <summary>
@@ -33,6 +32,20 @@ public class InMemoryBarangayRepository : IBarangayRepository
         SeedSampleData();
     }
 
+
+    public class InvalidNameCharactersException : Exception
+    {
+        public string FieldName { get; }
+        public string Value { get; }
+
+        public InvalidNameCharactersException(string fieldName, string value)
+            : base($"'{fieldName}' contains a character that isn't allowed in a name: \"{value}\".")
+        {
+            FieldName = fieldName;
+            Value = value;
+        }
+    }
+
     // -----------------------------------------------------------------
     //  Residents
     // -----------------------------------------------------------------
@@ -58,6 +71,11 @@ public class InMemoryBarangayRepository : IBarangayRepository
     /// </summary>
     private static void Apply(Resident r, ResidentDetails d)
     {
+
+        ValidateNameCharacters(nameof(d.FirstName), d.FirstName);
+        ValidateNameCharacters(nameof(d.MiddleName), d.MiddleName);
+        ValidateNameCharacters(nameof(d.LastName), d.LastName);
+
         r.FirstName         = d.FirstName;
         r.MiddleName        = d.MiddleName;
         r.LastName          = d.LastName;
@@ -72,6 +90,24 @@ public class InMemoryBarangayRepository : IBarangayRepository
         r.DateOfResidency   = d.DateOfResidency;
         r.IsRegisteredVoter = d.IsRegisteredVoter;
         r.Classification    = d.Classification;
+    }
+
+    /// <summary>
+    /// ── VALIDATION ──────────────────────────────────────────────────────
+    /// Letters, spaces, hyphens, and apostrophes are allowed since they show
+    /// up in real names; anything else (digits, symbols, etc.) raises
+    /// InvalidNameCharactersException as a warning to the caller.
+    /// </summary>
+    private static void ValidateNameCharacters(string fieldName, string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return;
+
+        bool hasSpecialCharacter = value.Any(c =>
+            !char.IsLetter(c) && !char.IsWhiteSpace(c) && c != '-' && c != '\'');
+
+        if (hasSpecialCharacter)
+            throw new InvalidNameCharactersException(fieldName, value);
     }
 
     public void RemoveResident(Resident resident)
@@ -137,7 +173,7 @@ public class InMemoryBarangayRepository : IBarangayRepository
                                     .ToDictionary(g => g.Key, g => g.Count()));
 
     // -----------------------------------------------------------------
-    private void SeedSampleData()
+        private void SeedSampleData()
     {
         var today = DateTime.Today;
 
