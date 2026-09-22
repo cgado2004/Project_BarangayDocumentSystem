@@ -35,6 +35,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -64,6 +65,20 @@
     <Compile Include="Interfaces\IBarangayRepository.cs" />
     <Compile Include="Interfaces\IDocumentTemplate.cs" />
     <Compile Include="Data\InMemoryBarangayRepository.cs" />
+    <Compile Include="Data\SampleData.cs" />
+    <Compile Include="Services\DocumentRenderer.cs" />
+    <Compile Include="Services\FeeSchedule.cs" />
+    <Compile Include="Services\RequestService.cs" />
+    <Compile Include="Services\ResidentService.cs" />
+    <Compile Include="Services\ResidentValidator.cs" />
+    <Compile Include="Documents\BarangayIdTemplate.cs" />
+    <Compile Include="Documents\BusinessClearanceTemplate.cs" />
+    <Compile Include="Documents\ClearanceTemplate.cs" />
+    <Compile Include="Documents\GoodMoralTemplate.cs" />
+    <Compile Include="Documents\IndigencyTemplate.cs" />
+    <Compile Include="Documents\JobseekerTemplate.cs" />
+    <Compile Include="Documents\ResidencyTemplate.cs" />
+    <Compile Include="Configuration\AppSettings.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">

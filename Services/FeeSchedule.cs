@@ -1,0 +1,62 @@
+using System;
+using BarangayDocumentSystem.Models;
+
+namespace BarangayDocumentSystem.Services
+{
+    public class FeeSchedule
+    {
+        // Classroom rates; replace these with the approved barangay schedule before actual use.
+        public const decimal ClearanceFee = 50m;
+        public const decimal ResidencyFee = 50m;
+        public const decimal IndigencyFee = 0m;
+        public const decimal BusinessClearanceFee = 200m;
+        public const decimal BarangayIdFee = 100m;
+        public const decimal JobseekerFee = 0m;
+        public const decimal GoodMoralFee = 50m;
+
+        public FeeAssessment Assess(Resident resident, DocumentType documentType)
+        {
+            if (resident == null) throw new ArgumentException("Select a resident first.");
+            decimal fee = GetBaseFee(documentType);
+            if (documentType == DocumentType.BarangayBusinessClearance)
+                return new FeeAssessment(fee, "Project schedule: business clearance; personal exemptions do not apply.");
+            if (documentType == DocumentType.FirstTimeJobseekerCertificate)
+            {
+                ValidateJobseeker(resident);
+                return new FeeAssessment(JobseekerFee, "First-time jobseeker certification - RA 11261.");
+            }
+            if (documentType == DocumentType.CertificateOfIndigency)
+                return new FeeAssessment(IndigencyFee, "Project policy: free certificate of indigency.");
+            if (resident.IsIndigent)
+                return new FeeAssessment(0m, "Project policy: indigent resident exemption.");
+            if (resident.IsSeniorCitizen)
+                return new FeeAssessment(0m, "Project policy: senior citizen exemption (reference: RA 9994).");
+            if (resident.IsPersonWithDisability)
+                return new FeeAssessment(0m, "Project policy: PWD exemption (reference: RA 10754).");
+            return new FeeAssessment(fee, "Standard classroom rate; local ordinance rates are not configured.");
+        }
+
+        public decimal GetBaseFee(DocumentType type)
+        {
+            switch (type)
+            {
+                case DocumentType.BarangayClearance: return ClearanceFee;
+                case DocumentType.CertificateOfResidency: return ResidencyFee;
+                case DocumentType.CertificateOfIndigency: return IndigencyFee;
+                case DocumentType.BarangayBusinessClearance: return BusinessClearanceFee;
+                case DocumentType.BarangayId: return BarangayIdFee;
+                case DocumentType.FirstTimeJobseekerCertificate: return JobseekerFee;
+                case DocumentType.CertificateOfGoodMoralCharacter: return GoodMoralFee;
+                default: throw new ArgumentException("Select a valid document type.");
+            }
+        }
+
+        public void ValidateJobseeker(Resident resident)
+        {
+            if (resident.HasUsedJobseekerBenefit)
+                throw new InvalidOperationException("This resident has already used the first-time jobseeker benefit.");
+            if (resident.DateOfResidency.Date.AddMonths(6) > DateTime.Today)
+                throw new InvalidOperationException("First-time jobseeker certification requires at least six months of residency.");
+        }
+    }
+}
