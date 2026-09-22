@@ -53,6 +53,7 @@
     <Compile Include="Forms\MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Configuration\AppSettings.cs" />
     <Compile Include="Models\BarangayProfile.cs" />
     <Compile Include="Models\CivilStatus.cs" />
     <Compile Include="Models\DocumentRequest.cs" />
@@ -78,7 +79,59 @@
     <Compile Include="Documents\IndigencyTemplate.cs" />
     <Compile Include="Documents\JobseekerTemplate.cs" />
     <Compile Include="Documents\ResidencyTemplate.cs" />
-    <Compile Include="Configuration\AppSettings.cs" />
+    <Compile Include="Helpers\ErrorLogger.cs" />
+    <Compile Include="Helpers\UiFeedback.cs" />
+    <Compile Include="Helpers\UiLayout.cs" />
+    <Compile Include="Printing\DocumentPrintJob.cs" />
+    <Compile Include="Printing\TextPaginator.cs" />
+    <Compile Include="Controls\DashboardControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\DashboardControl.Designer.cs">
+      <DependentUpon>DashboardControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\RequestsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\RequestsControl.Designer.cs">
+      <DependentUpon>RequestsControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\ResidentsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\ResidentsControl.Designer.cs">
+      <DependentUpon>ResidentsControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\DocumentPreviewForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\DocumentPreviewForm.Designer.cs">
+      <DependentUpon>DocumentPreviewForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\PaymentForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\PaymentForm.Designer.cs">
+      <DependentUpon>PaymentForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\RejectionForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\RejectionForm.Designer.cs">
+      <DependentUpon>RejectionForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\RequestForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\RequestForm.Designer.cs">
+      <DependentUpon>RequestForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\ResidentForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ResidentForm.Designer.cs">
+      <DependentUpon>ResidentForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -102,6 +155,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="README.md" />
+    <None Include="docs\CodeGuide.md" />
+    <None Include="docs\Walkthrough.md" />
+    <None Include="docs\FeePolicy.md" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
