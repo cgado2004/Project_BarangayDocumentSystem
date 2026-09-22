@@ -71,7 +71,9 @@ sample-data switch. Restart the app after changing these settings. Set the
 signing official's name before presenting generated documents.
 
 Fee amounts and exemptions are centralized in `Services/FeeSchedule.cs`.
-They are **classroom assumptions**, not an approved local revenue ordinance.
+Residency and good moral certificates use the PHP 100 base fee shown in the
+supplied Citizen's Charter photo. Other rates and personal exemptions still
+use **classroom assumptions** while the remaining Charter work is pending.
 See [fee and document notes](docs/FeePolicy.md).
 
 Unexpected errors are logged under

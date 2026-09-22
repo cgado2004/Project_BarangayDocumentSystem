@@ -33,6 +33,7 @@ namespace BarangayDocumentSystem.Tests
             Run("Invalid input is rejected without changing stored records", InvalidResidents);
             Run("Repository copies isolate unsaved edits", CopyIsolation);
             Run("All document rates and exemption precedence", FeeRules);
+            Run("Charter certification fees are displayed and saved", CharterCertificationFees);
             Run("Valid workflow and required payment", Workflow);
             Run("Invalid transitions leave requests unchanged", InvalidTransitions);
             Run("Receipts are required and unique across requests", ReceiptRules);
@@ -155,10 +156,10 @@ namespace BarangayDocumentSystem.Tests
             var ordinary = ValidResident();
             var rates = new Dictionary<DocumentType, decimal>
             {
-                { DocumentType.BarangayClearance, 50m }, { DocumentType.CertificateOfResidency, 50m },
+                { DocumentType.BarangayClearance, 50m }, { DocumentType.CertificateOfResidency, 100m },
                 { DocumentType.CertificateOfIndigency, 0m }, { DocumentType.BarangayBusinessClearance, 200m },
                 { DocumentType.BarangayId, 100m }, { DocumentType.FirstTimeJobseekerCertificate, 0m },
-                { DocumentType.CertificateOfGoodMoralCharacter, 50m }
+                { DocumentType.CertificateOfGoodMoralCharacter, 100m }
             };
             foreach (var rate in rates)
             {
@@ -175,12 +176,44 @@ namespace BarangayDocumentSystem.Tests
                 var exempt = ValidResident();
                 classify(exempt);
                 Check(schedule.Assess(exempt, DocumentType.BarangayClearance).Amount == 0m, "Personal exemption missing.");
+                foreach (var type in new[] { DocumentType.CertificateOfResidency, DocumentType.CertificateOfGoodMoralCharacter })
+                {
+                    var assessment = schedule.Assess(exempt, type);
+                    Check(assessment.Amount == 0m && assessment.Basis.StartsWith("Project policy:"),
+                        "Certification base fee replaced a classroom exemption or mislabeled its basis.");
+                }
                 Check(schedule.Assess(exempt, DocumentType.BarangayBusinessClearance).Amount == 200m, "Business fee was waived.");
             }
             ordinary.IsStudent = true;
             ordinary.IsSoloParent = true;
             Check(schedule.Assess(ordinary, DocumentType.BarangayClearance).Amount == 50m, "Unspecified exemption applied.");
             Rejects(() => schedule.Assess(ordinary, (DocumentType)999));
+        }
+
+        private static void CharterCertificationFees()
+        {
+            var fixture = new Fixture();
+            var resident = fixture.AddResident();
+            string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Screenshots");
+            Directory.CreateDirectory(folder);
+            foreach (var type in new[] { DocumentType.CertificateOfResidency, DocumentType.CertificateOfGoodMoralCharacter })
+            {
+                using (var form = new RequestForm(fixture.Residents, fixture.Requests, fixture.Renderer, resident.ResidentId))
+                {
+                    var documents = (ComboBox)Field(form, "cmbDocument");
+                    documents.SelectedItem = documents.Items.Cast<IDocumentTemplate>().Single(item => item.DocumentType == type);
+                    ((TextBox)Field(form, "txtPurpose")).Text = "School requirement";
+                    Capture(form, Path.Combine(folder, type + "-request.png"));
+                    string feeText = ((Label)Field(form, "lblFee")).Text;
+                    Check(feeText.Contains("PHP " + 100m.ToString("N2")) && feeText.Contains("Citizen's Charter"),
+                        type + " must display the PHP 100 Charter fee.");
+                    Invoke(form, "SubmitRequest", form, EventArgs.Empty);
+                    Check(form.DialogResult == DialogResult.OK, "Certification request was not submitted.");
+                }
+                var request = fixture.Requests.Search().Single(item => item.DocumentType == type);
+                Check(request.Fee == 100m && request.FeeBasis.Contains("Citizen's Charter"),
+                    type + " must save the PHP 100 fee and its Charter basis.");
+            }
         }
 
         private static void Workflow()
