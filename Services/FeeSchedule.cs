@@ -5,14 +5,15 @@ namespace BarangayDocumentSystem.Services
 {
     public class FeeSchedule
     {
-        // Classroom rates; replace these with the approved barangay schedule before actual use.
+        // Residency and good moral base fees follow the supplied Citizen's Charter photo.
+        // Other rates and personal exemptions still use the classroom policy.
         public const decimal ClearanceFee = 50m;
-        public const decimal ResidencyFee = 50m;
+        public const decimal ResidencyFee = 100m;
         public const decimal IndigencyFee = 0m;
         public const decimal BusinessClearanceFee = 200m;
         public const decimal BarangayIdFee = 100m;
         public const decimal JobseekerFee = 0m;
-        public const decimal GoodMoralFee = 50m;
+        public const decimal GoodMoralFee = 100m;
 
         public FeeAssessment Assess(Resident resident, DocumentType documentType)
         {
@@ -33,6 +34,9 @@ namespace BarangayDocumentSystem.Services
                 return new FeeAssessment(0m, "Project policy: senior citizen exemption (reference: RA 9994).");
             if (resident.IsPersonWithDisability)
                 return new FeeAssessment(0m, "Project policy: PWD exemption (reference: RA 10754).");
+            if (documentType == DocumentType.CertificateOfResidency ||
+                documentType == DocumentType.CertificateOfGoodMoralCharacter)
+                return new FeeAssessment(fee, "Citizen's Charter: residency and good moral certification.");
             return new FeeAssessment(fee, "Standard classroom rate; local ordinance rates are not configured.");
         }
 

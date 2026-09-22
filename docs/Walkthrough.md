@@ -41,6 +41,8 @@ Preview a Pending request too: its text is visible, but printing is disabled.
 
 ## Fees and eligibility
 
+- Select Juan and choose Certificate of Residency, then Certificate of Good
+  Moral Character. Each should show PHP 100.00 with a Citizen's Charter basis.
 - Maria's personal certificates are free under the classroom senior policy.
 - Maria's business clearance still costs PHP 200.00 and requires business details.
 - Liza's personal certificates are free under the classroom PWD policy.

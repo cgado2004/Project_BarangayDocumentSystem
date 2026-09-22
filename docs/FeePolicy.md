@@ -1,30 +1,53 @@
 # Fee and document notes
 
-This is a classroom project. Rates and exemptions in `FeeSchedule` implement
-the project's demonstration policy. They are not verified Magugpo Poblacion
-ordinance rates.
+This is a classroom project. The Citizen's Charter update is in progress:
+`FeeSchedule` now uses the photographed board's PHP 100 base fee for residency
+and good moral certificates. Other rates and personal exemptions still use
+the project's demonstration policy.
 
-| Document | Base classroom fee |
-|---|---:|
-| Barangay Clearance | PHP 50 |
-| Certificate of Residency | PHP 50 |
-| Certificate of Indigency | PHP 0 |
-| Barangay Business Clearance | PHP 200 |
-| Barangay ID | PHP 100 |
-| First-Time Jobseeker Certificate | PHP 0 |
-| Certificate of Good Moral Character | PHP 50 |
+| Document | Current base fee | Basis / update status |
+|---|---:|---|
+| Barangay Clearance | PHP 50 | Classroom placeholder; purpose-based Charter fees pending |
+| Certificate of Residency | PHP 100 | Supplied Citizen's Charter photo; updated |
+| Certificate of Indigency | PHP 0 | Existing free policy; also shown as free on the board |
+| Barangay Business Clearance | PHP 200 | Classroom placeholder; tariff needs clarification |
+| Barangay ID | PHP 100 | Classroom placeholder; no price established by the photo |
+| First-Time Jobseeker Certificate | PHP 0 | Existing jobseeker policy; see references below |
+| Certificate of Good Moral Character | PHP 100 | Supplied Citizen's Charter photo; updated |
 
-The amounts above were retained from the
+The remaining classroom amounts were retained from the
 [original project's fee schedule](https://github.com/cgado2004/Project_BarangayDocumentSystem/blob/93d89ecfb49a6ec3399291ffcd88f1321c414b6a/src/BarangayDocumentSystem.Domain/Services/FeeSchedule.cs).
 That version explicitly labels its amounts as placeholders. It is the source
-of the sample values, not an official price reference. No verified Magugpo
-Poblacion fee schedule has been supplied for this project; the PHP 50, PHP 100,
-and PHP 200 amounts still need confirmation from the barangay's approved
-ordinance or published Citizen's Charter.
+of those sample values, not an official price reference.
+
+## Supplied Charter evidence and remaining work
+
+The source is the Barangay Magugpo Poblacion Citizen's Charter photo in
+`brgy stuff.docx`: the 12th photo in document order (`word/media/image6.jpg`).
+The source document and photos stay outside Git. The photo establishes what
+the board displays; its effective date and complete exceptions are unconfirmed.
+
+- Residency and good moral certification base fees are now PHP 100. The form
+  displays the Charter basis and saves it with the request.
+- Barangay clearance lists PHP 100 for local employment and PHP 200 for
+  employment abroad. An explicit purpose choice and fee update are pending;
+  other processing fees refer to the barangay tariff.
+- Clearance lists one valid ID, purok clearance, and a residence certificate
+  (cedula). Certification lists one valid ID and purok clearance. These
+  supporting-document requirements are not yet collected or checked by the app.
+- Indigency and low-income certificates are listed as free. Low-income and
+  other-purpose certification do not have separate document types in the app.
+- The business-clearance fee wording is ambiguous and needs barangay
+  clarification. The photo establishes no barangay ID price or blanket
+  senior/PWD exemption.
 
 Personal exemptions apply to indigent, senior, and PWD classifications in the
-project policy. Business clearance keeps its base fee. Student and solo-parent
-tags alone do not waive fees.
+existing classroom policy, including residency and good moral requests. This
+small base-fee update preserves that behavior; reviewing those exemptions is
+still pending. Business clearance keeps its base fee. Student and solo-parent
+tags alone do not waive fees. The sample collection total remains PHP 50:
+its paid request is a clearance, and its two affected certificates remain
+free under the classroom senior/PWD policies.
 
 ## References and a documentation correction
 

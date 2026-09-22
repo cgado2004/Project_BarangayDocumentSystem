@@ -31,7 +31,7 @@ by the compiler.
 | `DocumentRequest` | Request details, resident snapshot, payment, and status |
 | `ResidentValidator` | Required fields, dates, classifications, contact format |
 | `ResidentService` | Search, save, and delete operations |
-| `FeeSchedule` | All classroom fee amounts and exemption rules |
+| `FeeSchedule` | Document base fees, their sources, and classroom exemption rules |
 | `RequestService` | Filing, status changes, receipts, release, and rejection |
 | `DocumentRenderer` | Shared letterhead, footer, and template selection |
 | `IDocumentTemplate` | The title and body supplied by a document template |
