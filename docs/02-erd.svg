@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1220 880" width="1220" height="880">
+  <defs>
+    <style>
+      text { font-family: "Segoe UI", -apple-system, "Noto Sans", "DejaVu Sans", sans-serif; }
+      .mono { font-family: Consolas, "Cascadia Mono", "DejaVu Sans Mono", monospace; }
+      .tbl     { fill:#FFFFFF; stroke:#06155A; stroke-width:2; }
+      .hdr     { fill:#06155A; }
+      .hdrtxt  { fill:#FFFFFF; font-size:15px; font-weight:600; }
+      .col     { font-size:12.5px; fill:#04060F; }
+      .pk      { font-size:12.5px; fill:#8A5A00; font-weight:700; }
+      .fk      { font-size:12.5px; fill:#1F6F43; font-weight:700; }
+      .type    { font-size:11.5px; fill:#7A8794; }
+      .rowline { stroke:#E6E9F2; stroke-width:1; }
+      .rel     { stroke:#0616C1; stroke-width:2; fill:none; }
+      .card    { font-size:12px; fill:#0616C1; font-weight:700; }
+      .note    { font-size:12px; fill:#55575B; }
+      .notehd  { font-size:13px; fill:#06155A; font-weight:700; }
+      .notebox { fill:#F4F7FE; stroke:#B7D0F2; stroke-width:1.5; }
+      .title   { font-size:21px; font-weight:700; fill:#04060F; }
+      .sub     { font-size:13px; fill:#7A8794; }
+    </style>
+  </defs>
+
+  <rect width="1220" height="880" fill="#FFFFFF"/>
+
+  <text x="36" y="42" class="title">Entity Relationship Diagram — Barangay Document System v3</text>
+  <text x="36" y="64" class="sub">MySQL 8.0 · database barangay_magugpo · InnoDB · utf8mb4_unicode_ci</text>
+
+  <!-- residents -->
+  <g>
+    <rect x="36" y="96" width="330" height="384" rx="8" class="tbl"/>
+    <path d="M36 104 a8 8 0 0 1 8 -8 h314 a8 8 0 0 1 8 8 v26 h-330 z" class="hdr"/>
+    <text x="52" y="120" class="hdrtxt">residents</text>
+
+    <text x="52" y="154" class="pk mono">PK  resident_id</text>
+    <text x="350" y="154" class="type mono" text-anchor="end">INT UNSIGNED AI</text>
+    <line x1="36" y1="163" x2="366" y2="163" class="rowline"/>
+    <text x="52" y="181" class="col mono">first_name</text><text x="350" y="181" class="type mono" text-anchor="end">VARCHAR(60)</text>
+    <text x="52" y="200" class="col mono">middle_name</text><text x="350" y="200" class="type mono" text-anchor="end">VARCHAR(60)</text>
+    <text x="52" y="219" class="col mono">last_name</text><text x="350" y="219" class="type mono" text-anchor="end">VARCHAR(60)</text>
+    <text x="52" y="238" class="col mono">suffix</text><text x="350" y="238" class="type mono" text-anchor="end">VARCHAR(10)</text>
+    <text x="52" y="257" class="col mono">date_of_birth</text><text x="350" y="257" class="type mono" text-anchor="end">DATE</text>
+    <text x="52" y="276" class="col mono">gender</text><text x="350" y="276" class="type mono" text-anchor="end">ENUM(2)</text>
+    <text x="52" y="295" class="col mono">civil_status</text><text x="350" y="295" class="type mono" text-anchor="end">ENUM(5)</text>
+    <text x="52" y="314" class="col mono">purok</text><text x="350" y="314" class="type mono" text-anchor="end">VARCHAR(40)</text>
+    <text x="52" y="333" class="col mono">address_line</text><text x="350" y="333" class="type mono" text-anchor="end">VARCHAR(160)</text>
+    <text x="52" y="352" class="col mono">contact_number</text><text x="350" y="352" class="type mono" text-anchor="end">VARCHAR(20)</text>
+    <text x="52" y="371" class="col mono">occupation</text><text x="350" y="371" class="type mono" text-anchor="end">VARCHAR(80)</text>
+    <text x="52" y="390" class="col mono">date_of_residency</text><text x="350" y="390" class="type mono" text-anchor="end">DATE</text>
+    <text x="52" y="409" class="col mono">is_registered_voter</text><text x="350" y="409" class="type mono" text-anchor="end">BOOLEAN</text>
+    <text x="52" y="428" class="col mono">has_availed_jobseeker</text><text x="350" y="428" class="type mono" text-anchor="end">BOOLEAN</text>
+    <line x1="36" y1="440" x2="366" y2="440" class="rowline"/>
+    <text x="52" y="458" class="note">IDX (last_name, first_name) · purok</text>
+  </g>
+
+  <!-- resident_classifications -->
+  <g>
+    <rect x="446" y="96" width="316" height="196" rx="8" class="tbl"/>
+    <path d="M446 104 a8 8 0 0 1 8 -8 h300 a8 8 0 0 1 8 8 v26 h-316 z" class="hdr"/>
+    <text x="462" y="120" class="hdrtxt">resident_classifications</text>
+    <text x="462" y="154" class="pk mono">PK,FK  resident_id</text>
+    <text x="746" y="154" class="type mono" text-anchor="end">INT UNSIGNED</text>
+    <text x="462" y="173" class="pk mono">PK,FK  classification_code</text>
+    <text x="746" y="173" class="type mono" text-anchor="end">VARCHAR(20)</text>
+    <line x1="446" y1="182" x2="762" y2="182" class="rowline"/>
+    <text x="462" y="200" class="col mono">date_granted</text><text x="746" y="200" class="type mono" text-anchor="end">DATE</text>
+    <text x="462" y="219" class="col mono">reference_no</text><text x="746" y="219" class="type mono" text-anchor="end">VARCHAR(40)</text>
+    <line x1="446" y1="230" x2="762" y2="230" class="rowline"/>
+    <text x="462" y="249" class="note">Junction table. Resolves the C#</text>
+    <text x="462" y="266" class="note">[Flags] enum into one row per tag,</text>
+    <text x="462" y="283" class="note">keeping the data in 1NF.</text>
+  </g>
+
+  <!-- classification_types -->
+  <g>
+    <rect x="842" y="96" width="342" height="178" rx="8" class="tbl"/>
+    <path d="M842 104 a8 8 0 0 1 8 -8 h326 a8 8 0 0 1 8 8 v26 h-342 z" class="hdr"/>
+    <text x="858" y="120" class="hdrtxt">classification_types</text>
+    <text x="858" y="154" class="pk mono">PK  classification_code</text>
+    <text x="1168" y="154" class="type mono" text-anchor="end">VARCHAR(20)</text>
+    <line x1="842" y1="163" x2="1184" y2="163" class="rowline"/>
+    <text x="858" y="181" class="col mono">display_name</text><text x="1168" y="181" class="type mono" text-anchor="end">VARCHAR(40)</text>
+    <text x="858" y="200" class="col mono">legal_basis</text><text x="1168" y="200" class="type mono" text-anchor="end">VARCHAR(120)</text>
+    <text x="858" y="219" class="col mono">grants_fee_exemption</text><text x="1168" y="219" class="type mono" text-anchor="end">BOOLEAN</text>
+    <line x1="842" y1="230" x2="1184" y2="230" class="rowline"/>
+    <text x="858" y="249" class="note">SENIOR_CITIZEN · PWD · INDIGENT</text>
+    <text x="858" y="266" class="note">STUDENT · SOLO_PARENT</text>
+  </g>
+
+  <!-- document_requests -->
+  <g>
+    <rect x="446" y="392" width="400" height="392" rx="8" class="tbl"/>
+    <path d="M446 400 a8 8 0 0 1 8 -8 h384 a8 8 0 0 1 8 8 v26 h-400 z" class="hdr"/>
+    <text x="462" y="416" class="hdrtxt">document_requests</text>
+
+    <text x="462" y="450" class="pk mono">PK  request_id</text>
+    <text x="830" y="450" class="type mono" text-anchor="end">INT UNSIGNED AI</text>
+    <text x="462" y="469" class="fk mono">FK  resident_id</text>
+    <text x="830" y="469" class="type mono" text-anchor="end">INT UNSIGNED</text>
+    <line x1="446" y1="478" x2="846" y2="478" class="rowline"/>
+    <text x="462" y="496" class="col mono">document_type</text><text x="830" y="496" class="type mono" text-anchor="end">ENUM(20)</text>
+    <text x="462" y="515" class="col mono">scope</text><text x="830" y="515" class="type mono" text-anchor="end">ENUM(2)</text>
+    <text x="462" y="534" class="col mono">purpose</text><text x="830" y="534" class="type mono" text-anchor="end">VARCHAR(200)</text>
+    <text x="462" y="553" class="col mono">date_requested</text><text x="830" y="553" class="type mono" text-anchor="end">DATETIME</text>
+    <text x="462" y="572" class="col mono">date_released</text><text x="830" y="572" class="type mono" text-anchor="end">DATETIME NULL</text>
+    <text x="462" y="591" class="col mono">status</text><text x="830" y="591" class="type mono" text-anchor="end">ENUM(5)</text>
+    <text x="462" y="610" class="col mono">fee</text><text x="830" y="610" class="type mono" text-anchor="end">DECIMAL(10,2)</text>
+    <text x="462" y="629" class="col mono">fee_basis</text><text x="830" y="629" class="type mono" text-anchor="end">VARCHAR(120)</text>
+    <text x="462" y="648" class="col mono">is_paid</text><text x="830" y="648" class="type mono" text-anchor="end">BOOLEAN</text>
+    <text x="462" y="667" class="col mono">official_receipt_no</text><text x="830" y="667" class="type mono" text-anchor="end">VARCHAR(40) NULL</text>
+    <text x="462" y="686" class="col mono">remarks</text><text x="830" y="686" class="type mono" text-anchor="end">VARCHAR(255) NULL</text>
+    <line x1="446" y1="698" x2="846" y2="698" class="rowline"/>
+    <text x="462" y="716" class="note">IDX resident_id · status · date_requested</text>
+    <text x="462" y="738" class="note">scope exists because the Citizen's Charter</text>
+    <text x="462" y="755" class="note">prices a clearance ₱100 local / ₱200 abroad.</text>
+    <text x="462" y="772" class="note">reference_no is derived in a view, not stored.</text>
+  </g>
+
+  <!-- relationships -->
+  <path d="M366 190 H446" class="rel"/>
+  <path d="M386 183 V197" class="rel"/>
+  <path d="M446 190 l-15 -7 M446 190 l-15 7" class="rel"/>
+  <text x="372" y="178" class="card">1</text>
+  <text x="440" y="178" class="card" text-anchor="end">0..*</text>
+
+  <path d="M842 190 H762" class="rel"/>
+  <path d="M824 183 V197" class="rel"/>
+  <path d="M762 190 l15 -7 M762 190 l15 7" class="rel"/>
+  <text x="836" y="178" class="card" text-anchor="end">1</text>
+  <text x="768" y="178" class="card">0..*</text>
+
+  <path d="M366 440 H406 V500 H446" class="rel"/>
+  <path d="M386 433 V447" class="rel"/>
+  <path d="M446 500 l-15 -7 M446 500 l-15 7" class="rel"/>
+  <text x="372" y="428" class="card">1</text>
+  <text x="440" y="490" class="card" text-anchor="end">0..*</text>
+  <text x="406" y="521" class="note" text-anchor="middle">CASCADE</text>
+
+  <!-- notes -->
+  <g>
+    <rect x="36" y="516" width="380" height="268" rx="8" class="notebox"/>
+    <text x="54" y="542" class="notehd">Design decisions</text>
+    <text x="54" y="568" class="note">1. Native ENUM, not VARCHAR + CHECK.</text>
+    <text x="54" y="585" class="note">MySQL silently IGNORED CHECK before 8.0.16,</text>
+    <text x="54" y="602" class="note">and XAMPP often ships MariaDB — a CHECK</text>
+    <text x="54" y="619" class="note">schema would look validated but accept junk.</text>
+    <text x="54" y="645" class="note">2. Enum NAMES stored, never ordinals, so</text>
+    <text x="54" y="662" class="note">reordering the C# enum cannot repoint rows.</text>
+    <text x="54" y="688" class="note">3. fee is DECIMAL(10,2), never FLOAT — binary</text>
+    <text x="54" y="705" class="note">floats cannot hold 0.10 and money drifts.</text>
+    <text x="54" y="731" class="note">4. Rules a CHECK cannot express live in</text>
+    <text x="54" y="748" class="note">TRIGGERS: no release of an unpaid fee-bearing</text>
+    <text x="54" y="765" class="note">document; RA 11261 availed once only.</text>
+  </g>
+
+  <g>
+    <rect x="876" y="392" width="308" height="180" rx="8" class="notebox"/>
+    <text x="894" y="418" class="notehd">Cardinality</text>
+    <text x="894" y="444" class="note">resident 1 ──── 0..* request</text>
+    <text x="894" y="466" class="note">resident 1 ──── 0..* classification</text>
+    <text x="894" y="488" class="note">type     1 ──── 0..* classification</text>
+    <text x="894" y="516" class="note">A request must always have exactly</text>
+    <text x="894" y="533" class="note">one resident (FK NOT NULL). Deleting</text>
+    <text x="894" y="550" class="note">a resident cascades to both children.</text>
+  </g>
+
+  <text x="36" y="820" class="sub">Legend: PK primary key · FK foreign key · AI auto-increment · crow's foot = "many" side</text>
+  <text x="36" y="842" class="sub">Prepared by Clint Wood Gado · fees per the Barangay Citizen's Charter</text>
+</svg>

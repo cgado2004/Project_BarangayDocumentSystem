@@ -1,0 +1,13 @@
+{
+  "//": "I pin the SDK so everyone in the group builds with a known-good version.",
+
+  "//2": "rollForward is latestMajor, NOT latestFeature. This matters and I got it wrong the first time. latestFeature only searches within the SAME major.minor - it looks for 8.0.x and nothing else. If someone opens this on a machine whose Visual Studio shipped .NET 9 or 10 and has no 8.0.x SDK installed, the build dies with NETSDK1141 'Unable to locate the .NET SDK version 8.0.100'. latestMajor allows any SDK equal to or newer than the version below, so a newer Visual Studio just works.",
+
+  "//3": "The projects still TARGET net8.0 via TargetFramework. A newer SDK can build an older target perfectly well - the SDK is the toolbox, the target framework is what you build with it. These are two different things.",
+
+  "sdk": {
+    "version": "8.0.100",
+    "rollForward": "latestMajor",
+    "allowPrerelease": false
+  }
+}

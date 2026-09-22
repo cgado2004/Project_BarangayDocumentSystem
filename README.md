@@ -1,276 +1,192 @@
-# Barangay Resident and Document Request Management System
+# Barangay Resident and Document Request Management System — v3
 
-**Barangay Magugpo Poblacion · City of Tagum · Davao del Norte**
-
-A Windows Forms desktop application for barangay staff: maintain the resident
-registry, accept document requests, assess fees against the correct statutory
-exemptions, track each request through its workflow, and print the finished
-certificate.
+**Barangay Magugpo Poblacion, City of Tagum, Davao del Norte**
+Windows desktop application · WinForms · .NET 8
 
 ---
 
-## Group Members
+## Group
 
-| Name |
+| Member |
 |---|
-| Dagamac, Emmanuelle Philippe M. |
-| Del Rosario, Jonathan, F |
+| Dagamac, Emmanuelle Philippe |
+| Del Rosario, Jonathan F. |
 | Gado, Clint Wood |
 | Raborar, Frent Dhieniel |
 
-> Roles and task assignments: **TBD**.
-
 ---
-
-> **v2 — refactored.** Split into three projects for SOLID, duplication
-> removed for DRY, and the TabControl replaced with a sidebar shell.
-> Full write-up: [`docs/04-refactor-notes.md`](docs/04-refactor-notes.md).
 
 ## Running it
 
 **Visual Studio 2022:** open `BarangayDocumentSystem.sln`, set
-**BarangayDocumentSystem.UI** as the startup project, press **F5**.
+**BarangayDocumentSystem.App** as the startup project, press **F5**.
 
-**Command line:**
 ```bash
-dotnet run --project src/BarangayDocumentSystem.UI
+dotnet run --project src/BarangayDocumentSystem.App
 ```
 
-> Three projects now, so the startup project matters. Domain and
-> Infrastructure are class libraries and cannot be launched.
+Requires the **.NET 8 SDK** with the **".NET desktop development"** workload.
+Sample data loads on start — no database needed.
 
-Requires the **.NET 8 SDK** and the **".NET desktop development"** workload.
-Sample data loads automatically — no database needed.
+> `BarangayDocumentSystem.Core` is a class library and cannot be launched. If
+> Visual Studio says *"a project with an Output Type of Class Library cannot
+> be started directly"*, the startup project is wrong. That setting lives in a
+> gitignored file, so **every teammate must set it once after cloning.**
 
 ---
 
-## What it does
+## What changed in v3
 
-Three destinations in the left sidebar.
-
-### Residents
-Register, edit, search, and delete residents. Tracks name, birth date, gender,
-civil status, purok, address, contact, occupation, voter status, date of
-residency, and **classifications** (senior citizen, PWD, indigent, student,
-solo parent).
-
-### Document Requests
-File a request, then move it through the workflow:
-
-```
-Pending → Processing → Ready for Release → Released
-   └──────────┴────────────────┴──────────→ Rejected
-```
-
-Record payment against an official receipt number, and view or print the
-finished document.
-
-### Dashboard
-Resident counts, request counts by status, revenue collected, documents issued
-free of charge, and breakdowns by document type and purok.
-
----
-
-## Documents supported
-
-| Document | Base fee* | Notes |
+| | v2 | **v3** |
 |---|---|---|
-| Barangay Clearance | ₱50 | Most requested |
-| Certificate of Residency | ₱50 | Proof of address |
-| Certificate of Indigency | **FREE** | DILG MC 2019-177 |
-| Barangay Business Clearance | ₱200 | Personal exemptions do **not** apply |
-| Barangay ID | ₱100 | |
-| First-Time Jobseeker Certificate | **FREE** | RA 11261 |
-| Certificate of Good Moral Character | ₱50 | |
+| Folders | 3 (Domain / Infrastructure / UI) | **2 (Core / App)** |
+| Document types | 7 | **20** — the full tarpaulin |
+| Barangay Clearance fee | ₱50 placeholder | **₱100 local / ₱200 abroad** |
+| Certification fee | ₱50 placeholder | **₱100** |
+| Punong Barangay | `[SET THE NAME HERE]` | **HON. EUGENIA SOLIS HINGPIT, MD** |
+| Puroks | "Purok 1…5" | **the 14 real puroks** |
+| Look | generic WinForms grey | **digital-government style** |
 
-\* **Placeholders — see the warning below.**
-
----
-
-## ⚠️ Fee amounts must be replaced before real use
-
-Under the **Local Government Code (RA 7160, secs. 152–186)** a barangay may
-only collect a fee fixed by a **duly enacted barangay revenue ordinance**.
-Collecting without one is **illegal exaction**.
-
-The amounts in `Domain/Services/FeeSchedule.cs` are typical Philippine ranges used so
-the program runs. **Replace them with the actual Magugpo Poblacion ordinance
-rates.** They are all declared as constants at the top of that one file for
-exactly that reason.
+All fee and name data is taken from the barangay's own posted documents — the
+Citizen's Charter, the FY 2025 20% Development Fund project list, and the City
+Budget Office Letter of Review of 27 November 2024. **The "fees are
+placeholders" limitation from the original documentation is now closed.**
 
 ---
 
-## Statutory exemptions built in
+## Fees actually charged
 
-These are real Philippine laws, not invented rules — which is what makes this
-a domain model rather than a generic CRUD app.
-
-### RA 11261 — First Time Jobseekers Assistance Act
-Barangay clearance and certification are **free** for a qualified first-time
-jobseeker. The system enforces all three conditions:
-
-1. **Six months' residency** — computed from the resident's `DateOfResidency`
-2. **Once only** — a flag is set when the certificate is released
-3. Filipino citizenship — assumed for registered residents
-
-If a resident fails either testable condition, the request dialog **disables
-the submit button and explains why**. The printed certificate includes the
-Oath of Undertaking that receiving agencies (NBI, PSA, BIR) look for.
-
-### Others
-| Law | Effect |
+| Service | Fee |
 |---|---|
-| **RA 9994** | Senior citizen — document fees waived |
-| **RA 10754** | PWD — document fees waived |
-| **DILG MC 2019-177** | Certificate of indigency issued free |
-| **RA 11032** | Official receipt required for every collection |
+| Barangay Clearance — local employment | ₱100 |
+| Barangay Clearance — for work abroad | ₱200 |
+| Certification (residency, good moral, other) | ₱100 |
+| Certificate of Indigency | FREE |
+| Certificate of Low Income | FREE |
+| Business Clearance | ₱200 — **no personal exemptions** |
+| Assistance / social-service papers | FREE |
 
-> **Business clearance is deliberately excluded** from personal exemptions —
-> it is a regulatory fee on an enterprise, not a personal document. A senior
-> citizen still pays it.
+Waivers on top: **RA 9994** senior citizens · **RA 10754** PWDs · indigent
+status · **RA 11261** first-time jobseekers (six months' residency, once only).
 
 ---
 
 ## Project layout
 
-Three projects. The dependency arrow points **inward** — UI knows Domain,
-Domain knows nobody.
+Two projects. The dependency arrow points **inward** — App knows Core, Core
+knows nobody.
 
 ```
-BarangayDocumentSystem/
-├── BarangayDocumentSystem.sln          ← open this in Visual Studio
-├── README.md
+BarangayDocumentSystemV3/
+├── BarangayDocumentSystem.sln       ← open this
 ├── docs/
-│   ├── 01-system-design.md             domain rules & workflow
-│   └── 04-refactor-notes.md            DRY / SOLID write-up
-└── src/
-    ├── BarangayDocumentSystem.Domain/           net8.0 — no UI reference
-    │   ├── Abstractions/
-    │   │   ├── IBarangayRepository.cs   storage contract + ResidentDetails
-    │   │   └── IDocumentTemplate.cs     one-document contract + BarangayProfile
-    │   ├── Entities/
-    │   │   ├── Resident.cs              registry record
-    │   │   ├── DocumentRequest.cs       request + guarded status transitions
-    │   │   └── Enums.cs                 DocumentType, RequestStatus, …
-    │   ├── Services/
-    │   │   ├── FeeSchedule.cs           ALL fee rules and exemptions
-    │   │   └── DocumentRenderer.cs      page layout, written once
-    │   └── Templates/                   one class per document (7)
-    │
-    ├── BarangayDocumentSystem.Infrastructure/   net8.0
-    │   └── InMemoryBarangayRepository.cs        swap for MySQL later
-    │
-    └── BarangayDocumentSystem.UI/               net8.0-windows ← WinForms only here
-        ├── Program.cs                   composition root — wires everything
-        ├── MainShell.cs                 sidebar + content + status bar
-        ├── Theme/AppTheme.cs            every colour, font, spacing value
-        ├── Common/
-        │   ├── Dialog.cs                all message boxes (6 methods)
-        │   ├── InputValidator.cs        reusable field validation
-        │   ├── UiFactory.cs             themed control construction
-        │   └── NavigationSidebar.cs     left nav rail
-        ├── Views/                       Dashboard / Residents / Requests
-        └── Forms/                       modal dialogs
+│   ├── 01-requirements.md           scope, FR, NFR, changes from the PDF
+│   ├── 02-erd.svg                   entity relationship diagram
+│   ├── 03-uml.svg                   UML class diagram
+│   └── 04-project-timeline.md       Sept 22–27 plan
+├── db/
+│   ├── 01-schema.sql                tables, triggers, views
+│   └── 02-seed-data.sql             the same 7 residents as the demo
+├── src/
+│   ├── BarangayDocumentSystem.Core/          net8.0 — no UI reference
+│   │   ├── Entities/     Resident, DocumentRequest, Enums
+│   │   ├── Rules/        FeeSchedule, DocumentRenderer, DisplayFormat
+│   │   └── Data/         IBarangayRepository, InMemory…, BarangayProfile
+│   └── BarangayDocumentSystem.App/           net8.0-windows — WinForms only
+│       ├── App.config    every setting that might change
+│       ├── AppSettings.cs   reads App.config safely
+│       ├── Program.cs    composition root — the only place that picks a store
+│       ├── MainShell.cs  sidebar + content + status bar
+│       ├── Theme/        AppTheme (colours, fonts), Draw (GDI+ helpers)
+│       ├── Controls/     Card, PillButton, Badge, Chip, Sidebar
+│       ├── Views/        Dashboard, Residents, Requests
+│       └── Dialogs/      resident, request, payment, prompt, preview
+└── tests/
+    └── RuleChecks/       runnable checks against the Citizen's Charter
 ```
 
-**`Domain` targets `net8.0`, not `net8.0-windows`, and references no other
-project.** Using a WinForms type there is a compile error, not a code-review
-note — Dependency Inversion enforced by the build.
-
-**No fee arithmetic and no status rules live in the UI.** They sit in
-`FeeSchedule` and `DocumentRequest`, so they hold regardless of what the
-interface does — and can be tested without clicking anything.
-
 ---
 
-## Sample data
+## Settings — `src/BarangayDocumentSystem.App/App.config`
 
-Seven residents across Puroks 1–5, chosen to exercise every rule:
+Everything that might change lives here, so nobody has to rebuild to adjust a
+fee or a name.
 
-| Resident | Why they're there |
+| Key | Meaning |
 |---|---|
-| Juan Dela Cruz | Ordinary resident — pays full fees |
-| Maria Reyes | **Senior citizen** — fees waived |
-| Jose Bautista Jr. | 14 months' residency — **qualifies** under RA 11261 |
-| Ana Villanueva | Solo parent, business owner |
-| Pedro Mendoza | **Indigent** — fees waived |
-| Liza Torres | **Student + PWD** — multiple classifications |
-| Carlo Aquino | 2 months' residency — **fails** the RA 11261 six-month test |
+| `Storage` | `Memory` (sample data, the default) or `MySQL` |
+| `Barangay.*` | Name, city, province, Punong Barangay, office hours |
+| `Fee.*` | The charter rates, in pesos |
+| `Rule.JobseekerResidencyMonths` | The RA 11261 residency requirement |
+| `BarangayDb` | The MySQL connection string |
 
-Try filing a First-Time Jobseeker Certificate for **Carlo** — the dialog blocks
-it and explains why. Then try **Jose** — it goes through, free of charge.
+**Leave `Storage` on `Memory` unless you are testing the database** — see
+[`docs/05-database-guide.md`](docs/05-database-guide.md).
 
 ---
 
-## Expected behaviour
+## Database
 
-> **These are design intentions, not test results.** The project has **not been
-> compiled or run** — the environment it was written in could not install the
-> .NET SDK — and there are **no automated tests**. The fee and eligibility
-> logic was checked by porting it to a scratch script and running the cases
-> below; the rules were then written into C# to match. Everything here should
-> be confirmed by actually running the app.
+`db/01-schema.sql` then `db/02-seed-data.sql`, run in that order in phpMyAdmin
+or MySQL Workbench. Full instructions, including the common errors and what
+they mean, are in [`docs/05-database-guide.md`](docs/05-database-guide.md).
 
-| Scenario | Expected outcome | Enforced by |
-|---|---|---|
-| Senior requests clearance | ₱0, cites RA 9994 | `FeeSchedule.Assess` |
-| PWD requests clearance | ₱0, cites RA 10754 | `FeeSchedule.Assess` |
-| Indigent requests clearance | ₱0 | `FeeSchedule.Assess` |
-| Ordinary resident, clearance | ₱50 | `FeeSchedule.Assess` |
-| Senior requests **business** clearance | **₱200** — not waived | `FeeSchedule.Assess` (checked before personal exemptions) |
-| Jose (14 mo) → jobseeker cert | Allowed, free | `CanIssueJobseekerCertificate` |
-| Carlo (2 mo) → jobseeker cert | **Blocked** — under 6 months | `CanIssueJobseekerCertificate` |
-| Already availed → jobseeker cert | **Blocked** — once only | `HasAvailedFirstTimeJobseeker` |
-| Release unpaid fee-bearing doc | **Blocked** until paid | `DocumentRequest.Release` |
-| Reject a released document | **Blocked** | `DocumentRequest.Reject` |
+The C# class that talks to MySQL is **not in this build yet**. If you set
+`Storage=MySQL` the app tells you so plainly and starts on the sample data
+rather than pretending.
 
-Each row names the method that enforces it, so any claim can be checked
-against the source.
+**`Core` targets `net8.0`, not `net8.0-windows`, and references no other
+project.** Using a WinForms type there is a compile error, not a code-review
+note — the layering is enforced by the build.
 
 ---
 
-## Notable techniques
+## Interface
 
-- **`[Flags]` enum** for classifications — a resident can be senior *and*
-  indigent; combined with bitwise `|=`
-- **Guarded state transitions** in `DocumentRequest` — illegal moves throw,
-  and the UI catches and reports instead of crashing
-- **Live fee assessment** — the fee and its legal basis update as the document
-  type changes, before anything is committed
-- **`TryParse`, never `Parse`**, and `KeyPress` filtering on numeric fields
-- **`PrintDocument`** for real printing — framework only, no NuGet package
-- **`Prompt.cs`** built entirely in code — proof the designer is a
-  convenience, not a requirement
+Modelled on a digital-government service concept: white canvas, lavender-blue
+gradients, rounded cards, pill buttons, heavy headings.
 
-Added in the v2 refactor:
+**Everything is clickable.** Dashboard stat cards jump to the filtered list
+they summarise; purok chips open the residents of that purok; resident rows
+show that person's request history underneath; double-clicking a request opens
+the printable document.
 
-- **Two interfaces** (`IBarangayRepository`, `IDocumentTemplate`) — the UI
-  names a concrete storage class in exactly one place, `Program.cs`
-- **One template class per document** — adding an eighth certificate means
-  adding a file and one line, never editing the renderer
-- **`Dialog` / `InputValidator` / `UiFactory`** — 18 raw `MessageBox.Show`
-  calls reduced to 0; validation reads as a chain of conditions
-- **`AppTheme`** — every colour, font and spacing value in one file
-- **System fonts only** (Segoe UI, Consolas). A font that is not installed
-  does not error; Windows substitutes different metrics and the layout
-  silently breaks on the grader's machine
+**It adapts to the screen.** The window takes 92% of the available work area
+up to 1360×860 and never below 1000×640, DPI scaling is on, every view scrolls
+rather than clipping, grids fill their width, and dialogs are resizable with
+minimum sizes.
 
 ---
 
-## Not included
+## Verified
 
-Honest scope notes:
+```
+dotnet build  →  Build succeeded, 0 errors, 0 warnings  (all three projects)
 
-- **No database.** `InMemoryBarangayRepository` holds everything in memory and
-  data is lost on exit. It is the only class that knows where data lives, so a
-  MySQL version implements `IBarangayRepository` and is selected by one line
-  in `Program.cs` — no view or form changes.
-- **No login or user roles.** A real deployment needs at least clerk vs.
-  captain separation.
-- **No photo or biometric capture** for barangay IDs.
-- **Punong Barangay name is a placeholder** — set it in
-  `BarangayProfile.MagugpoPoblacion` (`Domain/Abstractions/IDocumentTemplate.cs`).
-- **No blotter/case module** — a real clearance checks for pending cases;
-  here that is asserted, not verified.
-- **No unit tests.** The refactor makes them possible — `IBarangayRepository`
-  can now be faked — but none are written yet.
+23 / 23 rule checks passed:
+  real purok names · Peña renders with ñ intact
+  clearance ₱100 local · ₱200 abroad · certification ₱100
+  indigency FREE · low income FREE · business ₱200
+  senior waived · PWD waived · senior STILL pays the business fee
+  RA 11261: 14 months allowed, 2 months blocked with a reason
+  unpaid fee-bearing release REFUSED · released after payment
+  reference BMP-2026-0007 · real Punong Barangay on the certificate
+  no placeholder text anywhere
+```
+
+## Not verified — please read
+
+- **The UI has never been launched.** Everything compiles, but running WinForms
+  needs Windows and this was built on Linux. No screen has been seen. Run it
+  before the defence.
+- **The MySQL scripts have not been executed** against a real server.
+- The checks above are a console harness in `tests/RuleChecks`, not a proper
+  unit-test framework. Run them with `dotnet run --project tests/RuleChecks`.
+
+## Before submitting
+
+- [ ] Run it on Windows and click through every screen
+- [ ] Take screenshots for the documentation
+- [ ] Set **BarangayDocumentSystem.App** as the startup project
+- [ ] Each member fills in their own row of `docs/04-project-timeline.md`
+- [x] ~~Confirm the ₱200 business clearance rate~~ — confirmed, ₱200 stands

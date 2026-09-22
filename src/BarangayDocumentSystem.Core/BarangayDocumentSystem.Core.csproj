@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>BarangayDocumentSystem.Core</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <!-- Core targets plain net8.0, NOT net8.0-windows, and references nothing.
+       That means a WinForms type cannot be used in here even by accident -
+       the compiler stops it. The dependency rule is enforced by the build
+       rather than by me remembering. -->
+
+</Project>
