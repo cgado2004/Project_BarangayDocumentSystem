@@ -44,6 +44,7 @@ namespace BarangayDocumentSystem.Tests
             Run("Text pagination consumes every character", Pagination);
             Run("Printer preview renders a multi-page document without printing", PrinterPreview);
             Run("Sample data and empty startup both work", SampleRecords);
+            Run("Main window loads the dashboard and navigates to all pages", MainNavigation);
             Run("Forms and navigation render at normal and minimum sizes", UiSmoke);
             Console.WriteLine();
             Console.WriteLine(passed + " passed; " + failed + " failed; " + skipped + " skipped.");
@@ -404,6 +405,35 @@ namespace BarangayDocumentSystem.Tests
                 "Sample collection total is wrong.");
             var carlo = fixture.Residents.Search("Carlo").Single();
             Rejects(() => fixture.Create(carlo.ResidentId, DocumentType.FirstTimeJobseekerCertificate));
+        }
+
+        private static void MainNavigation()
+        {
+            var fixture = new Fixture();
+            using (var main = new MainForm(fixture.Residents, fixture.Requests, fixture.Renderer, AppSettings.Load()))
+            {
+                main.Opacity = 0;
+                main.ShowInTaskbar = false;
+                main.Show();
+                Application.DoEvents();
+                var content = (Panel)Field(main, "pnlContent");
+                Check(content.Controls.Count == 3, "The main window must load all three pages.");
+                Check(content.Controls.OfType<DashboardControl>().Single().Visible, "Dashboard must be visible at startup.");
+                string[] buttons = { "btnResidents", "btnRequests", "btnDashboard" };
+                Type[] pages = { typeof(ResidentsControl), typeof(RequestsControl), typeof(DashboardControl) };
+                for (int index = 0; index < buttons.Length; index++)
+                {
+                    var button = main.Controls.Find(buttons[index], true).Single() as Button;
+                    Check(button != null, "Missing navigation button: " + buttons[index]);
+                    button.PerformClick();
+                    Application.DoEvents();
+                    var visible = content.Controls.Cast<Control>().Where(page => page.Visible).ToList();
+                    Check(visible.Count == 1 && pages[index].IsInstanceOfType(visible[0]), "Navigation selected the wrong page.");
+                    Check(visible[0].Width > 0 && visible[0].Height > 0 && visible[0].Controls.Count > 0,
+                        "The selected page is empty or has no display area.");
+                }
+                main.Hide();
+            }
         }
 
         private static void UiSmoke()

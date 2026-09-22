@@ -5,11 +5,19 @@ This version targets **.NET Framework 4.7.2** and uses one application project.
 
 ## Run
 
-1. Open `BarangayDocumentSystem.slnx` in Visual Studio. If your Visual Studio
-   version does not support that solution format, open `BarangayDocumentSystem.csproj`.
+1. Open `BarangayDocumentSystem.sln` in Visual Studio 2022. The `.slnx` file
+   is also available for newer versions that support that format.
 2. Install the **.NET desktop development** workload and the **.NET Framework
    4.7.2 targeting pack** if Visual Studio asks for them.
-3. Press **F5**.
+3. Set `BarangayDocumentSystem` as the startup project, then press **F5**.
+
+If the app opens as an empty white window, check that you pulled the latest
+`Draft` branch: the earlier models-and-storage checkpoint still had the empty
+starter form. Rebuild the solution after pulling. At runtime, the app starts
+on Dashboard with Residents and Document Requests in the sidebar.
+
+The Form Designer shows the main window layout. The three data pages are
+created by the runtime constructor; use F5 to see the working dashboard.
 
 Seven fictional residents and six requests load by default. Set
 `LoadSampleData` to `false` in `App.config` to start with empty lists.
