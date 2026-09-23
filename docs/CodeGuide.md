@@ -84,9 +84,16 @@ release and benefit-use updates within a database transaction.
 
 Layouts are separated from event handlers using partial classes.
 `.Designer.cs` files hold the layout; the matching `.cs` files hold behavior.
-Most dialogs use the simple factories in `UiLayout` to keep button and grid
-styles consistent. These layouts are currently maintained in code; review
-the layout file when changing controls.
+`InitializeComponent` uses explicit control construction, property assignments,
+container additions, and named event handlers that the Windows Forms designer
+can read. Keep service calls, loops, layout factories, and inline event lambdas
+out of that method. Grid columns have unique component names within each view;
+their `DataPropertyName` values still identify the model properties to display.
+
+Parameterless constructors create the designable controls. The constructors
+that accept services supply runtime data. For example, `MainForm` shows its
+shell in the designer; open `DashboardControl` to edit the dashboard layout.
+Check both the designer and the running app when changing layouts.
 
 `UiFeedback.Run` catches expected validation and workflow errors and displays
 their messages. Unexpected exceptions are logged by `ErrorLogger`.

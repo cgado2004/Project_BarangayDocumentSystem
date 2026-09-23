@@ -22,6 +22,8 @@ namespace BarangayDocumentSystem.Forms
                 "Amount to record: PHP " + request.Fee.ToString("N2");
         }
 
+        private void CloseDialog(object sender, EventArgs e) { Close(); }
+
         private void SavePayment(object sender, EventArgs e)
         {
             UiFeedback.Run(this, () =>

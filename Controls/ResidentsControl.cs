@@ -25,6 +25,16 @@ namespace BarangayDocumentSystem.Controls
             RefreshData();
         }
 
+        private void SearchChanged(object sender, EventArgs e)
+        {
+            UiFeedback.Run(this, RefreshData);
+        }
+
+        private void ResidentDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0) EditResident(sender, e);
+        }
+
         public void RefreshData()
         {
             if (residents == null) return;

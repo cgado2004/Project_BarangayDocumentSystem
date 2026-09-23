@@ -14,7 +14,12 @@ namespace BarangayDocumentSystem.Controls
         private readonly DocumentRenderer renderer;
         public event EventHandler DataChanged;
 
-        public RequestsControl() { InitializeComponent(); }
+        public RequestsControl()
+        {
+            InitializeComponent();
+            cmbStatus.SelectedIndex = 0;
+            UpdateSelection();
+        }
 
         public RequestsControl(ResidentService residents, RequestService requests, DocumentRenderer renderer) : this()
         {
@@ -23,6 +28,17 @@ namespace BarangayDocumentSystem.Controls
             this.renderer = renderer;
             RefreshData();
         }
+
+        private void FilterChanged(object sender, EventArgs e)
+        {
+            UiFeedback.Run(this, RefreshData);
+        }
+
+        private void RequestSelectionChanged(object sender, EventArgs e) { UpdateSelection(); }
+
+        private void ProcessRequest(object sender, EventArgs e) { ChangeStatus(requests.StartProcessing); }
+
+        private void ReadyRequest(object sender, EventArgs e) { ChangeStatus(requests.MarkReady); }
 
         public void RefreshData()
         {

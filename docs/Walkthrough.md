@@ -2,6 +2,21 @@
 
 Keep `LoadSampleData=true` in `App.config` for this walkthrough.
 
+## Fresh checkout and designer
+
+1. Open the classic `.sln` in Visual Studio 2022 or newer. Install any missing
+   desktop development components listed by `.vsconfig`, then rebuild.
+2. Confirm the startup project is BarangayDocumentSystem and its Debug start
+   action is **Start project**. Press F5 and check the dashboard below.
+3. Stop debugging. Open MainForm, ResidentForm, RequestForm, PaymentForm,
+   RejectionForm, and DocumentPreviewForm in the designer. Each should load
+   without a parsing error.
+4. Open DashboardControl, ResidentsControl, and RequestsControl in the designer
+   to edit the pages. MainForm's designer contains only the navigation shell.
+
+The automated runner checks runtime behavior. Designer loading and IDE startup
+are separate checks; repeat them when layout or project settings change.
+
 ## First run
 
 Open the solution and press F5. The dashboard should show:
