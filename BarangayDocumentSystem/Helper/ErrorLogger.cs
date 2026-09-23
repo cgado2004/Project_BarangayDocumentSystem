@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace BarangayDocumentSystem.Helper;
 
 /// <summary>

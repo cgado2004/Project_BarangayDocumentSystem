@@ -188,7 +188,7 @@ public class HeroBanner : Control
 public class DashboardView : ViewBase
 {
     private readonly IBarangayRepository _repository;
-    private readonly FeeSchedule _fees;
+    private readonly Service.FeeSchedule _fees;
 
     /// <summary>Raised with ("residents", filter) or ("requests", filter) so
     /// the shell can open the list behind a number.</summary>
@@ -204,7 +204,7 @@ public class DashboardView : ViewBase
     private readonly Label _docTypesTitle = new();
     private readonly FlowLayoutPanel _docTypeBars = new();
 
-    public DashboardView(IBarangayRepository repository, FeeSchedule fees)
+    public DashboardView(IBarangayRepository repository, Service.FeeSchedule fees)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _fees = fees ?? throw new ArgumentNullException(nameof(fees));

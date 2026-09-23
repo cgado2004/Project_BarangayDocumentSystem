@@ -126,7 +126,7 @@ public class DocumentRequest
 
     /// <summary>The readable name of this document, which I use on screen and
     /// on the printed page.</summary>
-    public string GetDocumentName() => FeeSchedule.NameOf(DocumentType);
+    public string GetDocumentName() => Service.FeeSchedule.NameOf(DocumentType);
 
     // -----------------------------------------------------------------
     //  The fee result, applied once at filing time by the repository.
