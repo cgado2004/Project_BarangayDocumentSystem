@@ -1,4 +1,4 @@
-# Barangay Resident and Document Request Management System — v3.1.2
+# Barangay Resident and Document Request Management System — v3.1.3
 
 **Barangay Magugpo Poblacion, City of Tagum, Davao del Norte**
 Windows desktop application · WinForms · .NET 8
@@ -25,12 +25,14 @@ the `.slnx` format needs the *"Use the XML solution format"* preview
 feature enabled (Settings → Environment → Preview Features); 17.13 and
 later read it out of the box.
 
-**If the `.slnx` will not open** — Visual Studio older than 17.10 cannot
-read the XML format and may fail with nothing but an empty Solution
-Explorer — open **`BarangayDocumentSystem.sln`** instead. The classic
-solution format sits beside the `.slnx`, references the same two projects,
-and opens on every Visual Studio version. Open one or the other, never
-both.
+**Opening the solution.** `.slnx` opens **natively on Visual Studio 2022
+17.13+, including the current 17.14 builds** — no preview toggle. It does
+*not* launch by double-click the way `.sln` does, so use *File → Open →
+Project/Solution*. On 17.10–17.12 enable the XML-solution preview feature
+first; on anything older (or whenever the pane comes up empty), open
+**`BarangayDocumentSystem.sln`** — the classic format beside it, same two
+projects, same GUIDs. Open one or the other, never both. Full checklist:
+[`docs/06` §10](docs/06-pushing-to-github.md).
 
 ```bash
 dotnet run --project BarangayDocumentSystem
@@ -95,6 +97,26 @@ its 7-document subset (all 24 services stay), its SQL Server LocalDB
 runtime (MySQL remains the protocol engine), and its parallel folder
 structure. Nothing from Phillippe Dagamac's `draft3` branch is included —
 that work is still TBD.
+
+---
+
+## What changed in v3.1.3
+
+A UI/UX and compatibility round, grounded in what a teammate's machine
+actually did:
+
+- **Bundled fonts.** `Assets/fonts/` is probed first via
+  `PrivateFontCollection` — drop Inter's `.ttf` files there and the brand
+  face renders on every machine, installed or not (OFL allows it).
+- **Keyboard navigation.** `Ctrl+1 / 2 / 3` jump Dashboard / Residents /
+  Document requests; the shell is now fully keyboard-drivable.
+- **The RA 11032 clock is always visible.** The status bar turns the
+  danger colour and reads `⚠ N past the 3-working-day standard` the
+  moment any open request breaches it; the Pending tile shows `· N aged`.
+- **Accessibility.** Every clickable stat card carries an
+  `AccessibleName` a screen reader can speak.
+- **VS 17.14 (2026) guidance.** `.slnx` is GA there — see `docs/06` §10
+  for the version-aware open checklist (and why double-click fails).
 
 ---
 
@@ -193,6 +215,8 @@ BarangayDocumentSystem/
 │   ├── 01-schema.sql                 tables, triggers, views (v3.1 columns)
 │   └── 02-seed-data.sql              the same residents as the demo
 ├── BarangayDocumentSystem/                    net8.0-windows
+│   ├── Assets/fonts/     (optional) drop Inter .ttf files here and every
+│   │                     machine renders the same face — v3.1.3
 │   ├── App.config        every setting that might change
 │   ├── app.manifest      PerMonitorV2 + supportedOS
 │   ├── packages.config   designer accessibility listing

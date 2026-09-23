@@ -58,6 +58,21 @@ public partial class MainShell : Form
         LoadLogo();
         UpdateDpiReadout();
 
+        // v3.1.3: the shell is fully drivable from the keyboard -
+        // Ctrl+1/2/3 jump between the three screens, so every function
+        // the mouse has, the keyboard has too.
+        KeyPreview = true;
+        KeyDown += (_, e) =>
+        {
+            if (!e.Control) return;
+            switch (e.KeyCode)
+            {
+                case Keys.D1: e.SuppressKeyPress = true; ShowDashboard();     break;
+                case Keys.D2: e.SuppressKeyPress = true; ShowResidents(null); break;
+                case Keys.D3: e.SuppressKeyPress = true; ShowRequests(null);  break;
+            }
+        };
+
         ShowDashboard();
     }
 
@@ -186,7 +201,7 @@ public partial class MainShell : Form
     {
         if (_dashboardView is null)
         {
-            _dashboardView = new DashboardView(_repository);
+            _dashboardView = new DashboardView(_repository, _fees);
             _dashboardView.RequestNavigate += (_, e) =>
             {
                 if (e.View == "residents") ShowResidents(e.Filter);
@@ -238,10 +253,24 @@ public partial class MainShell : Form
     private void UpdateStatus()
     {
         var s = _repository.GetStatistics();
+
+        // v3.1.3: the RA 11032 clock is a legal deadline, so it belongs in
+        // the one bar that is always on screen. Quiet while we are inside
+        // the standard; the whole line turns the danger colour when we are
+        // not - a backlog with a breached deadline must not look like a
+        // caption.
+        int aged = _repository.Requests.Count(
+            r => r.IsBeyondRA11032Standard(_fees.RA11032SimpleWorkingDays));
+
         lblStatus.Text =
             $"{s.TotalResidents} residents   ·   {s.TotalRequests} requests   ·   " +
-            $"{DisplayFormat.Peso(s.TotalCollected)} collected   ·   " +
-            $"{BarangayProfile.Current.PunongBarangay}";
+            $"{DisplayFormat.Peso(s.TotalCollected)} collected" +
+            (aged > 0
+                ? $"   ·   \u26a0 {aged} past the {_fees.RA11032SimpleWorkingDays}-working-day standard"
+                : string.Empty) +
+            $"   ·   {BarangayProfile.Current.PunongBarangay}";
+
+        lblStatus.ForeColor = aged > 0 ? Danger : Muted;
     }
 
     private void UpdateDpiReadout()

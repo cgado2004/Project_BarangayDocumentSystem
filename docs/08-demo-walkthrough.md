@@ -34,6 +34,10 @@ v3.1.1 — it should show:
 - **₱255.00 collected** (₱100 clearance + ₱155 cedula).
 - 1 document issued free of charge.
 - One aged request highlighted under the RA 11032 note.
+- The status bar reads `⚠ 1 past the 3-working-day standard` in the danger
+  colour — the v3.1.3 aging alert (it is quiet when nothing is overdue).
+- `Ctrl+1 / 2 / 3` jump between Dashboard, Residents and Document
+  requests without touching the mouse.
 
 Everything is in-memory: records reset when the app closes. That is
 deliberate until the MySQL repository lands (see

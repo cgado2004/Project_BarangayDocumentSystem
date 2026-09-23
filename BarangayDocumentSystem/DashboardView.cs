@@ -188,6 +188,7 @@ public class HeroBanner : Control
 public class DashboardView : ViewBase
 {
     private readonly IBarangayRepository _repository;
+    private readonly FeeSchedule _fees;
 
     /// <summary>Raised with ("residents", filter) or ("requests", filter) so
     /// the shell can open the list behind a number.</summary>
@@ -203,9 +204,10 @@ public class DashboardView : ViewBase
     private readonly Label _docTypesTitle = new();
     private readonly FlowLayoutPanel _docTypeBars = new();
 
-    public DashboardView(IBarangayRepository repository)
+    public DashboardView(IBarangayRepository repository, FeeSchedule fees)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _fees = fees ?? throw new ArgumentNullException(nameof(fees));
 
         _hero.Dock = DockStyle.Top;
         _hero.Height = 158;
@@ -316,8 +318,16 @@ public class DashboardView : ViewBase
         _stats.Controls.Clear();
         _stats.Controls.Add(MakeStat("Residents", s.TotalResidents.ToString(),
             "on the registry", Primary, tileW, gap, () => Go("residents", null)));
+        // v3.1.3: the Pending tile carries its own urgency - how much of
+        // the backlog is already past the RA 11032 standard - so the
+        // backlog and its deadline are one glance apart, not two clicks.
+        int agedPending = _repository.Requests.Count(r =>
+            r.Status == RequestStatus.Pending &&
+            r.IsBeyondRA11032Standard(_fees.RA11032SimpleWorkingDays));
+
         _stats.Controls.Add(MakeStat("Pending", s.Pending.ToString(),
-            "to be processed", Warning, tileW, gap, () => Go("requests", "Pending")));
+            agedPending > 0 ? $"to be processed \u00b7 {agedPending} aged" : "to be processed",
+            Warning, tileW, gap, () => Go("requests", "Pending")));
         _stats.Controls.Add(MakeStat("Ready", s.ReadyForRelease.ToString(),
             "to be collected", Info, tileW, gap, () => Go("requests", "ReadyForRelease")));
         _stats.Controls.Add(MakeStat("Released", s.Released.ToString(),
@@ -414,6 +424,10 @@ public class DashboardView : ViewBase
         card.Controls.Add(cap);
         card.Controls.Add(val);
         card.Controls.Add(lbl);
+
+        // v3.1.3: the card is clickable, so it is also one accessible
+        // object with a sentence a screen reader can actually say.
+        card.AccessibleName = $"{label}: {value}, {caption}.";
 
         // I wire the click to the labels as well as the card. A label sits on
         // top of its parent and swallows the click, so without this, clicking

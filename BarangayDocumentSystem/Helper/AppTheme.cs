@@ -91,7 +91,12 @@ public static class AppTheme
     /// </summary>
     public static void Resolve()
     {
-        UiFamily = FirstInstalledFont(
+        // v3.1.3: bundled fonts first. If Assets/fonts carries the brand
+        // typefaces (see BundledFonts below), they win over whatever the
+        // machine happens to have installed, so the dashboard looks the
+        // same on every laptop in the room - typography by design, not
+        // by luck.
+        UiFamily = FirstUiFont(
             "Inter",                // Google / rsms.me/inter - first choice
             "Inter Display",        // Inter's display cut, newer releases
             "Plus Jakarta Sans",    // spec family #2 (v3.1.2 dashboard spec)
@@ -102,7 +107,7 @@ public static class AppTheme
             "Segoe UI",             // every Windows since Vista
             "Tahoma");              // last resort
 
-        MonoFamily = FirstInstalledFont(
+        MonoFamily = FirstUiFont(
             "Cascadia Mono",        // ships with Windows Terminal and VS
             "Consolas",
             "Courier New");
@@ -135,6 +140,61 @@ public static class AppTheme
         }
 
         return candidates[^1];
+    }
+
+    // -----------------------------------------------------------------
+    //  Bundled fonts, v3.1.3
+    //
+    //  Typography that depends on what happens to be installed is not
+    //  typography, it is luck. The app therefore looks for font files in
+    //  Assets/fonts FIRST - drop Inter-Regular.ttf and Inter-Bold.ttf
+    //  there and every machine renders the same face, installed or not
+    //  (the SIL Open Font License allows shipping them with the app) -
+    //  and only falls back to the installed-font probe when the folder
+    //  is empty or the machine cannot read it.
+    // -----------------------------------------------------------------
+    private static System.Drawing.Text.PrivateFontCollection? _bundled;
+
+    private static System.Drawing.Text.PrivateFontCollection BundledFonts()
+    {
+        if (_bundled is not null) return _bundled;
+
+        var collection = new System.Drawing.Text.PrivateFontCollection();
+        try
+        {
+            string dir = Path.Combine(AppContext.BaseDirectory, "Assets", "fonts");
+            if (Directory.Exists(dir))
+            {
+                foreach (string file in Directory.GetFiles(dir))
+                {
+                    if (file.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) ||
+                        file.EndsWith(".otf", StringComparison.OrdinalIgnoreCase))
+                        collection.AddFontFile(file);   // one bad file skips, it does not stop the app
+                }
+            }
+        }
+        catch
+        {
+            // unreadable folder or typeface - the installed probe still runs
+        }
+
+        _bundled = collection;
+        return _bundled;
+    }
+
+    /// <summary>The first family found among the bundled fonts, then the
+    /// machine's installed set. The last candidate is always the floor.</summary>
+    private static string FirstUiFont(params string[] candidates)
+    {
+        var bundled = BundledFonts();
+        if (bundled.Families.Length > 0)
+        {
+            var names = bundled.Families.Select(f => f.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (string name in candidates)
+                if (names.Contains(name)) return name;
+        }
+
+        return FirstInstalledFont(candidates);
     }
 
     // I build fonts through these properties so every screen asks for a role

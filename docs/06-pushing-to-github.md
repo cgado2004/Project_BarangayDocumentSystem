@@ -178,30 +178,40 @@ that you did not touch, ask in the group chat before cleaning.
 ## 10. The .slnx will not open (or Solution Explorer is empty)
 
 **An empty Solution Explorer means NO solution is loaded** - the open
-attempt failed. Visual Studio older than 17.10 cannot read the XML `.slnx`
-format and typically fails with no error at all, leaving the pane blank.
-Work through this list, in order:
+attempt failed. First, know your version (*Help → About Microsoft Visual
+Studio*); the answer depends on it:
 
-1. **Use the fallback and move on.** Open **`BarangayDocumentSystem.sln`**
-   instead (*File → Open → Project/Solution*). The classic format sits
-   beside the `.slnx`, references the same two projects with the same
-   GUIDs, and opens on every Visual Studio version. One or the other -
-   never both at once. This is the recommended answer; the rest of this
-   list is for staying on the `.slnx`.
-2. **Check your version** (*Help → About Microsoft Visual Studio*).
-   `.slnx` needs **17.10 or later**. On 17.10-17.12 turn on
-   *Tools → Options → Environment → Preview Features → "Use the XML
-   solution format"*, restart VS, and try again. From 17.13 it opens out
-   of the box.
-3. **Folder view is not the solution.** If the title bar says only
-   `Project_BarangayDocumentSystem`, you are browsing the folder - that is
-   not "having the solution open". The Solution Explorer view dropdown
-   should say *Solution view* and show two projects:
-   `BarangayDocumentSystem` (startup) and `RuleChecks`.
-4. **Pane rendered blank but a solution should be open?**
+| Your VS | `.slnx` support |
+|---|---|
+| **17.14** (GA since the May 2025 release - this includes the September 2026 builds) | **native, no toggle needed** |
+| 17.13 | native |
+| 17.10-17.12 | preview feature: *Tools → Options → Environment → Preview Features → "Use the XML solution format"*, restart VS |
+| older than 17.10 | none - use the `.sln` fallback below |
+
+Then, in order:
+
+1. **Open it the right way.** `.slnx` files do **not** launch Visual Studio
+   by double-click the way `.sln` files do. Start Visual Studio, then
+   *File → Open → Project/Solution* and pick the `.slnx`. The Solution
+   Explorer dropdown should switch to *Solution view* and show two
+   projects: `BarangayDocumentSystem` (startup) and `RuleChecks`.
+2. **On 17.14 and still empty?** The format is not your problem - the
+   workspace is. Run the ten-second test in step 4.
+3. **Pane renders blank although a solution should be open?**
    *Window → Reset Window Layout* rebuilds the tool panes.
+4. **The ten-second workspace test.** Clone fresh into a NEW folder and
+   open the `.slnx` there:
+
+   ```powershell
+   git clone https://github.com/cgado2004/Project_BarangayDocumentSystem.git fresh-check
+   ```
+
+   Works there? Your old folder was stale or dirty (leftover ghosts from
+   §9, an out-of-date checkout). Keep the fresh clone, migrate nothing,
+   delete the old folder when you are sure.
 5. **No Visual Studio handy, or still failing?** The `dotnet` CLI builds
-   and runs without any solution file:
+   and runs without any solution file (SDK 9.0.200+ even reads `.slnx`;
+   on an 8.x SDK target the project directly):
 
    ```powershell
    dotnet build BarangayDocumentSystem/BarangayDocumentSystem.csproj
@@ -209,9 +219,12 @@ Work through this list, in order:
    ```
 
    `global.json` pins SDK 8.0.100 with `rollForward: latestMajor`, so any
-   newer SDK you already have is fine - you do not need exactly 8.0.100.
-
-6. **Safety check:** if *Windows Explorer* (not Visual Studio) now shows
-   the repo folder empty or half-empty after a cleanup, STOP and run
+   newer SDK you already have is fine.
+6. **Safety check:** if *Windows Explorer* (not Visual Studio) shows the
+   repo folder empty or half-empty after a cleanup, STOP and run
    `git status` then `git checkout . && git pull` - tracked files are
    always restorable, untracked ones are not.
+
+**The `.sln` fallback** sits beside the `.slnx` with the same two projects
+and the same GUIDs; it opens on every Visual Studio version ever. One or
+the other, never both at once.
