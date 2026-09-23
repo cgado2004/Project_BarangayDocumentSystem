@@ -61,6 +61,7 @@
     </Compile>
     <Compile Include="Configuration\AppSettings.cs" />
     <Compile Include="Models\BarangayProfile.cs" />
+    <Compile Include="Models\BarangayStatistics.cs" />
     <Compile Include="Models\CivilStatus.cs" />
     <Compile Include="Models\DocumentRequest.cs" />
     <Compile Include="Models\DocumentType.cs" />
@@ -72,10 +73,16 @@
     <Compile Include="Interfaces\IBarangayRepository.cs" />
     <Compile Include="Interfaces\IDocumentTemplate.cs" />
     <Compile Include="Data\InMemoryBarangayRepository.cs" />
+    <Compile Include="Data\SqlBarangayRepository.cs" />
+    <Compile Include="Data\SqlDatabase.cs" />
+    <Compile Include="Data\SqlResidentMapping.cs" />
+    <Compile Include="Data\SqlRequestMapping.cs" />
+    <EmbeddedResource Include="Data\Schema.sql" />
     <Compile Include="Data\SampleData.cs" />
     <Compile Include="Services\DocumentRenderer.cs" />
     <Compile Include="Services\FeeSchedule.cs" />
     <Compile Include="Services\RequestService.cs" />
+    <Compile Include="Services\ReportingService.cs" />
     <Compile Include="Services\ResidentService.cs" />
     <Compile Include="Services\ResidentValidator.cs" />
     <Compile Include="Documents\BarangayIdTemplate.cs" />
@@ -165,6 +172,7 @@
     <None Include="App.config" />
     <None Include="README.md" />
     <None Include="docs\CodeGuide.md" />
+    <None Include="docs\Database.md" />
     <None Include="docs\Walkthrough.md" />
     <None Include="docs\FeePolicy.md" />
   </ItemGroup>

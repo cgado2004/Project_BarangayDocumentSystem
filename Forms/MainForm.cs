@@ -10,21 +10,18 @@ namespace BarangayDocumentSystem.Forms
 {
     public partial class MainForm : Form
     {
-        private readonly ResidentService residents;
         private DashboardControl dashboardPage;
         private ResidentsControl residentsPage;
         private RequestsControl requestsPage;
 
         public MainForm() { InitializeComponent(); }
 
-        public MainForm(ResidentService residents, RequestService requests, DocumentRenderer renderer, AppSettings settings)
+        public MainForm(ResidentService residents, RequestService requests, DocumentRenderer renderer, AppSettings settings, ReportingService reporting)
             : this()
         {
-            this.residents = residents;
             lblBarangay.Text = settings.Profile.BarangayName + Environment.NewLine + settings.Profile.CityName;
-            lblSession.Text = "Session-only records: data resets when the app closes. Classroom fee schedule." +
-                (settings.LoadSampleData ? " Sample records loaded." : "");
-            dashboardPage = new DashboardControl(residents, requests);
+            lblSession.Text = "Records are saved on this computer. Classroom fee schedule.";
+            dashboardPage = new DashboardControl(reporting);
             residentsPage = new ResidentsControl(residents, requests, renderer);
             requestsPage = new RequestsControl(residents, requests, renderer);
             pnlContent.Controls.AddRange(new Control[] { dashboardPage, residentsPage, requestsPage });
@@ -71,10 +68,5 @@ namespace BarangayDocumentSystem.Forms
             });
         }
 
-        private void MainFormClosing(object sender, FormClosingEventArgs e)
-        {
-            if (e.CloseReason == CloseReason.UserClosing && residents != null && residents.Search().Count > 0)
-                e.Cancel = !UiFeedback.Confirm(this, "Close this session? Resident records, requests, and payment records are stored only in memory and will be lost.");
-        }
     }
 }

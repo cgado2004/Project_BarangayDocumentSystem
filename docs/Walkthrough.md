@@ -19,7 +19,9 @@ are separate checks; repeat them when layout or project settings change.
 
 ## First run
 
-Open the solution and press F5. The dashboard should show:
+Install SQL Server Express LocalDB using the included `.vsconfig`, open the
+solution, and press F5. On a new database with `LoadSampleData=true`, the
+dashboard should show:
 
 - 7 residents and 6 requests.
 - 2 pending, 1 processing, 1 ready, 2 released, 0 rejected.
@@ -76,11 +78,15 @@ Preview a Pending request too: its text is visible, but printing is disabled.
   Its old name and address should remain.
 - A rejected request should not allow processing, payment, or release.
 
-## Session behavior
+## Saved records
 
-Close the app and confirm the warning. Reopen it: the sample records return,
-but records you added in the previous session do not. With
-`LoadSampleData=false`, it starts empty instead.
+Create a resident, file a request, and record a payment. Close the app and
+reopen it: the new resident, request, receipt, and dashboard collection total
+must remain. Released certificates must retain their finalized text.
+Sample records must not duplicate on restart.
+
+`LoadSampleData=false` creates an empty database only on first initialization.
+It does not erase an existing database. See [database setup](Database.md).
 
 ## Automated checks
 

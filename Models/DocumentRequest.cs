@@ -5,6 +5,8 @@ namespace BarangayDocumentSystem.Models
     public class DocumentRequest
     {
         public int RequestId { get; internal set; }
+        // Stops old changes from replacing newer ones.
+        public int Version { get; internal set; }
         public int ResidentId { get; internal set; }
         public Resident ResidentSnapshot { get; internal set; }
         public DocumentType DocumentType { get; internal set; }

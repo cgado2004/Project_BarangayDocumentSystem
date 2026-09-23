@@ -86,7 +86,7 @@ namespace BarangayDocumentSystem.Forms
             this.lblPageTitle.Padding = new System.Windows.Forms.Padding(20, 12, 0, 0);
             this.lblPageTitle.Font = new System.Drawing.Font("Segoe UI", 23F);
             this.lblPageTitle.ForeColor = System.Drawing.Color.FromArgb(31, 74, 64);
-            this.lblSession.Text = "Session-only records";
+            this.lblSession.Text = "Records are saved on this computer";
             this.lblSession.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.lblSession.Height = 48;
             this.lblSession.Padding = new System.Windows.Forms.Padding(20, 8, 12, 0);
@@ -104,7 +104,6 @@ namespace BarangayDocumentSystem.Forms
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Name = "MainForm";
             this.Text = "Barangay Resident and Document Request Management System";
-            this.FormClosing += MainFormClosing;
             this.pnlSidebar.ResumeLayout(false);
             this.pnlBody.ResumeLayout(false);
             this.ResumeLayout(false);

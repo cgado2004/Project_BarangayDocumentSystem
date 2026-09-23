@@ -32,12 +32,16 @@ namespace BarangayDocumentSystem.Data
             if (resident.ResidentId == 0)
             {
                 resident.ResidentId = nextResidentId++;
+                resident.Version = 1;
                 residents.Add(resident.Copy());
                 return;
             }
 
             int index = residents.FindIndex(item => item.ResidentId == resident.ResidentId);
             if (index < 0) throw new InvalidOperationException("The resident record no longer exists.");
+            if (residents[index].Version != resident.Version)
+                throw new InvalidOperationException("This resident was changed by another action. Refresh and reopen the record.");
+            resident.Version++;
             residents[index] = resident.Copy();
         }
 
@@ -68,13 +72,37 @@ namespace BarangayDocumentSystem.Data
             if (request.RequestId == 0)
             {
                 request.RequestId = nextRequestId++;
+                request.Version = 1;
                 requests.Add(request.Copy());
                 return;
             }
 
             int index = requests.FindIndex(item => item.RequestId == request.RequestId);
             if (index < 0) throw new InvalidOperationException("The document request no longer exists.");
+            if (requests[index].Version != request.Version)
+                throw new InvalidOperationException("This request was changed by another action. Refresh and try again.");
+            request.Version++;
             requests[index] = request.Copy();
+        }
+
+        public void ExecuteInTransaction(Action action)
+        {
+            if (action == null) throw new ArgumentNullException(nameof(action));
+            var savedResidents = residents.Select(resident => resident.Copy()).ToList();
+            var savedRequests = requests.Select(request => request.Copy()).ToList();
+            int savedResidentId = nextResidentId;
+            int savedRequestId = nextRequestId;
+            try { action(); }
+            catch
+            {
+                residents.Clear();
+                residents.AddRange(savedResidents);
+                requests.Clear();
+                requests.AddRange(savedRequests);
+                nextResidentId = savedResidentId;
+                nextRequestId = savedRequestId;
+                throw;
+            }
         }
     }
 }

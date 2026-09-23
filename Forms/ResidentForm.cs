@@ -10,6 +10,7 @@ namespace BarangayDocumentSystem.Forms
     {
         private readonly ResidentService service;
         private readonly int residentId;
+        private readonly int version;
         private readonly bool benefitAlreadyUsed;
 
         public ResidentForm()
@@ -22,6 +23,7 @@ namespace BarangayDocumentSystem.Forms
             this.service = service;
             var resident = existing ?? new Resident();
             residentId = resident.ResidentId;
+            version = resident.Version;
             benefitAlreadyUsed = resident.HasUsedJobseekerBenefit;
             Text = existing == null ? "Register resident" : "Edit resident";
             txtFirstName.Text = resident.FirstName;
@@ -59,7 +61,7 @@ namespace BarangayDocumentSystem.Forms
                     throw new ArgumentException("Select a gender and civil status.");
                 var resident = new Resident
                 {
-                    ResidentId = residentId, FirstName = txtFirstName.Text, MiddleName = txtMiddleName.Text,
+                    ResidentId = residentId, Version = version, FirstName = txtFirstName.Text, MiddleName = txtMiddleName.Text,
                     LastName = txtLastName.Text, Suffix = txtSuffix.Text, DateOfBirth = dtpBirth.Value.Date,
                     DateOfResidency = dtpResidency.Value.Date, Gender = (Gender)cmbGender.SelectedItem,
                     CivilStatus = (CivilStatus)cmbCivilStatus.SelectedItem, Purok = txtPurok.Text,

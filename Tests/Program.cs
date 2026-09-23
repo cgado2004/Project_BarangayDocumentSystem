@@ -23,13 +23,20 @@ namespace BarangayDocumentSystem.Tests
         private static int passed;
         private static int failed;
         private static int skipped;
+        private static bool useSql;
+        private static readonly List<SqlTestDatabase> databases = new List<SqlTestDatabase>();
 
         [STAThread]
-        private static int Main()
+        private static int Main(string[] args)
         {
+            useSql = args.Contains("--sql");
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Console.WriteLine("Process: " + (IntPtr.Size * 8) + "-bit; CLR: " + Environment.Version);
+            Console.WriteLine("Storage: " + (useSql ? "SQL Server LocalDB (temporary test databases)" : "In memory"));
+            Run("Dashboard totals include paid rejections and empty categories", Reporting);
+            Run("Stale resident edits cannot overwrite newer records", StaleEdits);
+            Run("Transactions roll back related changes", TransactionRollback);
             Run("Resident create, search, edit, and delete", ResidentCrud);
             Run("Invalid input is rejected without changing stored records", InvalidResidents);
             Run("Repository copies isolate unsaved edits", CopyIsolation);
@@ -50,6 +57,12 @@ namespace BarangayDocumentSystem.Tests
             Run("Page filters and workflow buttons are connected", PageInteractions);
             Run("Dialog cancel buttons close without saving", CancelDialogs);
             Run("Forms and navigation render at normal and minimum sizes", UiSmoke);
+            if (useSql)
+            {
+                Run("SQL records, receipts and released text survive reconnection", DatabasePersistence);
+                Run("SQL sample initialization is once-only and atomic", DatabaseSamples);
+                Run("SQL constraints reject conflicting writes from separate connections", DatabaseConstraints);
+            }
             Console.WriteLine();
             Console.WriteLine(passed + " passed; " + failed + " failed; " + skipped + " skipped.");
             return failed == 0 ? 0 : 1;
@@ -60,11 +73,154 @@ namespace BarangayDocumentSystem.Tests
             try { test(); passed++; Console.WriteLine("PASS " + name); }
             catch (NotSupportedException error) { skipped++; Console.WriteLine("SKIP " + name + ": " + error.Message); }
             catch (Exception error) { failed++; Console.WriteLine("FAIL " + name + Environment.NewLine + error); }
+            finally
+            {
+                foreach (var database in databases)
+                {
+                    try { database.Dispose(); }
+                    catch (Exception error) { failed++; Console.WriteLine("FAIL test database cleanup: " + error.Message); }
+                }
+                databases.Clear();
+            }
         }
 
         private static void Check(bool condition, string message)
         {
             if (!condition) throw new Exception(message);
+        }
+
+        private static SqlTestDatabase NewDatabase()
+        {
+            var database = new SqlTestDatabase();
+            databases.Add(database);
+            return database;
+        }
+
+        private static void Reporting()
+        {
+            var fixture = new Fixture();
+            var empty = fixture.Reporting.GetStatistics();
+            Check(empty.TotalResidents == 0 && empty.TotalCollected == 0m, "Empty dashboard must have zero totals.");
+            Check(empty.RequestsByStatus.Count == 5 && empty.RequestsByStatus.All(item => item.Value == 0), "Empty status categories disappeared.");
+            SampleData.Load(fixture.Residents, fixture.Requests);
+            var totals = fixture.Reporting.GetStatistics();
+            Check(totals.TotalResidents == 7 && totals.TotalRequests == 6 && totals.TotalCollected == 50m, "Sample dashboard totals differ.");
+            Check(totals.PendingRequests == 2 && totals.ReadyRequests == 1 && totals.FreeDocumentsReleased == 1, "Workflow totals differ.");
+            Check(totals.RequestsByDocument.Sum(item => item.Value) == 6 && totals.ResidentsByPurok.Sum(item => item.Value) == 7, "Grouped totals differ.");
+            var resident = fixture.AddResident();
+            var request = fixture.Create(resident.ResidentId);
+            fixture.Requests.RecordPayment(request.RequestId, "REPORT-OR");
+            fixture.Requests.Reject(request.RequestId, "Cancelled by resident");
+            Check(fixture.Reporting.GetStatistics().TotalCollected == 100m, "Rejecting a paid request erased collection history.");
+        }
+
+        private static void StaleEdits()
+        {
+            var fixture = new Fixture();
+            var resident = fixture.AddResident();
+            var oldEdit = fixture.Residents.Get(resident.ResidentId);
+            var newEdit = fixture.Residents.Get(resident.ResidentId);
+            newEdit.Address = "Newer saved address";
+            fixture.Residents.Save(newEdit);
+            oldEdit.Address = "Outdated address";
+            Rejects(() => fixture.Residents.Save(oldEdit));
+            Check(fixture.Residents.Get(resident.ResidentId).Address == "Newer saved address", "An old form overwrote a newer save.");
+        }
+
+        private static void TransactionRollback()
+        {
+            var fixture = new Fixture();
+            var resident = fixture.AddResident();
+            var request = fixture.Create(resident.ResidentId, DocumentType.FirstTimeJobseekerCertificate);
+            fixture.Requests.StartProcessing(request.RequestId);
+            fixture.Requests.MarkReady(request.RequestId);
+            Rejects(() => fixture.Repository.ExecuteInTransaction(() =>
+            {
+                fixture.Requests.Release(request.RequestId);
+                fixture.AddResident();
+                throw new InvalidOperationException("Simulated failure before commit");
+            }));
+            Check(fixture.Requests.Get(request.RequestId).Status == RequestStatus.ReadyForRelease, "Request release was not rolled back.");
+            Check(!fixture.Residents.Get(resident.ResidentId).HasUsedJobseekerBenefit, "Benefit flag was not rolled back.");
+            Check(fixture.Residents.Search().Count == 1, "Resident insert was not rolled back.");
+            fixture.Requests.Release(request.RequestId);
+            Check(fixture.Requests.Get(request.RequestId).Status == RequestStatus.Released &&
+                fixture.Residents.Get(resident.ResidentId).HasUsedJobseekerBenefit, "Release and benefit flag were not committed together.");
+        }
+
+        private static void DatabasePersistence()
+        {
+            var database = NewDatabase();
+            var fixture = new Fixture(database.OpenRepository());
+            var resident = ValidResident("José O'Neil");
+            resident.CivilStatus = CivilStatus.Divorced;
+            fixture.Residents.Save(resident);
+            var request = fixture.Create(resident.ResidentId, DocumentType.BarangayBusinessClearance);
+            fixture.Requests.StartProcessing(request.RequestId);
+            fixture.Requests.MarkReady(request.RequestId);
+            fixture.Requests.RecordPayment(request.RequestId, "PERSIST-OR");
+            fixture.Requests.Release(request.RequestId);
+            string original = fixture.Requests.Preview(request.RequestId);
+            var saved = fixture.Requests.Get(request.RequestId);
+            resident.FirstName = "Changed later";
+            fixture.Residents.Save(resident);
+
+            var reopened = new Fixture(database.OpenRepository());
+            Check(reopened.Residents.Get(resident.ResidentId).FirstName == "Changed later", "Resident edit was lost on reconnect.");
+            var restored = reopened.Requests.Get(request.RequestId);
+            Check(restored.ResidentSnapshot.FirstName == "José O'Neil" && restored.ResidentSnapshot.CivilStatus == CivilStatus.Divorced,
+                "Unicode name, apostrophe, enum or historical snapshot did not round-trip.");
+            Check(restored.BusinessName == "Sample Store" && restored.BusinessAddress == "Sample Street" && restored.BusinessNature == "Retail", "Business details were lost.");
+            Check(restored.IsPaid && restored.OfficialReceiptNumber == "PERSIST-OR" && restored.DatePaid == saved.DatePaid &&
+                restored.DateReleased == saved.DateReleased, "Payment or release timestamps were lost.");
+            Check(reopened.Requests.Preview(request.RequestId) == original, "Final document changed after reconnect.");
+            Rejects(() => reopened.Residents.Delete(resident.ResidentId));
+            var next = reopened.AddResident();
+            Check(next.ResidentId > resident.ResidentId, "Identity numbers restarted.");
+        }
+
+        private static void DatabaseSamples()
+        {
+            var database = NewDatabase();
+            var repository = database.OpenRepository();
+            var fixture = new Fixture(repository);
+            Rejects(() => repository.Initialize(true, () =>
+            {
+                SampleData.Load(fixture.Residents, fixture.Requests);
+                throw new InvalidOperationException("Simulated interrupted first run");
+            }));
+            Check(fixture.Residents.Search().Count == 0 && fixture.Requests.Search().Count == 0, "Partial samples remained after failure.");
+            repository.Initialize(true, () => SampleData.Load(fixture.Residents, fixture.Requests));
+            var juan = fixture.Residents.Search("Juan").Single();
+            juan.Address = "Edited sample address";
+            fixture.Residents.Save(juan);
+            database.OpenRepository().Initialize(true, () => { throw new Exception("Samples must not reload."); });
+            Check(fixture.Residents.Search().Count == 7 && fixture.Requests.Search().Count == 6, "Samples were duplicated.");
+            Check(fixture.Residents.Get(juan.ResidentId).Address == "Edited sample address", "Startup replaced existing records.");
+            var empty = NewDatabase().OpenRepository();
+            empty.Initialize(false, null);
+            empty.Initialize(true, () => { throw new Exception("An initialized empty database must stay empty."); });
+            Check(empty.GetResidents().Count == 0, "Sample switch changed existing database contents.");
+        }
+
+        private static void DatabaseConstraints()
+        {
+            var database = NewDatabase();
+            var repository = database.OpenRepository();
+            var fixture = new Fixture(repository);
+            var resident = fixture.AddResident();
+            var first = fixture.Create(resident.ResidentId);
+            var second = fixture.Create(resident.ResidentId);
+            fixture.Requests.RecordPayment(first.RequestId, "DB-RECEIPT");
+            database.ExpectConstraint("UPDATE dbo.DocumentRequests SET IsPaid = 1, OfficialReceiptNumber = N'db-receipt', DatePaid = SYSDATETIME() WHERE RequestId = @id", second.RequestId);
+            Check(!fixture.Requests.Get(second.RequestId).IsPaid, "Failed duplicate payment changed the record.");
+            fixture.Create(resident.ResidentId, DocumentType.FirstTimeJobseekerCertificate);
+            database.ExpectConstraint("UPDATE dbo.DocumentRequests SET DocumentType = 5 WHERE RequestId = @id", second.RequestId);
+            database.ExpectConstraint("DELETE FROM dbo.Residents WHERE ResidentId = @id", resident.ResidentId);
+            var stale = database.OpenRepository().GetRequest(second.RequestId);
+            fixture.Requests.StartProcessing(second.RequestId);
+            Rejects(() => repository.SaveRequest(stale));
+            Check(fixture.Requests.Get(second.RequestId).Status == RequestStatus.Processing, "Stale request overwrote the newer status.");
         }
 
         private static void Rejects(Action action)
@@ -446,7 +602,7 @@ namespace BarangayDocumentSystem.Tests
         private static void MainNavigation()
         {
             var fixture = new Fixture();
-            using (var main = new MainForm(fixture.Residents, fixture.Requests, fixture.Renderer, AppSettings.Load()))
+            using (var main = new MainForm(fixture.Residents, fixture.Requests, fixture.Renderer, AppSettings.Load(), fixture.Reporting))
             {
                 main.Opacity = 0;
                 main.ShowInTaskbar = false;
@@ -555,7 +711,7 @@ namespace BarangayDocumentSystem.Tests
             SampleData.Load(fixture.Residents, fixture.Requests);
             string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Screenshots");
             Directory.CreateDirectory(folder);
-            using (var main = new MainForm(fixture.Residents, fixture.Requests, fixture.Renderer, settings))
+            using (var main = new MainForm(fixture.Residents, fixture.Requests, fixture.Renderer, settings, fixture.Reporting))
             {
                 Capture(main, Path.Combine(folder, "dashboard.png"));
                 foreach (string page in new[] { "residents", "requests" })
@@ -579,6 +735,13 @@ namespace BarangayDocumentSystem.Tests
                 Check(fixture.Residents.Search("Form Saved").Count == 1, "Resident form did not save through the service.");
             }
             var resident = fixture.Residents.Search("Form Saved").Single();
+            using (var form = new ResidentForm(fixture.Residents, resident))
+            {
+                Capture(form, Path.Combine(folder, "resident-edit-form.png"));
+                ((TextBox)Field(form, "txtAddress")).Text = "Edited through the form";
+                Click(form, "btnSaveResident");
+                Check(fixture.Residents.Get(resident.ResidentId).Address == "Edited through the form", "Resident form did not retain the saved record version.");
+            }
             using (var form = new RequestForm(fixture.Residents, fixture.Requests, fixture.Renderer, resident.ResidentId))
             {
                 ((ComboBox)Field(form, "cmbDocument")).SelectedIndex = 3;
@@ -633,13 +796,17 @@ namespace BarangayDocumentSystem.Tests
 
         private class Fixture
         {
+            public IBarangayRepository Repository { get; private set; }
+            public ReportingService Reporting { get; private set; }
             public ResidentService Residents { get; private set; }
             public RequestService Requests { get; private set; }
             public DocumentRenderer Renderer { get; private set; }
 
-            public Fixture()
+            public Fixture(IBarangayRepository repository = null)
             {
-                var repository = new InMemoryBarangayRepository();
+                if (repository == null) repository = useSql ? (IBarangayRepository)NewDatabase().OpenRepository() : new InMemoryBarangayRepository();
+                Repository = repository;
+                Reporting = new ReportingService(repository);
                 Residents = new ResidentService(repository);
                 Renderer = new DocumentRenderer(new BarangayProfile("Test Barangay", "Test City", "Test Province", "Test Official"),
                     new IDocumentTemplate[] { new ClearanceTemplate(), new ResidencyTemplate(), new IndigencyTemplate(),

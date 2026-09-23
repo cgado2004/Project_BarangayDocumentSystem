@@ -93,6 +93,11 @@ namespace BarangayDocumentSystem.Services
 
         public void Release(int requestId)
         {
+            repository.ExecuteInTransaction(() => ReleaseDocument(requestId));
+        }
+
+        private void ReleaseDocument(int requestId)
+        {
             var request = Get(requestId);
             RequireStatus(request, RequestStatus.ReadyForRelease);
             if (request.Fee > 0m && !request.IsPaid)

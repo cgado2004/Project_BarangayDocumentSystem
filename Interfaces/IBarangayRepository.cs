@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using BarangayDocumentSystem.Models;
 
@@ -12,5 +13,6 @@ namespace BarangayDocumentSystem.Interfaces
         IReadOnlyList<DocumentRequest> GetRequests();
         DocumentRequest GetRequest(int requestId);
         void SaveRequest(DocumentRequest request);
+        void ExecuteInTransaction(Action action);
     }
 }

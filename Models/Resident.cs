@@ -5,6 +5,8 @@ namespace BarangayDocumentSystem.Models
     public class Resident
     {
         public int ResidentId { get; set; }
+        // Stops old edits from replacing newer ones.
+        public int Version { get; internal set; }
         public string FirstName { get; set; } = "";
         public string MiddleName { get; set; } = "";
         public string LastName { get; set; } = "";
