@@ -26,6 +26,8 @@ namespace BarangayDocumentSystem.Forms
                 "Draft preview. Release the request before printing the document.";
         }
 
+        private void CloseDialog(object sender, EventArgs e) { Close(); }
+
         private void PrintPreview(object sender, EventArgs e)
         {
             UiFeedback.Run(this, () =>

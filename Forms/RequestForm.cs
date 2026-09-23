@@ -31,6 +31,8 @@ namespace BarangayDocumentSystem.Forms
             UpdateFee();
         }
 
+        private void CloseDialog(object sender, EventArgs e) { Close(); }
+
         private void SelectionChanged(object sender, EventArgs e) { UpdateFee(); }
 
         private void FormatResident(object sender, ListControlConvertEventArgs e)

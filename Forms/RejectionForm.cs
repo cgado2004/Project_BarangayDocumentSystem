@@ -21,6 +21,8 @@ namespace BarangayDocumentSystem.Forms
                 (request.IsPaid ? Environment.NewLine + "The payment will remain in the collection history. This app does not issue refunds." : "");
         }
 
+        private void CloseDialog(object sender, EventArgs e) { Close(); }
+
         private void RejectRequest(object sender, EventArgs e)
         {
             UiFeedback.Run(this, () =>

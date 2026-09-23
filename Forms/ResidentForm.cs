@@ -48,6 +48,8 @@ namespace BarangayDocumentSystem.Forms
             chkJobseekerUsed.Enabled = !benefitAlreadyUsed;
         }
 
+        private void CloseDialog(object sender, EventArgs e) { Close(); }
+
         private void SaveResident(object sender, EventArgs e)
         {
             UiFeedback.Run(this, () =>

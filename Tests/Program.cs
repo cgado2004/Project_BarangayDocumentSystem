@@ -29,6 +29,7 @@ namespace BarangayDocumentSystem.Tests
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            Console.WriteLine("Process: " + (IntPtr.Size * 8) + "-bit; CLR: " + Environment.Version);
             Run("Resident create, search, edit, and delete", ResidentCrud);
             Run("Invalid input is rejected without changing stored records", InvalidResidents);
             Run("Repository copies isolate unsaved edits", CopyIsolation);
@@ -46,6 +47,8 @@ namespace BarangayDocumentSystem.Tests
             Run("Printer preview renders a multi-page document without printing", PrinterPreview);
             Run("Sample data and empty startup both work", SampleRecords);
             Run("Main window loads the dashboard and navigates to all pages", MainNavigation);
+            Run("Page filters and workflow buttons are connected", PageInteractions);
+            Run("Dialog cancel buttons close without saving", CancelDialogs);
             Run("Forms and navigation render at normal and minimum sizes", UiSmoke);
             Console.WriteLine();
             Console.WriteLine(passed + " passed; " + failed + " failed; " + skipped + " skipped.");
@@ -207,7 +210,7 @@ namespace BarangayDocumentSystem.Tests
                     string feeText = ((Label)Field(form, "lblFee")).Text;
                     Check(feeText.Contains("PHP " + 100m.ToString("N2")) && feeText.Contains("Citizen's Charter"),
                         type + " must display the PHP 100 Charter fee.");
-                    Invoke(form, "SubmitRequest", form, EventArgs.Empty);
+                    Click(form, "btnSubmit");
                     Check(form.DialogResult == DialogResult.OK, "Certification request was not submitted.");
                 }
                 var request = fixture.Requests.Search().Single(item => item.DocumentType == type);
@@ -469,6 +472,82 @@ namespace BarangayDocumentSystem.Tests
             }
         }
 
+        private static void PageInteractions()
+        {
+            var fixture = new Fixture();
+            var resident = fixture.AddResident();
+            var second = ValidResident("Second");
+            fixture.Residents.Save(second);
+            var request = fixture.Create(resident.ResidentId);
+            using (var host = new Form { Opacity = 0, ShowInTaskbar = false })
+            using (var residents = new ResidentsControl(fixture.Residents, fixture.Requests, fixture.Renderer))
+            using (var requests = new RequestsControl(fixture.Residents, fixture.Requests, fixture.Renderer))
+            {
+                host.Controls.Add(residents);
+                host.Show();
+                Application.DoEvents();
+                var search = (TextBox)Field(residents, "txtSearch");
+                var grid = (DataGridView)Field(residents, "gridResidents");
+                search.Text = "Second";
+                Check(grid.Rows.Count == 1 && ((Resident)grid.Rows[0].DataBoundItem).ResidentId == second.ResidentId,
+                    "Resident search did not refresh the grid.");
+                search.Clear();
+                Check(grid.Rows.Count == 2, "Clearing resident search did not restore the rows.");
+
+                host.Controls.Remove(residents);
+                host.Controls.Add(requests);
+                Application.DoEvents();
+                ((Button)Field(requests, "btnProcess")).PerformClick();
+                Check(fixture.Requests.Get(request.RequestId).Status == RequestStatus.Processing,
+                    "Start processing button is not connected.");
+                ((Button)Field(requests, "btnReady")).PerformClick();
+                Check(fixture.Requests.Get(request.RequestId).Status == RequestStatus.ReadyForRelease,
+                    "Mark ready button is not connected.");
+                Check(!((Button)Field(requests, "btnRelease")).Enabled, "Unpaid request can be released.");
+                var status = (ComboBox)Field(requests, "cmbStatus");
+                var requestGrid = (DataGridView)Field(requests, "gridRequests");
+                status.SelectedIndex = 1;
+                Check(requestGrid.Rows.Count == 0 && !((Button)Field(requests, "btnPay")).Enabled,
+                    "Status filtering did not clear the selection and its actions.");
+                status.SelectedIndex = 0;
+                Check(requestGrid.Rows.Count == 1, "All statuses did not restore the request.");
+                ((TextBox)Field(requests, "txtSearch")).Text = "No matching resident";
+                Check(requestGrid.Rows.Count == 0, "Request search did not refresh the grid.");
+                host.Hide();
+            }
+        }
+
+        private static void CancelDialogs()
+        {
+            var fixture = new Fixture();
+            var resident = fixture.AddResident();
+            var request = fixture.Create(resident.ResidentId);
+            using (var form = new ResidentForm(fixture.Residents)) CheckCancel(form, "btnCancel");
+            using (var form = new RequestForm(fixture.Residents, fixture.Requests, fixture.Renderer)) CheckCancel(form, "btnCancel");
+            using (var form = new PaymentForm(fixture.Requests, request)) CheckCancel(form, "btnCancel");
+            using (var form = new RejectionForm(fixture.Requests, request)) CheckCancel(form, "btnCancel");
+            using (var form = new DocumentPreviewForm(request, fixture.Requests.Preview(request.RequestId))) CheckCancel(form, "btnClose");
+            Check(fixture.Residents.Search().Count == 1 && fixture.Requests.Search().Count == 1,
+                "Canceling created a record.");
+            var saved = fixture.Requests.Get(request.RequestId);
+            Check(saved.Status == RequestStatus.Pending && !saved.IsPaid, "Canceling changed the request.");
+        }
+
+        private static void CheckCancel(Form form, string buttonName)
+        {
+            Click(form, buttonName);
+            Check(form.IsDisposed && form.DialogResult == DialogResult.Cancel, "Cancel did not close the dialog.");
+        }
+
+        private static void Click(Form form, string buttonName)
+        {
+            form.Opacity = 0;
+            form.ShowInTaskbar = false;
+            form.Show();
+            Application.DoEvents();
+            ((Button)Field(form, buttonName)).PerformClick();
+        }
+
         private static void UiSmoke()
         {
             var settings = AppSettings.Load();
@@ -496,7 +575,7 @@ namespace BarangayDocumentSystem.Tests
                 ((TextBox)Field(form, "txtPurok")).Text = "Purok 6";
                 ((TextBox)Field(form, "txtAddress")).Text = "42 Test Street";
                 ((TextBox)Field(form, "txtContact")).Text = "09170001111";
-                Invoke(form, "SaveResident", form, EventArgs.Empty);
+                Click(form, "btnSaveResident");
                 Check(fixture.Residents.Search("Form Saved").Count == 1, "Resident form did not save through the service.");
             }
             var resident = fixture.Residents.Search("Form Saved").Single();
@@ -508,14 +587,14 @@ namespace BarangayDocumentSystem.Tests
                 ((TextBox)Field(form, "txtBusinessName")).Text = "Form Store";
                 ((TextBox)Field(form, "txtBusinessAddress")).Text = "42 Test Street";
                 ((TextBox)Field(form, "txtBusinessNature")).Text = "Retail";
-                Invoke(form, "SubmitRequest", form, EventArgs.Empty);
+                Click(form, "btnSubmit");
             }
             var request = fixture.Requests.Search("Form Saved").Single();
             using (var form = new PaymentForm(fixture.Requests, request))
             {
                 Capture(form, Path.Combine(folder, "payment-form.png"));
                 ((TextBox)Field(form, "txtReceipt")).Text = "FORM-OR-001";
-                Invoke(form, "SavePayment", form, EventArgs.Empty);
+                Click(form, "btnSave");
                 Check(fixture.Requests.Get(request.RequestId).IsPaid, "Payment form did not save payment.");
             }
             using (var form = new RejectionForm(fixture.Requests, fixture.Requests.Get(request.RequestId)))

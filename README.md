@@ -7,9 +7,28 @@ This version targets **.NET Framework 4.7.2** and uses one application project.
 
 1. Open `BarangayDocumentSystem.sln` in Visual Studio 2022. The `.slnx` file
    is also available for newer versions that support that format.
-2. Install the **.NET desktop development** workload and the **.NET Framework
-   4.7.2 targeting pack** if Visual Studio asks for them.
-3. Set `BarangayDocumentSystem` as the startup project, then press **F5**.
+2. Accept Visual Studio's missing-component prompt from the included `.vsconfig`.
+   It lists **.NET desktop development** and the **.NET Framework 4.7.2 targeting
+   pack**. You can also import `.vsconfig` using Visual Studio Installer.
+3. Set `BarangayDocumentSystem` as the startup project, rebuild, then press **F5**.
+
+Use Windows with the .NET Framework 4.7.2 runtime or a later compatible 4.x
+runtime. Building also needs the 4.7.2 targeting pack, even when a newer runtime
+is installed. Installing .NET 8/10 alone does not supply that targeting pack.
+The project uses C# 7.3 and the classic `.sln` format for VS 2022 compatibility.
+This Windows Forms application does not run natively on macOS or Linux.
+
+Visual Studio can detect prerequisites from a solution's `.vsconfig`; see
+[Microsoft's installation configuration guide](https://learn.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations).
+
+If Visual Studio says the startup project cannot be launched, open **Project
+Properties > Debug** and select **Start project**. The shared project points
+to `BarangayDocumentSystem.Program` and uses a Windows executable output.
+Local `.vs` and `.csproj.user` settings are not shared through Git. To separate
+an IDE setting problem from an application problem, try opening
+`bin\Debug\BarangayDocumentSystem.exe` after a successful build. Keep its
+`.exe.config` file alongside it. If that works but F5 fails, check the IDE's
+startup/debug settings; avoid changing document or fee code to fix the launcher.
 
 If the app opens as an empty white window, check that you pulled the latest
 `Draft` branch: the earlier models-and-storage checkpoint still had the empty
@@ -18,6 +37,9 @@ on Dashboard with Residents and Document Requests in the sidebar.
 
 The Form Designer shows the main window layout. The three data pages are
 created by the runtime constructor; use F5 to see the working dashboard.
+To edit those pages, open the corresponding files under `Controls` in the
+designer. Forms and pages use ordinary designer declarations and named event
+handlers; their design-time constructors do not load services or sample data.
 
 Seven fictional residents and six requests load by default. Set
 `LoadSampleData` to `false` in `App.config` to start with empty lists.
@@ -55,7 +77,7 @@ cannot be deleted.
 | `Documents` | One template class for each document type |
 | `Forms` | Main window and input dialogs |
 | `Controls` | Dashboard, Residents, and Requests pages |
-| `Helpers` | Shared UI layout, messages, and error logging |
+| `Helpers` | User messages and error logging |
 | `Printing` | Page layout and Windows printing |
 | `Configuration` | Loading and checking `App.config` |
 | `Tests` | Executable checks for rules, forms, and pagination |
@@ -93,6 +115,12 @@ The runner exits with a nonzero code if a check fails. Screenshots are written
 under the test build's `Screenshots` folder, which Git ignores. The printer
 preview check uses Microsoft Print to PDF without submitting a print job;
 it is skipped if that driver is unavailable.
+
+These executable tests check running forms, including real button clicks and
+filter events. They do not invoke the Visual Studio designer. After changing
+layout code, also open each of the six forms and three controls in the designer,
+and check F5 from a fresh checkout. A runtime-only test cannot catch all designer
+parsing errors.
 
 For a guided demo, read [the walkthrough](docs/Walkthrough.md).
 For the structure and class responsibilities, read [the code guide](docs/CodeGuide.md).
