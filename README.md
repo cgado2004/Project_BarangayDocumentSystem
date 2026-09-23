@@ -226,6 +226,8 @@ Modelled on a digital-government service concept: white canvas,
 lavender-blue gradients, rounded cards, pill buttons, heavy headings — set
 in **Inter** when the machine has it.
 
+![Dashboard preview](docs/dashboard-preview.png)
+
 **Everything is clickable.** Dashboard stat cards jump to the filtered list
 they summarise; purok chips open the residents of that purok; resident rows
 show that person's request history underneath; double-clicking a request

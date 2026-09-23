@@ -25,7 +25,9 @@ arithmetic; this covers what a human sees.
 ## 2. First run (sample data)
 
 The app seeds fictional people on start, chosen to exercise every branch of
-the fee rules. The dashboard should show:
+the fee rules. The dashboard should match the reference preview in
+[`docs/dashboard-preview.png`](dashboard-preview.png), regenerated for
+v3.1.1 — it should show:
 
 - **7 residents** across the real puroks of Magugpo Poblacion.
 - **13 requests**: 8 pending, 1 processing, 1 ready for release, 3 released.
