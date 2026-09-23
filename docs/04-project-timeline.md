@@ -29,7 +29,8 @@ Gado, Clint Wood · Raborar, Frent Dhieniel
 - Two-layer restructure — `Core` (net8.0, no UI reference) and `App` (WinForms).
 - Real fees from the Barangay Citizen's Charter, replacing the ₱50 placeholders.
 - Two-tier Barangay Clearance: ₱100 local, ₱200 abroad.
-- 20 document types from the barangay's frontline-services board.
+- 20 document types from the barangay's frontline-services board
+  (24 in v3.1, with the four Citizen's Charter money services).
 - Real purok names and the real Punong Barangay on every certificate.
 - Diia-style interface: white canvas, lavender gradients, rounded cards, pill buttons.
 - Clickable dashboard, live search, per-resident request history, status-aware buttons.

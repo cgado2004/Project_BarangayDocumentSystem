@@ -1,9 +1,13 @@
-# Software Requirements — Version 3
+# Software Requirements — Version 3.1
 
 **Barangay Resident and Document Request Management System**
 Barangay Magugpo Poblacion, City of Tagum, Davao del Norte
 
-*Prepared by Clint Wood Gado for IT13.*
+*Prepared by Clint Wood Gado for IT13.
+
+> v3.1 supersedes the v3 requirements. §VI lists every change this
+> version makes, so the three documents (PDF → v3 → v3.1) can be reconciled
+> rather than silently diverging.*
 
 > This supersedes the requirements in `Documentation IT13.pdf`. Everything that
 > changed is listed in §V so the two can be reconciled rather than silently
@@ -71,6 +75,12 @@ Magugpo Poblacion. It covers:
 | **FR-18** | **Every figure on the dashboard shall be clickable and shall navigate to the filtered list it summarises.** | **Medium** |
 | **FR-19** | **Show the request history of the selected resident on the Residents screen, without navigating away.** | **Medium** |
 | **FR-20** | **Offer only the status actions legal for the selected request; all others shall be disabled.** | **Medium** |
+| **FR-21** | **Support the four Citizen's Charter services the tarpaulin did not carry: the cedula (computed under RA 7160 Sec. 156 from sworn gross income), the Katarungang Pambarangay filing (₱150), barangay facility use (₱200 per hour or part), and other processing fees under the Barangay Taripa (assessed with the item stated).** | **High** |
+| **FR-22** | **Price the Business Clearance by the law violated: the clerk assesses the amount and names the ordinance, and both travel onto the request, the receipt and the clearance. ₱200 is the standard rate when nothing was violated.** | **High** |
+| **FR-23** | **Allow a qualifying first-time jobseeker to claim the RA 11261 one-time waiver on the Barangay Clearance itself, and mark the availment on release exactly as for the certificate.** | **High** |
+| **FR-24** | **Print the official receipt (payment record) with the reference, amount and legal basis, from the payment dialog.** | **Medium** |
+| **FR-25** | **Count working days each open request has waited and flag anything past the RA 11032 three-working-day standard for a simple transaction.** | **Medium** |
+| **FR-26** | **Refuse a cedula for a person under eighteen, citing RA 7160 Sec. 156.** | **High** |
 
 ---
 
@@ -82,10 +92,10 @@ Magugpo Poblacion. It covers:
 | NFR-02 | Reliability — invalid operations raise handled exceptions and produce a message dialog; the application does not crash on a mis-click or malformed input. | High |
 | NFR-03 | Performance — every screen action completes in under one second on a standard office workstation. | Medium |
 | NFR-04 | Maintainability — all fee amounts and exemption rules reside in a single class (`FeeSchedule`), and every amount can be overridden from `App.config` without rebuilding. | High |
-| **NFR-05** | **Modularity — a two-layer structure (Core, App) in which Core targets plain `net8.0` and references no user-interface framework, so business rules can be tested independently of the interface.** *(revised — see §V)* | High |
+| **NFR-05** | **Modularity — a single `net8.0-windows` project with the layers as folders (Models, Service, Interfaces, DBContext, Helper), so the group's prescribed structure is followed while the dependency direction still points inward: views know the rules, the rules know nothing of the views.** *(revised again — see §VI)* | High |
 | NFR-06 | Extensibility — adding a document type requires adding one enum value and one branch in the renderer, without modifying any view. | Medium |
 | NFR-07 | Portability — data access goes through `IBarangayRepository`, so the in-memory store can be replaced with MySQL by changing one line in `Program.cs`. | Medium |
-| NFR-08 | Compatibility — runs on Windows 10 or later with .NET 8, using only system-installed fonts (Segoe UI, Consolas) so layout cannot break on another machine. | Medium |
+| NFR-08 | Compatibility — runs on Windows 10 or later with .NET 8. Typography resolves at startup through the Inter / SF Pro / Roboto / Segoe UI fallback stack, so layout cannot break on another machine and no font is *required* to be installed. | Medium |
 | NFR-09 | Accuracy — fee computation applies statutory exemptions in a fixed order and returns both the amount and its legal basis. | High |
 | NFR-10 | Auditability — every collection is recorded against an official receipt number and every released document remains on record. | Medium |
 | NFR-11 | Security — a production deployment shall support clerk and punong barangay roles before handling live resident data. | Low |
@@ -107,13 +117,18 @@ versions 1 and 2.
 | Barangay Certification (residency, good moral, other purpose) | **₱100** | |
 | Certificate of Indigency | **FREE** | |
 | Certificate of Low Income | **FREE** | |
-| Barangay Business Clearance | **₱200** | varies by law; ₱200 standard. No personal exemptions. |
-| Lupong Tagapamayapa — filing a case | ₱150 | not automated in this version |
-| Barangay facilities (gym) | ₱200/hr | not automated in this version |
+| Barangay Business Clearance | **VARIES** | amount assessed per the law violated; ₱200 standard. No personal exemptions. |
+| Cedula (community tax) | **VARIES** | ₱5 + ₱1 per ₱1,000 sworn gross annual income, additional capped at ₱5,000 (RA 7160 Sec. 156) |
+| Katarungang Pambarangay — filing a case | **₱150** | |
+| Other processing fees (Barangay Taripa) | **VARIES** | clerk assesses; item stated |
+| Barangay facilities (gym) | **₱200/hr** | hour or any part of an hour |
 | Assistance and social-service papers | **FREE** | medical, financial, burial, 4Ps, IP, solo parent, GAD, CSO, blotter |
 
 Statutory waivers applied on top: **RA 9994** (senior citizens), **RA 10754**
-(PWDs), indigent status, and **RA 11261** (first-time jobseekers).
+(PWDs), indigent status (**RA 11291**), and **RA 11261** (first-time
+jobseekers — once only, six months' residency, covering both the certificate
+and the barangay clearance). Full legal reference:
+[`07-fee-schedule-and-legal-basis.md`](07-fee-schedule-and-legal-basis.md).
 
 ---
 
@@ -148,3 +163,46 @@ Recorded plainly so the marker can see what moved and why.
 8. **Settings moved into `App.config`.** Fees, barangay details and the choice
    of storage are read at startup, so a group-mate can correct a rate or point
    the app at their own MySQL server without touching code or rebuilding.
+
+---
+
+## VI. Changes in v3.1
+
+Recorded as plainly as §V, so the marker can see what moved and why.
+
+1. **The structure is one project.** The group's v3.1 reference structure
+   prescribes a single `BarangayDocumentSystem` project (`net8.0-windows`)
+   with the layers as folders — `DBContext`, `Helper`, `Interfaces`,
+   `Models`, `Service` — plus the shell, the three views and the four forms
+   at the project root, and a `BarangayDocumentSystem.slnx` solution. The
+   `src/Core` + `src/App` split of v3 is gone; the dependency *direction*
+   it protected survives, because `Service` and `Models` still reference
+   nothing above them (the document renderer resolves its own fonts for
+   exactly this reason).
+2. **Four more document types (20 → 24):** the cedula, the Katarungang
+   Pambarangay filing, barangay facility use, and the other processing
+   fees under the Barangay Taripa — the rest of the charter's posted fee
+   schedule, all of it priced by rule (FR-21 to FR-26).
+3. **The Business Clearance now really varies.** v3 charged a flat ₱200
+   with a comment; v3.1 assesses the amount against the law violated, as
+   the charter actually posts it.
+4. **The document text moved into templates.** `IDocumentTemplate` plus the
+   template classes in `Service/Templates` own the wording of each document;
+   `DocumentRenderer` is a GDI+ layout engine that draws the page, powers a
+   true print preview, and prints. Adding a document is now one small class
+   (NFR-06 honoured more literally than v3 managed).
+5. **Receipts print.** The payment dialog produces the official-receipt
+   preview with the amount and the legal basis.
+6. **RA 11032 aging** appears in the request queue: working days in the
+   open, with anything past three working days highlighted.
+7. **The six core technical fixes** (see the README): designer support,
+   PerMonitorV2 high-DPI in three agreeing places, the Inter/SF Pro/Roboto
+   font stack with ClearType, percent-sized responsive grids, composited
+   smooth scrolling, and WM_DPICHANGED handlers in the shell and the
+   preview.
+8. **Citations corrected.** DILG MC 2019-177 is the clearance-integration
+   circular under RA 11032 §11(f), not the free-indigency basis; the
+   indigent waiver now cites RA 11291. The full legal reference is
+   [`07-fee-schedule-and-legal-basis.md`](07-fee-schedule-and-legal-basis.md).
+9. **No NuGet packages at all.** App.config is read with `System.Xml.Linq`,
+   so the solution restores and builds with no network.

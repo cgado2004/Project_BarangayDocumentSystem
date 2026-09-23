@@ -24,7 +24,7 @@ specifically working on the MySQL part.
 
 ## 2. Which storage the app is using
 
-One line in `src/BarangayDocumentSystem.App/App.config` decides:
+One line in `BarangayDocumentSystem/App.config` decides:
 
 ```xml
 <add key="Storage" value="Memory" />
@@ -114,7 +114,7 @@ Nothing else in the program changes, because every screen only ever sees
 
 **I also have to be straight about this: I have never run these scripts.**
 There was no MySQL server on the machine I wrote them on. Every statement has
-been checked against the MySQL dialect by a parser, and the 20 document-type
+been checked against the MySQL dialect by a parser, and the 24 document-type
 values were verified to match the C# enum exactly, in the same order — but
 "it parses" is not "it runs". **Please run them and tell me what breaks.**
 
