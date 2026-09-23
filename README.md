@@ -25,6 +25,13 @@ the `.slnx` format needs the *"Use the XML solution format"* preview
 feature enabled (Settings → Environment → Preview Features); 17.13 and
 later read it out of the box.
 
+**If the `.slnx` will not open** — Visual Studio older than 17.10 cannot
+read the XML format and may fail with nothing but an empty Solution
+Explorer — open **`BarangayDocumentSystem.sln`** instead. The classic
+solution format sits beside the `.slnx`, references the same two projects,
+and opens on every Visual Studio version. Open one or the other, never
+both.
+
 ```bash
 dotnet run --project BarangayDocumentSystem
 ```
@@ -171,6 +178,7 @@ the rules know nothing of the views.
 ```
 BarangayDocumentSystem/
 ├── BarangayDocumentSystem.slnx       ← open this
+├── BarangayDocumentSystem.sln        ← fallback for VS < 17.10
 ├── README.md
 ├── docs/
 │   ├── 01-requirements.md            scope, FR, NFR, the v3.1 changes (§VI)

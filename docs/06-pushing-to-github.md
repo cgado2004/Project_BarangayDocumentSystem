@@ -175,22 +175,33 @@ that you did not touch, ask in the group chat before cleaning.
 
 ---
 
-## 10. The .slnx will not open
+## 10. The .slnx will not open (or Solution Explorer is empty)
 
-The solution is in the XML `.slnx` format. Checklist, in order:
+**An empty Solution Explorer means NO solution is loaded** - the open
+attempt failed. Visual Studio older than 17.10 cannot read the XML `.slnx`
+format and typically fails with no error at all, leaving the pane blank.
+Work through this list, in order:
 
-1. **Visual Studio version.** `.slnx` needs **VS 2022 17.10 or later**. On
-   17.10–17.12 turn on *Tools → Options → Environment → Preview Features →
-   "Use the XML solution format"*, restart VS, and try again. From 17.13 it
-   opens out of the box. (Check *Help → About* for your exact version.)
-2. **Open it as a solution, not a folder.** If the title bar says only
-   `Project_BarangayDocumentSystem`, you are in *Folder view* — that is not
-   the same as having the solution open. Use *File → Open → Project/
-   Solution*, pick `BarangayDocumentSystem.slnx`, and the Solution Explorer
-   should switch to *Solution view* with two projects:
-   `BarangayDocumentSystem` (startup) and `tests/RuleChecks`.
-3. **No Visual Studio handy?** The `dotnet` CLI understands `.slnx` from
-   SDK 9.0.200; on an 8.x SDK build the project directly:
+1. **Use the fallback and move on.** Open **`BarangayDocumentSystem.sln`**
+   instead (*File → Open → Project/Solution*). The classic format sits
+   beside the `.slnx`, references the same two projects with the same
+   GUIDs, and opens on every Visual Studio version. One or the other -
+   never both at once. This is the recommended answer; the rest of this
+   list is for staying on the `.slnx`.
+2. **Check your version** (*Help → About Microsoft Visual Studio*).
+   `.slnx` needs **17.10 or later**. On 17.10-17.12 turn on
+   *Tools → Options → Environment → Preview Features → "Use the XML
+   solution format"*, restart VS, and try again. From 17.13 it opens out
+   of the box.
+3. **Folder view is not the solution.** If the title bar says only
+   `Project_BarangayDocumentSystem`, you are browsing the folder - that is
+   not "having the solution open". The Solution Explorer view dropdown
+   should say *Solution view* and show two projects:
+   `BarangayDocumentSystem` (startup) and `RuleChecks`.
+4. **Pane rendered blank but a solution should be open?**
+   *Window → Reset Window Layout* rebuilds the tool panes.
+5. **No Visual Studio handy, or still failing?** The `dotnet` CLI builds
+   and runs without any solution file:
 
    ```powershell
    dotnet build BarangayDocumentSystem/BarangayDocumentSystem.csproj
@@ -198,8 +209,9 @@ The solution is in the XML `.slnx` format. Checklist, in order:
    ```
 
    `global.json` pins SDK 8.0.100 with `rollForward: latestMajor`, so any
-   newer SDK you already have is fine — you do not need to install exactly
-   8.0.100.
-4. **Still failing after a clean checkout?** Delete the ghosts in §9 first:
-   stray `.csproj` files from the old layout can confuse the "open folder"
-   mode even though the `.slnx` itself ignores them.
+   newer SDK you already have is fine - you do not need exactly 8.0.100.
+
+6. **Safety check:** if *Windows Explorer* (not Visual Studio) now shows
+   the repo folder empty or half-empty after a cleanup, STOP and run
+   `git status` then `git checkout . && git pull` - tracked files are
+   always restorable, untracked ones are not.
