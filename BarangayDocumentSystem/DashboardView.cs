@@ -24,6 +24,21 @@ public class HeroBanner : Control
 {
     private Image? _logo;
 
+    // v3.1.5: cached GDI objects. Every OnPaint used to allocate a
+    // gradient brush, a path gradient with its path, a pen and a solid
+    // brush - on a resize drag that was dozens of handles a second on the
+    // most-painted control in the app. The pen and the disc brush are
+    // immutable and built once; the background gradient and the glow
+    // depend only on the control's size, so they are rebuilt (old ones
+    // disposed) only when the size actually changes.
+    private Pen? _rayPen;
+    private SolidBrush? _discBrush;
+    private LinearGradientBrush? _bgBrush;
+    private PathGradientBrush? _glowBrush;
+    private GraphicsPath? _glowPath;
+    private Size _bgBuiltFor;
+    private int _glowBuiltFor;
+
     /// <summary>The barangay seal. I take ownership and dispose the old one.</summary>
     public Image? Logo
     {
@@ -72,11 +87,13 @@ public class HeroBanner : Control
         // The navy wash - Deep is now the spec's #1B365D banner navy, and the
         // gradient runs diagonally so the darker corner sits under the seal
         // and the lighter one under the text.
-        using (var brush = new LinearGradientBrush(
-                   r, Deep, Primary, 20f))
+        if (_bgBrush is null || _bgBuiltFor != Size)
         {
-            g.FillPath(brush, shape);
+            _bgBrush?.Dispose();
+            _bgBrush = new LinearGradientBrush(r, Deep, Primary, 20f);
+            _bgBuiltFor = Size;
         }
+        g.FillPath(_bgBrush, shape);
 
         // I clip everything that follows to the rounded shape, so the rays and
         // the glow cannot spill past the corners.
@@ -88,35 +105,35 @@ public class HeroBanner : Control
 
         // Faint rays fanning from behind the seal, echoing the sun on the
         // barangay's own logo.
-        using (var rayPen = new Pen(Color.FromArgb(26, Gold), 2f))
+        _rayPen ??= new Pen(Color.FromArgb(26, Gold), 2f);
+        for (int i = 0; i < 16; i++)
         {
-            for (int i = 0; i < 16; i++)
-            {
-                double angle = i * (Math.PI * 2 / 16);
-                g.DrawLine(rayPen, cx, cy,
-                    cx + (float)(Math.Cos(angle) * 300),
-                    cy + (float)(Math.Sin(angle) * 300));
-            }
+            double angle = i * (Math.PI * 2 / 16);
+            g.DrawLine(_rayPen, cx, cy,
+                cx + (float)(Math.Cos(angle) * 300),
+                cy + (float)(Math.Sin(angle) * 300));
         }
 
         // A soft glow behind the seal so it lifts off the navy.
-        using (var glow = new GraphicsPath())
+        if (_glowBrush is null || _glowBuiltFor != Height)
         {
-            glow.AddEllipse(cx - 58, cy - 58, 116, 116);
-            using var pgb = new PathGradientBrush(glow)
+            _glowBrush?.Dispose();
+            _glowPath?.Dispose();
+            _glowPath = new GraphicsPath();
+            _glowPath.AddEllipse(cx - 58, cy - 58, 116, 116);
+            _glowBrush = new PathGradientBrush(_glowPath)
             {
                 CenterColor = Color.FromArgb(70, Color.White),
                 SurroundColors = new[] { Color.FromArgb(0, Color.White) }
             };
-            g.FillPath(pgb, glow);
+            _glowBuiltFor = Height;
         }
+        g.FillPath(_glowBrush, _glowPath);
 
         // A white disc for the seal to sit on. The seal artwork is drawn for a
         // white background, so this keeps its colours true.
-        using (var disc = new SolidBrush(Color.FromArgb(240, Color.White)))
-        {
-            g.FillEllipse(disc, cx - 46, cy - 46, 92, 92);
-        }
+        _discBrush ??= new SolidBrush(Color.FromArgb(240, Color.White));
+        g.FillEllipse(_discBrush, cx - 46, cy - 46, 92, 92);
 
         if (_logo is not null)
         {
@@ -166,7 +183,15 @@ public class HeroBanner : Control
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) _logo?.Dispose();
+        if (disposing)
+        {
+            _logo?.Dispose();
+            _rayPen?.Dispose();
+            _discBrush?.Dispose();
+            _bgBrush?.Dispose();
+            _glowBrush?.Dispose();
+            _glowPath?.Dispose();
+        }
         base.Dispose(disposing);
     }
 }
@@ -195,6 +220,7 @@ public class DashboardView : ViewBase
     public event EventHandler<(string View, string? Filter)>? RequestNavigate;
 
     private readonly HeroBanner _hero = new();
+    private int _lastTileW;   // the width the dynamic surfaces were last built for
     private readonly FlowLayoutPanel _stats = new();
     private readonly TableLayoutPanel _breakdown = new();
     private readonly Card _cardPurok = new();
@@ -315,11 +341,31 @@ public class DashboardView : ViewBase
     protected override void OnResize(EventArgs e)
     {
         base.OnResize(e);
-        if (_stats.Controls.Count > 0) RefreshFigures();
+
+        // v3.1.5: a resize drag fires this dozens of times a second, and
+        // rebuilding the stats, chips and bars on every tick is what made
+        // the window rubber-band. The rebuild only NEEDS to happen when
+        // the computed tile width actually changes - the figures
+        // themselves are refreshed on every OnShown, so nothing is lost.
+        if (_stats.Controls.Count == 0) return;
+        if (ComputeTileW() != _lastTileW) RefreshFigures();
     }
 
     private void Go(string view, string? filter) =>
         RequestNavigate?.Invoke(this, (view, filter));
+
+    /// <summary>
+    /// The tile width the stat grid builds with right now. The resize
+    /// guard consults the SAME maths RefreshFigures uses, so the two can
+    /// never drift apart.
+    /// </summary>
+    private int ComputeTileW()
+    {
+        const int tiles = 6;
+        const int gap = 14;
+        int avail = Math.Max(600, ClientSize.Width - Padding.Horizontal);
+        return Math.Max(160, (avail - (gap * (tiles - 1))) / tiles);
+    }
 
     /// <summary>
     /// I rebuild every figure on the dashboard from the repository.
@@ -352,10 +398,8 @@ public class DashboardView : ViewBase
         // sixth tile at the default 1360x860 window: the content pane is
         // 1056px there and six 178px tiles need 1138px. Six 160px tiles need
         // 1030px, which fits - and 160 still clears the widest tile content.
-        const int tiles = 6;
-        const int gap = 14;
-        int avail = Math.Max(600, ClientSize.Width - Padding.Horizontal);
-        int tileW = Math.Max(160, (avail - (gap * (tiles - 1))) / tiles);
+        int tileW = ComputeTileW();
+        _lastTileW = tileW;
 
         _stats.Controls.Clear();
         _stats.Controls.Add(MakeStat("Residents", s.TotalResidents.ToString(),

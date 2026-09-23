@@ -84,7 +84,7 @@ public class NavButton : Control
             TextFormatFlags.VerticalCenter | TextFormatFlags.HorizontalCenter);
 
         TextRenderer.DrawText(g, Text,
-            new Font(UiFamily, 11f, Active ? FontStyle.Bold : FontStyle.Regular),
+            Active ? NavItemActive : NavItem,   // v3.1.5: cached roles, not per-paint allocations
             new Rectangle(r.X + 52, r.Y, r.Width - 60, r.Height), fg,
             TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
     }

@@ -260,6 +260,13 @@ public static class AppTheme
     public static Font HeroSubtitle => CachedFont("HeroSubtitle", () => new(UiFamily, 11f, FontStyle.Regular));
     public static Font HeroFootnote => CachedFont("HeroFootnote", () => new(UiFamily, 9.5f, FontStyle.Bold));
 
+    // The sidebar's faces. Three nav buttons repaint on every hover, and
+    // each used to rebuild its two fonts per paint - six allocations for
+    // waving the mouse across the rail.
+    public static Font NavGlyph      => CachedFont("NavGlyph",      () => new(UiFamily, 13f, FontStyle.Bold));
+    public static Font NavItem       => CachedFont("NavItem",       () => new(UiFamily, 11f, FontStyle.Regular));
+    public static Font NavItemActive => CachedFont("NavItemActive", () => new(UiFamily, 11f, FontStyle.Bold));
+
     // =================================================================
     //  Spacing
     // =================================================================

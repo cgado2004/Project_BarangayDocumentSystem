@@ -180,6 +180,19 @@ refactor safety constraints (source files only; designer code untouched):
   `DoubleBuffered` enabled (the one property that stops DataGridView
   flicker, set once via reflection in `StyleGrid`).
 - **Accent bars** match the spec exactly: 4px, not 5px.
+- **Resize smoothness:** the dashboard's dynamic surfaces rebuild only
+  when the computed tile width actually changes — a resize drag no
+  longer rebuilds the stats, chips and bars dozens of times a second.
+- **GDI churn:** the hero banner's gradient/pen/brush objects and the
+  sidebar's nav fonts are now cached (rebuilt only on size changes and
+  disposed with the control) instead of being reallocated on every
+  paint.
+- **Root tidied:** the leader's push helper moved to `scripts/push.sh`
+  (see `docs/06` §4). The configuration files stay where the toolchain
+  requires them: `global.json` and `.editorconfig` must sit at the repo
+  root for the SDK and VS to find them, and `App.config`,
+  `app.manifest` and `packages.config` are referenced by path inside
+  the `.csproj`, which the team has locked.
 
 ---
 
@@ -252,6 +265,8 @@ BarangayDocumentSystem/
 │   ├── 06-pushing-to-github.md
 │   ├── 07-fee-schedule-and-legal-basis.md   every fee and its law
 │   └── 08-demo-walkthrough.md        the manual pre-defence click-through
+├── scripts/
+│   └── push.sh                       the leader's safe-push helper (docs/06 §4)
 ├── db/
 │   ├── 01-schema.sql                 tables, triggers, views (v3.1 columns)
 │   └── 02-seed-data.sql              the same residents as the demo

@@ -67,7 +67,7 @@ Because my commit sits on top, the push is a plain **fast-forward**. No
 From the `BarangayDocumentSystemV3` folder:
 
 ```bash
-bash push.sh
+bash scripts/push.sh
 ```
 
 The script fetches first and refuses to push if somebody else has committed in
