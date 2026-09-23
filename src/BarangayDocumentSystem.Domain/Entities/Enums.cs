@@ -1,6 +1,6 @@
 namespace BarangayDocumentSystem.Domain.Entities;
 
-/// <summary>Type of document a resident may request from the barangay.</summary>
+/// document type the residents can choose from
 public enum DocumentType
 {
     BarangayClearance,
@@ -12,10 +12,8 @@ public enum DocumentType
     CertificateOfGoodMoralCharacter
 }
 
-/// <summary>
-/// Where a request currently sits. Requests move forward through this
-/// sequence; Released and Rejected are terminal.
-/// </summary>
+
+/// Status of the request
 public enum RequestStatus
 {
     Pending,
@@ -25,10 +23,8 @@ public enum RequestStatus
     Rejected
 }
 
-/// <summary>
-/// Special classifications that affect fees under national law or local
-/// ordinance. A resident may hold more than one, so this is a [Flags] enum.
-/// </summary>
+
+/// Residents classifications 
 [Flags]
 public enum ResidentClassification
 {
