@@ -105,9 +105,12 @@ that work is still TBD.
 A UI/UX and compatibility round, grounded in what a teammate's machine
 actually did:
 
-- **Bundled fonts.** `Assets/fonts/` is probed first via
-  `PrivateFontCollection` — drop Inter's `.ttf` files there and the brand
-  face renders on every machine, installed or not (OFL allows it).
+- **Bundled fonts, actually shipped.** **Inter Regular + Bold now live in
+  `Assets/fonts/`** (SIL Open Font License — see `OFL-Inter.txt` there) and
+  are loaded first via `PrivateFontCollection`, so the brand face renders
+  identically on every machine, installed or not. Symbol codepoints (the
+  sidebar glyphs) draw in a dedicated `SymbolFamily` face, because Inter
+  does not carry them.
 - **Keyboard navigation.** `Ctrl+1 / 2 / 3` jump Dashboard / Residents /
   Document requests; the shell is now fully keyboard-drivable.
 - **The RA 11032 clock is always visible.** The status bar turns the
@@ -154,10 +157,11 @@ exact. `docs/dashboard-preview.png` was regenerated to match.
    `PerMonitorV2` in the `.csproj` (applied by
    `ApplicationConfiguration.Initialize()`), the `dpiAwareness` block in
    `app.manifest`, and a documented section in `App.config`.
-3. **Modern fonts.** `AppTheme.Resolve()` picks the first of **Inter →
-   SF Pro → Roboto → Segoe UI Variable → Segoe UI** the machine actually
-   has (install Inter from rsms.me/inter for the intended look), and all
-   custom drawing runs through ClearType.
+3. **Modern fonts.** Since v3.1.3 **Inter ships with the app**
+   (`Assets/fonts/`, SIL OFL) and is loaded before anything else; the
+   resolver falls back through **SF Pro → Roboto → Segoe UI Variable →
+   Segoe UI** for machines without the bundled files. All custom drawing
+   runs through ClearType.
 4. **Responsive gridding.** `UiFactory.Grid` builds TableLayoutPanels with
    **percentage** columns; every dialog and card row reflows instead of
    clipping.
@@ -215,8 +219,8 @@ BarangayDocumentSystem/
 │   ├── 01-schema.sql                 tables, triggers, views (v3.1 columns)
 │   └── 02-seed-data.sql              the same residents as the demo
 ├── BarangayDocumentSystem/                    net8.0-windows
-│   ├── Assets/fonts/     (optional) drop Inter .ttf files here and every
-│   │                     machine renders the same face — v3.1.3
+│   ├── Assets/fonts/     Inter Regular + Bold, bundled under the SIL OFL
+│   │                     — the brand face on every machine (v3.1.3)
 │   ├── App.config        every setting that might change
 │   ├── app.manifest      PerMonitorV2 + supportedOS
 │   ├── packages.config   designer accessibility listing

@@ -18,12 +18,11 @@ namespace BarangayDocumentSystem.Helper;
 ///             ->  Segoe UI Variable  ->  Segoe UI  ->  Tahoma
 ///
 /// Inter and Roboto are free (SIL Open Font License); SF Pro is what macOS
-/// and iOS use. None of them is guaranteed to be installed, so
-/// <see cref="Resolve"/> actually checks the machine's font table at
-/// startup and picks the first one present - falling all the way back to
-/// Segoe UI, which every Windows since Vista has. Install Inter from
-/// rsms.me/inter or Google Fonts for the intended look; the app runs
-/// correctly either way.
+/// and iOS use. Since v3.1.3 the brand faces ship IN the app under
+/// Assets/fonts and are loaded through a PrivateFontCollection, so the
+/// intended look no longer depends on what a machine has installed;
+/// <see cref="Resolve"/> still probes installed fonts as the fallback,
+/// landing on Segoe UI, which every Windows since Vista has.
 ///
 /// Text is drawn with ClearType (ClearTypeGridFit) throughout - see
 /// <see cref="Draw.Smooth"/> - so the UI text is sub-pixel smoothed rather
@@ -111,7 +110,23 @@ public static class AppTheme
             "Cascadia Mono",        // ships with Windows Terminal and VS
             "Consolas",
             "Courier New");
+
+        // v3.1.3: the nav glyphs (❖ ◉ ▤) are symbol codepoints the brand
+        // face may not carry - bundled Inter does not - so they are drawn
+        // in a face chosen for symbol coverage instead. GDI would render
+        // .notdef boxes otherwise, which is exactly the kind of machine
+        // -dependent ugliness this file exists to prevent.
+        string symbol = FirstInstalledFont(
+            "Segoe Fluent Icons",   // Windows 11
+            "Segoe MDL2 Assets",    // Windows 10
+            "Segoe UI Symbol");     // Windows 7 and up
+        SymbolFamily = symbol.Length == 0 ? UiFamily : symbol;
     }
+
+    /// <summary>The family used to DRAW symbol codepoints (the sidebar
+    /// glyphs). Resolved at startup; never used for prose.</summary>
+    public static string SymbolFamily { get; private set; } = "Segoe UI";
+
 
     /// <summary>
     /// The first of the candidates the machine actually has. Public, because

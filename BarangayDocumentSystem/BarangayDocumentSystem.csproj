@@ -51,6 +51,15 @@
     <None Update="Assets\barangay-logo.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+
+    <!-- v3.1.3: the bundled brand typefaces travel with the build for the
+         same reason - AppTheme's PrivateFontCollection loads them from
+         Assets\fonts at startup. Inter ships under the SIL Open Font
+         License (see Assets\fonts\OFL-Inter.txt), which permits exactly
+         this. -->
+    <None Update="Assets\fonts\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <!--

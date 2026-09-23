@@ -79,7 +79,7 @@ public class NavButton : Control
         }
 
         TextRenderer.DrawText(g, Glyph,
-            new Font(UiFamily, 13f, FontStyle.Bold),
+            new Font(SymbolFamily, 13f, FontStyle.Bold),
             new Rectangle(r.X + 18, r.Y, 26, r.Height), fg,
             TextFormatFlags.VerticalCenter | TextFormatFlags.HorizontalCenter);
 
