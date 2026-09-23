@@ -146,6 +146,25 @@ exact. `docs/dashboard-preview.png` was regenerated to match.
 
 ---
 
+## What changed in v3.1.5
+
+A stability-and-structure round on the dashboard, under the team's
+refactor safety constraints (source files only; designer code untouched):
+
+- All of `DashboardView`'s styling now lives in one dedicated
+  **`ApplyModernUIStyles()`** method called at the end of the constructor,
+  after the structural setup — the same pattern the designer-backed forms
+  follow with `BuildUi()`/`ApplyTheme()` after `InitializeComponent()`.
+  Structure, parenting and event wiring stay in the constructor, so a
+  restyle can never re-parent or re-wire anything.
+- **The six-card grid no longer wraps** at the default 1360×860 window:
+  the tile floor drops 178 → 160px (six 178px tiles needed 1138px inside
+  a 1056px pane; six 160px tiles need 1030px). The reference preview in
+  `docs/dashboard-preview.png` is regenerated at the default window size
+  to prove it.
+
+---
+
 ## The six core technical fixes
 
 1. **Designer support.** `packages.config` lists the accessibility

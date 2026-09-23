@@ -211,50 +211,35 @@ public class DashboardView : ViewBase
 
         _hero.Dock = DockStyle.Top;
         _hero.Height = 158;
-        _hero.Margin = new Padding(0, 0, 0, Gap);
 
         _stats.Name = "flowStats";
         _stats.Dock = DockStyle.Top;
         _stats.AutoSize = true;
         _stats.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _stats.WrapContents = true;
-        _stats.BackColor = Color.Transparent;
-        _stats.Padding = new Padding(0, Gap, 0, 0);
 
         _purokTitle.Text = "Residents by purok — click one to filter";
-        _purokTitle.Font = Subhead;
-        _purokTitle.ForeColor = Ink;
         _purokTitle.Dock = DockStyle.Top;
         _purokTitle.Height = 32;
-        _purokTitle.BackColor = Color.Transparent;
 
         _purokChips.Dock = DockStyle.Fill;
         _purokChips.AutoScroll = true;
         _purokChips.WrapContents = true;
-        _purokChips.BackColor = Color.Transparent;
 
         _cardPurok.Dock = DockStyle.Fill;
-        _cardPurok.Margin = new Padding(0, 0, 9, 0);
-        _cardPurok.Padding = new Padding(18, 14, 14, 14);
         _cardPurok.Controls.Add(_purokChips);
         _cardPurok.Controls.Add(_purokTitle);
 
         _docTypesTitle.Text = "Requests by document type";
-        _docTypesTitle.Font = Subhead;
-        _docTypesTitle.ForeColor = Ink;
         _docTypesTitle.Dock = DockStyle.Top;
         _docTypesTitle.Height = 32;
-        _docTypesTitle.BackColor = Color.Transparent;
 
         _docTypeBars.Dock = DockStyle.Fill;
         _docTypeBars.AutoScroll = true;
         _docTypeBars.WrapContents = false;
         _docTypeBars.FlowDirection = FlowDirection.TopDown;
-        _docTypeBars.BackColor = Color.Transparent;
 
         _cardDocTypes.Dock = DockStyle.Fill;
-        _cardDocTypes.Margin = new Padding(9, 0, 0, 0);
-        _cardDocTypes.Padding = new Padding(18, 14, 14, 14);
         _cardDocTypes.Controls.Add(_docTypeBars);
         _cardDocTypes.Controls.Add(_docTypesTitle);
 
@@ -264,8 +249,6 @@ public class DashboardView : ViewBase
         _breakdown.Dock = DockStyle.Fill;
         _breakdown.ColumnCount = 2;
         _breakdown.RowCount = 1;
-        _breakdown.BackColor = Color.Transparent;
-        _breakdown.Padding = new Padding(0, Gap, 0, 0);
         _breakdown.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
         _breakdown.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
         _breakdown.Controls.Add(_cardPurok, 0, 0);
@@ -274,6 +257,50 @@ public class DashboardView : ViewBase
         Controls.Add(_breakdown);
         Controls.Add(_stats);
         Controls.Add(_hero);
+
+        // Structure is set; now the look. Every colour, font and spacing
+        // this view owns is applied in one dedicated pass, strictly AFTER
+        // the structural setup above - the same contract the designer
+        // -backed forms follow with ApplyTheme()/BuildUi() after
+        // InitializeComponent().
+        ApplyModernUIStyles();
+    }
+
+    /// <summary>
+    /// The single place this view's modern-UI styling is applied: theme
+    /// fonts, colours, spacing and card metrics. No control parenting, no
+    /// event wiring, no structure - those live in the constructor, so a
+    /// restyle can never accidentally re-parent or re-wire anything.
+    /// </summary>
+    private void ApplyModernUIStyles()
+    {
+        // hero banner metrics (the navy gradient itself is painted in HeroBanner.OnPaint)
+        _hero.Margin = new Padding(0, 0, 0, Gap);
+
+        // stats strip
+        _stats.BackColor = Color.Transparent;
+        _stats.Padding = new Padding(0, Gap, 0, 0);
+
+        // breakdown section titles
+        _purokTitle.Font = Subhead;
+        _purokTitle.ForeColor = Ink;
+        _purokTitle.BackColor = Color.Transparent;
+
+        _docTypesTitle.Font = Subhead;
+        _docTypesTitle.ForeColor = Ink;
+        _docTypesTitle.BackColor = Color.Transparent;
+
+        // breakdown cards and their content surfaces
+        _cardPurok.Margin = new Padding(0, 0, 9, 0);
+        _cardPurok.Padding = new Padding(18, 14, 14, 14);
+        _purokChips.BackColor = Color.Transparent;
+
+        _cardDocTypes.Margin = new Padding(9, 0, 0, 0);
+        _cardDocTypes.Padding = new Padding(18, 14, 14, 14);
+        _docTypeBars.BackColor = Color.Transparent;
+
+        _breakdown.BackColor = Color.Transparent;
+        _breakdown.Padding = new Padding(0, Gap, 0, 0);
     }
 
     /// <summary>The barangay seal, shown in the hero banner.</summary>
@@ -310,10 +337,15 @@ public class DashboardView : ViewBase
         // than fixing it at 244px. With six tiles and a fixed width, the last
         // two dropped onto a second row and fell off the bottom on a normal
         // screen - I only saw that when I rendered the layout and looked at it.
+        //
+        // v3.1.5: the floor drops 178 -> 160 because 178 STILL wrapped the
+        // sixth tile at the default 1360x860 window: the content pane is
+        // 1056px there and six 178px tiles need 1138px. Six 160px tiles need
+        // 1030px, which fits - and 160 still clears the widest tile content.
         const int tiles = 6;
         const int gap = 14;
         int avail = Math.Max(600, ClientSize.Width - Padding.Horizontal);
-        int tileW = Math.Max(178, (avail - (gap * (tiles - 1))) / tiles);
+        int tileW = Math.Max(160, (avail - (gap * (tiles - 1))) / tiles);
 
         _stats.Controls.Clear();
         _stats.Controls.Add(MakeStat("Residents", s.TotalResidents.ToString(),
