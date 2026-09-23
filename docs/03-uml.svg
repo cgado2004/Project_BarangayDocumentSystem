@@ -25,8 +25,8 @@
   </defs>
 
   <rect width="1240" height="960" fill="#FFFFFF"/>
-  <text x="36" y="42" class="title">UML Class Diagram — Barangay Document System v3</text>
-  <text x="36" y="64" class="sub">Two layers: Core (net8.0, no UI reference) and App (net8.0-windows, WinForms)</text>
+  <text x="36" y="42" class="title">UML Class Diagram — Barangay Document System v3.1</text>
+  <text x="36" y="64" class="sub">One project (net8.0-windows) · folders as layers: Models · Service · Interfaces · DBContext · Helper</text>
 
   <!-- Resident -->
   <g>
@@ -54,7 +54,7 @@
     <text x="418" y="144" class="mono2">- requestId : int</text>
     <text x="418" y="162" class="mono2">+ Resident : Resident</text>
     <text x="418" y="180" class="mono2">+ DocumentType : DocumentType</text>
-    <text x="418" y="198" class="mono2">+ Scope : ClearanceScope</text>
+    <text x="418" y="198" class="mono2">+ Input : RequestInput</text>
     <text x="418" y="216" class="mono2">+ Status : RequestStatus</text>
     <text x="418" y="234" class="mono2">+ Fee : decimal</text>
     <text x="418" y="252" class="mono2">+ IsPaid : bool</text>
@@ -72,12 +72,12 @@
     <rect x="780" y="96" width="330" height="200" rx="4" class="cls"/>
     <path d="M780 100 a4 4 0 0 1 4 -4 h322 a4 4 0 0 1 4 4 v24 h-330 z" class="hdr"/>
     <text x="794" y="117" class="hdrtxt">FeeSchedule</text>
-    <text x="794" y="144" class="mono2">- ClearanceLocal = 100</text>
-    <text x="794" y="162" class="mono2">- ClearanceAbroad = 200</text>
-    <text x="794" y="180" class="mono2">- Certification = 100</text>
-    <text x="794" y="198" class="mono2">- BusinessRate = 200</text>
+    <text x="794" y="144" class="mono2">- ClearanceLocal = 100, Abroad = 200</text>
+    <text x="794" y="162" class="mono2">- LuponFiling = 150, Facility = 200/hr</text>
+    <text x="794" y="180" class="mono2">- Certification = 100, BusinessStd = 200</text>
+    <text x="794" y="198" class="mono2">- Cedula: 5 + 1/1,000, cap 5,000</text>
     <line x1="780" y1="210" x2="1110" y2="210" class="sep"/>
-    <text x="794" y="230" class="mono2">+ Assess(resident, type, scope)</text>
+    <text x="794" y="230" class="mono2">+ Assess(resident, type, input)</text>
     <text x="810" y="248" class="mono2">: FeeAssessment</text>
     <text x="794" y="270" class="mono2">+ NameOf(type) : string  « static »</text>
     <text x="794" y="288" class="note">All money lives here (NFR-04)</text>
@@ -108,7 +108,7 @@
     <text x="418" y="566" class="mono2">+ UpdateResident(r, details)</text>
     <text x="418" y="584" class="mono2">+ RemoveResident(r)</text>
     <text x="418" y="602" class="mono2">+ SearchResidents(term)</text>
-    <text x="418" y="620" class="mono2">+ CreateRequest(r, type, purpose, scope)</text>
+    <text x="418" y="620" class="mono2">+ CreateRequest(r, type, purpose, input)</text>
     <text x="418" y="638" class="mono2">+ SaveRequest(request)</text>
     <text x="418" y="656" class="mono2">+ GetStatistics()</text>
   </g>
@@ -139,10 +139,10 @@
     <text x="50" y="413" class="hdrtxt">DocumentRenderer</text>
     <text x="50" y="440" class="mono2">- profile : BarangayProfile</text>
     <line x1="36" y1="452" x2="326" y2="452" class="sep"/>
-    <text x="50" y="472" class="mono2">+ Render(request) : string</text>
-    <text x="50" y="490" class="mono2">- AppendLetterhead()</text>
-    <text x="50" y="508" class="mono2">- AppendBody()</text>
-    <text x="50" y="526" class="mono2">- AppendFooter()</text>
+    <text x="50" y="472" class="mono2">+ Draw(g, bounds, request)</text>
+    <text x="50" y="490" class="mono2">+ RenderText(request) : string</text>
+    <text x="50" y="508" class="mono2">+ CreatePrintDocument(request)</text>
+    <text x="50" y="526" class="mono2">  (GDI+ page engine)</text>
   </g>
 
   <!-- MainShell + views -->
@@ -150,7 +150,7 @@
     <rect x="850" y="530" width="330" height="170" rx="4" class="cls"/>
     <path d="M850 534 a4 4 0 0 1 4 -4 h322 a4 4 0 0 1 4 4 v24 h-330 z" class="hdr"/>
     <text x="864" y="551" class="hdrtxt">MainShell  (App layer)</text>
-    <text x="864" y="578" class="mono2">- sidebar : Sidebar</text>
+    <text x="864" y="578" class="mono2">- sidebar : NavigationSidebar</text>
     <text x="864" y="596" class="mono2">- dashboard / residents / requests</text>
     <line x1="850" y1="608" x2="1180" y2="608" class="sep"/>
     <text x="864" y="628" class="mono2">- Go(key, filter)</text>
@@ -202,12 +202,12 @@
   <g>
     <rect x="36" y="586" width="330" height="200" rx="8" class="notebox"/>
     <text x="54" y="612" class="notehd">Layering rule (NFR-05)</text>
-    <text x="54" y="636" class="note">Core targets plain net8.0 and references</text>
-    <text x="54" y="653" class="note">nothing at all. A WinForms type cannot be</text>
-    <text x="54" y="670" class="note">used inside it — the compiler refuses.</text>
-    <text x="54" y="694" class="note">So the arrow only ever points App → Core,</text>
-    <text x="54" y="711" class="note">never the other way, and the business</text>
-    <text x="54" y="728" class="note">rules can be tested with no UI at all.</text>
+    <text x="54" y="636" class="note">One project; the arrows still point</text>
+    <text x="54" y="653" class="note">one way only: UI → Service → Models.</text>
+    <text x="54" y="670" class="note">Service and Models never reference</text>
+    <text x="54" y="694" class="note">the UI, so the business rules can</text>
+    <text x="54" y="711" class="note">still be tested and checked with</text>
+    <text x="54" y="728" class="note">no user interface at all.</text>
     <text x="54" y="756" class="note">──── association      ┄┄┄ dependency /</text>
     <text x="54" y="773" class="note">                              realisation</text>
   </g>

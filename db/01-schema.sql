@@ -1,5 +1,5 @@
 -- =====================================================================
---  Barangay Resident and Document Request Management System - v3
+--  Barangay Resident and Document Request Management System - v3.1
 --  MySQL schema
 --
 --  Barangay Magugpo Poblacion, City of Tagum, Davao del Norte
@@ -170,8 +170,11 @@ CREATE TABLE document_requests (
     request_id            INT UNSIGNED  NOT NULL AUTO_INCREMENT,
     resident_id           INT UNSIGNED  NOT NULL,
 
-    -- All twenty services from the barangay's frontline-services tarpaulin,
-    -- in the same order as my C# DocumentType enum.
+    -- All twenty tarpaulin services plus the four the v3.1 Citizen's
+    -- Charter adds: the cedula, the Katarungang Pambarangay filing, barangay
+    -- facility use, and the other processing fees under the Barangay Taripa.
+    -- The order matches my C# DocumentType enum, and new values go at the
+    -- end, never in between.
     document_type         ENUM('BarangayClearance',
                                'CertificateOfResidency',
                                'CertificateOfIndigency',
@@ -191,7 +194,11 @@ CREATE TABLE document_requests (
                                'GadRelatedDocumentation',
                                'BlotterRelatedIncident',
                                'CsoDocumentation',
-                               'OtherCertification') NOT NULL,
+                               'OtherCertification',
+                               'CommunityTaxCertificate',
+                               'LuponCaseFiling',
+                               'BarangayFacilityRental',
+                               'OtherTarifaProcessingFee') NOT NULL,
 
     -- I need this because the Citizen's Charter prices ONE document two ways:
     -- a Barangay Clearance is 100 pesos for local employment but 200 pesos if
@@ -217,7 +224,30 @@ CREATE TABLE document_requests (
     -- Why the fee came out the way it did, for example "FREE - RA 11261".
     -- I store this because a resident can and will ask, and because it is my
     -- audit trail if a fee is ever questioned.
-    fee_basis             VARCHAR(120)      NULL,
+    fee_basis             VARCHAR(255)      NULL,
+
+    -- ============ the v3.1 variable-fee columns =====================
+    --
+    -- Four documents are priced by circumstance, so I keep the circumstances
+    -- beside the fee they produced:
+    --   assessed_amount  - the business clearance under a violated law, or
+    --                      the Taripa item assessed by the clerk
+    --   hours_of_use     - barangay facility hours (billed per hour or part)
+    --   declared_income  - the sworn gross annual income a cedula is computed
+    --                      from (RA 7160 Sec. 156)
+    --   fee_detail       - the free text: the law violated, the Taripa line,
+    --                      or the facility used
+    -- They are NULL for every flat-rate document, and they exist so a
+    -- receipt can always be explained, not just totalled.
+    assessed_amount       DECIMAL(10,2)     NULL,
+    hours_of_use          DECIMAL(6,2)      NULL,
+    declared_income       DECIMAL(12,2)     NULL,
+    fee_detail            VARCHAR(200)      NULL,
+
+    -- True when releasing this request consumed the resident's once-only
+    -- RA 11261 benefit - either the certificate itself or a barangay
+    -- clearance issued under the waiver.
+    availed_jobseeker_act BOOLEAN       NOT NULL DEFAULT FALSE,
 
     is_paid               BOOLEAN       NOT NULL DEFAULT FALSE,
     official_receipt_no   VARCHAR(40)       NULL,
@@ -341,8 +371,10 @@ END$$
 --  TRIGGER: RA 11261 may be availed only once
 --
 --  When a First-Time Jobseeker Certificate is released I flag the resident, so
---  a second one can never be issued. My C# code sets this too; the trigger
---  keeps it true even if somebody updates the row directly.
+--  a second one can never be issued. v3.1 extends the same rule to a barangay
+--  CLEARANCE issued under the waiver - the law covers both documents - which
+--  is what the availed_jobseeker_act column records. My C# code sets this
+--  too; the trigger keeps it true even if somebody updates the row directly.
 -- =====================================================================
 CREATE TRIGGER trg_mark_jobseeker_availed
 AFTER UPDATE ON document_requests
@@ -350,7 +382,8 @@ FOR EACH ROW
 BEGIN
     IF NEW.status = 'Released'
        AND OLD.status <> 'Released'
-       AND NEW.document_type = 'FirstTimeJobseekerCertificate' THEN
+       AND (NEW.document_type = 'FirstTimeJobseekerCertificate'
+            OR NEW.availed_jobseeker_act = TRUE) THEN
         UPDATE residents
            SET has_availed_jobseeker = TRUE
          WHERE resident_id = NEW.resident_id;
@@ -412,6 +445,11 @@ SELECT
     dr.status,
     dr.fee,
     dr.fee_basis,
+    dr.assessed_amount,
+    dr.hours_of_use,
+    dr.declared_income,
+    dr.fee_detail,
+    dr.availed_jobseeker_act,
     dr.is_paid,
     dr.official_receipt_no,
     dr.date_requested,

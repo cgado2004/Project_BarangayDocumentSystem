@@ -23,7 +23,7 @@
 
   <rect width="1220" height="880" fill="#FFFFFF"/>
 
-  <text x="36" y="42" class="title">Entity Relationship Diagram — Barangay Document System v3</text>
+  <text x="36" y="42" class="title">Entity Relationship Diagram — Barangay Document System v3.1</text>
   <text x="36" y="64" class="sub">MySQL 8.0 · database barangay_magugpo · InnoDB · utf8mb4_unicode_ci</text>
 
   <!-- residents -->
@@ -80,7 +80,7 @@
     <text x="1168" y="154" class="type mono" text-anchor="end">VARCHAR(20)</text>
     <line x1="842" y1="163" x2="1184" y2="163" class="rowline"/>
     <text x="858" y="181" class="col mono">display_name</text><text x="1168" y="181" class="type mono" text-anchor="end">VARCHAR(40)</text>
-    <text x="858" y="200" class="col mono">legal_basis</text><text x="1168" y="200" class="type mono" text-anchor="end">VARCHAR(120)</text>
+    <text x="858" y="200" class="col mono">legal_basis</text><text x="1168" y="200" class="type mono" text-anchor="end">VARCHAR(255)</text>
     <text x="858" y="219" class="col mono">grants_fee_exemption</text><text x="1168" y="219" class="type mono" text-anchor="end">BOOLEAN</text>
     <line x1="842" y1="230" x2="1184" y2="230" class="rowline"/>
     <text x="858" y="249" class="note">SENIOR_CITIZEN · PWD · INDIGENT</text>
@@ -89,7 +89,7 @@
 
   <!-- document_requests -->
   <g>
-    <rect x="446" y="392" width="400" height="392" rx="8" class="tbl"/>
+    <rect x="446" y="392" width="400" height="420" rx="8" class="tbl"/>
     <path d="M446 400 a8 8 0 0 1 8 -8 h384 a8 8 0 0 1 8 8 v26 h-400 z" class="hdr"/>
     <text x="462" y="416" class="hdrtxt">document_requests</text>
 
@@ -98,14 +98,14 @@
     <text x="462" y="469" class="fk mono">FK  resident_id</text>
     <text x="830" y="469" class="type mono" text-anchor="end">INT UNSIGNED</text>
     <line x1="446" y1="478" x2="846" y2="478" class="rowline"/>
-    <text x="462" y="496" class="col mono">document_type</text><text x="830" y="496" class="type mono" text-anchor="end">ENUM(20)</text>
+    <text x="462" y="496" class="col mono">document_type</text><text x="830" y="496" class="type mono" text-anchor="end">ENUM(24)</text>
     <text x="462" y="515" class="col mono">scope</text><text x="830" y="515" class="type mono" text-anchor="end">ENUM(2)</text>
     <text x="462" y="534" class="col mono">purpose</text><text x="830" y="534" class="type mono" text-anchor="end">VARCHAR(200)</text>
     <text x="462" y="553" class="col mono">date_requested</text><text x="830" y="553" class="type mono" text-anchor="end">DATETIME</text>
     <text x="462" y="572" class="col mono">date_released</text><text x="830" y="572" class="type mono" text-anchor="end">DATETIME NULL</text>
     <text x="462" y="591" class="col mono">status</text><text x="830" y="591" class="type mono" text-anchor="end">ENUM(5)</text>
     <text x="462" y="610" class="col mono">fee</text><text x="830" y="610" class="type mono" text-anchor="end">DECIMAL(10,2)</text>
-    <text x="462" y="629" class="col mono">fee_basis</text><text x="830" y="629" class="type mono" text-anchor="end">VARCHAR(120)</text>
+    <text x="462" y="629" class="col mono">fee_basis</text><text x="830" y="629" class="type mono" text-anchor="end">VARCHAR(255)</text>
     <text x="462" y="648" class="col mono">is_paid</text><text x="830" y="648" class="type mono" text-anchor="end">BOOLEAN</text>
     <text x="462" y="667" class="col mono">official_receipt_no</text><text x="830" y="667" class="type mono" text-anchor="end">VARCHAR(40) NULL</text>
     <text x="462" y="686" class="col mono">remarks</text><text x="830" y="686" class="type mono" text-anchor="end">VARCHAR(255) NULL</text>
@@ -114,6 +114,8 @@
     <text x="462" y="738" class="note">scope exists because the Citizen's Charter</text>
     <text x="462" y="755" class="note">prices a clearance ₱100 local / ₱200 abroad.</text>
     <text x="462" y="772" class="note">reference_no is derived in a view, not stored.</text>
+    <text x="462" y="789" class="note">v3.1 adds: assessed_amount, hours_of_use, declared_income,</text>
+    <text x="462" y="806" class="note">fee_detail, availed_jobseeker_act (variable-fee columns)</text>
   </g>
 
   <!-- relationships -->
@@ -164,6 +166,6 @@
     <text x="894" y="550" class="note">a resident cascades to both children.</text>
   </g>
 
-  <text x="36" y="820" class="sub">Legend: PK primary key · FK foreign key · AI auto-increment · crow's foot = "many" side</text>
-  <text x="36" y="842" class="sub">Prepared by Clint Wood Gado · fees per the Barangay Citizen's Charter</text>
+  <text x="36" y="838" class="sub">Legend: PK primary key · FK foreign key · AI auto-increment · crow's foot = "many" side</text>
+  <text x="36" y="858" class="sub">Prepared by Clint Wood Gado · fees per the Barangay Citizen's Charter</text>
 </svg>

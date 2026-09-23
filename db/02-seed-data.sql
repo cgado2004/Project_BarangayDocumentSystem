@@ -146,18 +146,22 @@ INSERT INTO document_requests
 SELECT resident_id, 'CertificateOfIndigency',
        'Medical Assistance at Davao Regional Medical Center',
        'ReadyForRelease', 0.00,
-       'FREE - Certificate of Indigency (DILG MC 2019-177)',
+       'FREE - Certificate of Indigency (Citizen''s Charter; RA 11291, Magna Carta of the Poor)',
        DATE_SUB(NOW(), INTERVAL 2 DAY)
 FROM residents WHERE last_name = 'Mendoza';
 
 -- Ana: a business clearance. She is a solo parent, but personal exemptions do
--- NOT apply to a business, so the full fee stands. This is the row I would
--- point at if anyone questions that rule.
+-- NOT apply to a business, so the assessed fee stands. v3.1 prices this
+-- document by the law violated; here she renewed late AND was found operating
+-- beyond her approved business line, so the clerk assessed 500. This is the
+-- row I would point at if anyone questions either rule.
 INSERT INTO document_requests
-    (resident_id, document_type, purpose, status, fee, fee_basis, date_requested)
+    (resident_id, document_type, purpose, status, fee, fee_basis,
+     assessed_amount, fee_detail, date_requested)
 SELECT resident_id, 'BarangayBusinessClearance', 'Sari-sari Store Renewal',
-       'Pending', 200.00,
-       'Business clearance - personal exemptions do not apply',
+       'Pending', 500.00,
+       'Business clearance - assessed per violation of Barangay Ordinance No. 12-2024 (Citizen''s Charter; RA 7160, Sec. 152). Personal exemptions do not apply.',
+       500.00, 'Barangay Ordinance No. 12-2024, operating beyond the approved business line',
        DATE_SUB(NOW(), INTERVAL 1 DAY)
 FROM residents WHERE last_name = 'Villanueva';
 
@@ -176,6 +180,80 @@ SELECT resident_id, 'BarangayClearance', 'Abroad',
        'Overseas Employment Requirement', 'Pending', 200.00,
        'Barangay Clearance - for employment abroad (Citizen''s Charter)', NOW()
 FROM residents WHERE last_name = 'Peña';
+
+
+-- ===== the v3.1 variable-fee documents ===============================
+
+-- Juan: a cedula. ₱5 basic + ₱150 additional on ₱150,000 of sworn gross
+-- income = ₱155, paid and released, so the certificate prints a completed
+-- computation.
+INSERT INTO document_requests
+    (resident_id, document_type, purpose, status, fee, fee_basis,
+     declared_income, is_paid, official_receipt_no, date_requested, date_released)
+SELECT resident_id, 'CommunityTaxCertificate',
+       CONCAT('Annual community tax, CY ', YEAR(NOW())),
+       'Released', 155.00,
+       'Community tax - ₱5.00 basic plus ₱1.00 for every ₱1,000 of sworn gross annual income (RA 7160, Sec. 156).',
+       150000.00, TRUE, 'OR-2026-00102',
+       DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_SUB(NOW(), INTERVAL 4 DAY)
+FROM residents WHERE last_name = 'Dela Cruz';
+
+-- Pedro: a Katarungang Pambarangay filing at the flat ₱150.
+INSERT INTO document_requests
+    (resident_id, document_type, purpose, status, fee, fee_basis, date_requested)
+SELECT resident_id, 'LuponCaseFiling',
+       'Boundary dispute with the adjacent lot owner',
+       'Pending', 150.00,
+       'Katarungang Pambarangay filing fee (Citizen''s Charter; RA 7160, Secs. 399-422)',
+       DATE_SUB(NOW(), INTERVAL 2 DAY)
+FROM residents WHERE last_name = 'Mendoza';
+
+-- Ana: the covered court for a birthday program. Two and a half hours is
+-- billed as three at ₱200 an hour, so ₱600 - the row that shows the
+-- per-hour-or-part rule.
+INSERT INTO document_requests
+    (resident_id, document_type, purpose, status, fee, fee_basis,
+     hours_of_use, fee_detail, date_requested)
+SELECT resident_id, 'BarangayFacilityRental',
+       'Barangay covered court - birthday program',
+       'Pending', 600.00,
+       'Barangay facility use - 2.5 hour(s) billed as 3 × ₱200.00 per hour (Citizen''s Charter; RA 7160, Sec. 152)',
+       2.50, 'Barangay covered court', DATE_SUB(NOW(), INTERVAL 1 DAY)
+FROM residents WHERE last_name = 'Villanueva';
+
+-- Maria: certified copies under the Barangay Taripa, assessed at ₱50.
+INSERT INTO document_requests
+    (resident_id, document_type, purpose, status, fee, fee_basis,
+     assessed_amount, fee_detail, date_requested)
+SELECT resident_id, 'OtherTarifaProcessingFee',
+       'Certified copies of a barangay resolution',
+       'Pending', 50.00,
+       'Certified true copies - 10 pages at ₱5.00 - ₱50.00 (Barangay Taripa; Citizen''s Charter; RA 7160, Sec. 152)',
+       50.00, 'Certified true copies - 10 pages at ₱5.00', NOW()
+FROM residents WHERE last_name = 'Reyes' AND first_name = 'Maria';
+
+-- Jose: a barangay clearance claiming the RA 11261 one-time waiver. The law
+-- covers the CLEARANCE as well as the certificate; releasing this row sets
+-- his has_availed_jobseeker flag.
+INSERT INTO document_requests
+    (resident_id, document_type, scope, purpose, status, fee, fee_basis,
+     availed_jobseeker_act, date_requested)
+SELECT resident_id, 'BarangayClearance', 'Local',
+       'First local employment application',
+       'Pending', 0.00,
+       'FREE - RA 11261 (First Time Jobseekers Assistance Act), availment 1 of 1',
+       TRUE, NOW()
+FROM residents WHERE last_name = 'Bautista';
+
+-- Liza: an ordinary certification filed six calendar days ago and still
+-- pending - the row the RA 11032 aging highlight points at.
+INSERT INTO document_requests
+    (resident_id, document_type, purpose, status, fee, fee_basis, date_requested)
+SELECT resident_id, 'OtherCertification',
+       'Certification for a school requirement',
+       'Pending', 0.00, 'FREE - Person With Disability (RA 10754)',
+       DATE_SUB(NOW(), INTERVAL 6 DAY)
+FROM residents WHERE last_name = 'Santos-Reyes';
 
 
 -- =====================================================================
