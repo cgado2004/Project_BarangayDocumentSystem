@@ -28,42 +28,75 @@ internal static class Program
     {
         ApplicationConfiguration.Initialize();
 
+        // v3.1.1: errors nobody expected are written to the local error log
+        // (Helper/ErrorLogger, adapted from Jonathan Del Rosario's Draft
+        // branch) instead of vanishing with the process. The handlers go on
+        // before the first form exists, which is the only moment WinForms
+        // allows SetUnhandledExceptionMode to be called.
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+        Application.ThreadException += (_, args) =>
+        {
+            ErrorLogger.Write(args.Exception);
+            Dialog.Error(null,
+                "Something went wrong and the action was cancelled. The " +
+                "details were written to the error log:\n\n" +
+                ErrorLogger.LogFilePath,
+                "Unexpected error");
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+        {
+            if (args.ExceptionObject is Exception fatal) ErrorLogger.Write(fatal);
+        };
+
         // I work out which fonts this machine actually has before I create a
         // single control, so every form is built with the right family from
         // the start rather than being restyled afterwards.
         AppTheme.Resolve();
 
-        // I read App.config first, so the barangay details and the fees on
-        // every printed document come from the file rather than from numbers
-        // I hard-coded months ago.
-        BarangayProfile.Current = new BarangayProfile
+        try
         {
-            BarangayName   = AppSettings.Text("Barangay.Name", "Barangay Magugpo Poblacion"),
-            CityName       = AppSettings.Text("Barangay.City", "City of Tagum"),
-            ProvinceName   = AppSettings.Text("Barangay.Province", "Davao del Norte"),
-            PunongBarangay = AppSettings.Text("Barangay.PunongBarangay", "HON. EUGENIA SOLIS HINGPIT, MD"),
-            OfficeHours    = AppSettings.Text("Barangay.OfficeHours", "Monday to Friday, 8:00 AM - 5:00 PM")
-        };
+            // I read App.config first, so the barangay details and the fees on
+            // every printed document come from the file rather than from numbers
+            // I hard-coded months ago.
+            BarangayProfile.Current = new BarangayProfile
+            {
+                BarangayName   = AppSettings.Text("Barangay.Name", "Barangay Magugpo Poblacion"),
+                CityName       = AppSettings.Text("Barangay.City", "City of Tagum"),
+                ProvinceName   = AppSettings.Text("Barangay.Province", "Davao del Norte"),
+                PunongBarangay = AppSettings.Text("Barangay.PunongBarangay", "HON. EUGENIA SOLIS HINGPIT, MD"),
+                OfficeHours    = AppSettings.Text("Barangay.OfficeHours", "Monday to Friday, 8:00 AM - 5:00 PM")
+            };
 
-        var fees = new FeeSchedule(
-            AppSettings.Money("Fee.Clearance.Local", 100m),
-            AppSettings.Money("Fee.Clearance.Abroad", 200m),
-            AppSettings.Money("Fee.Certification", 100m),
-            AppSettings.Money("Fee.BusinessClearance.Standard", 200m),
-            AppSettings.Money("Fee.LuponFiling", 150m),
-            AppSettings.Money("Fee.Facility.Hourly", 200m),
-            AppSettings.Money("Fee.CommunityTax.Base", 5m),
-            AppSettings.Money("Fee.CommunityTax.PerThousand", 1m),
-            AppSettings.Money("Fee.CommunityTax.Cap", 5000m),
-            AppSettings.Count("Rule.JobseekerResidencyMonths", 6),
-            AppSettings.Count("Rule.RA11032.SimpleWorkingDays", 3));
+            var fees = new FeeSchedule(
+                AppSettings.Money("Fee.Clearance.Local", 100m),
+                AppSettings.Money("Fee.Clearance.Abroad", 200m),
+                AppSettings.Money("Fee.Certification", 100m),
+                AppSettings.Money("Fee.BusinessClearance.Standard", 200m),
+                AppSettings.Money("Fee.LuponFiling", 150m),
+                AppSettings.Money("Fee.Facility.Hourly", 200m),
+                AppSettings.Money("Fee.CommunityTax.Base", 5m),
+                AppSettings.Money("Fee.CommunityTax.PerThousand", 1m),
+                AppSettings.Money("Fee.CommunityTax.Cap", 5000m),
+                AppSettings.Count("Rule.JobseekerResidencyMonths", 6),
+                AppSettings.Count("Rule.RA11032.SimpleWorkingDays", 3));
 
-        // This is the one decision I make that moves the whole system onto a
-        // real database. Every screen only ever sees IBarangayRepository, so
-        // nothing else in my program has to change.
-        IBarangayRepository repository = CreateRepository(fees);
+            // This is the one decision I make that moves the whole system onto a
+            // real database. Every screen only ever sees IBarangayRepository, so
+            // nothing else in my program has to change.
+            IBarangayRepository repository = CreateRepository(fees);
 
-        Application.Run(new MainShell(repository, fees));
+            Application.Run(new MainShell(repository, fees));
+        }
+        catch (Exception startupError)
+        {
+            // v3.1.1: even a failure this early leaves a trail. The log is the
+            // file a group-mate can be told to attach when "it won't open".
+            ErrorLogger.Write(startupError);
+            Dialog.Error(null,
+                "The application could not start. The details were written " +
+                "to the error log:\n\n" + ErrorLogger.LogFilePath,
+                "Startup error");
+        }
     }
 
     /// <summary>

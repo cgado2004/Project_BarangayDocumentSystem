@@ -3,17 +3,21 @@ using BarangayDocumentSystem.Models;
 using BarangayDocumentSystem.Service;
 
 // =====================================================================
-//  My rule checks, v3.1.
+//  My rule checks, v3.1.1.
 //
 //  I wrote this because compiling only proves my code is grammatical - it
 //  says nothing about whether the fees are right. This runs the actual
 //  business rules and compares them against the Citizen's Charter and the
 //  laws behind it.
 //
-//  v3.1 grows the list for the new money documents: the cedula computed
+//  v3.1 grew the list for the new money documents: the cedula computed
 //  under RA 7160 Sec. 156, the ₱150 lupon filing, facilities at ₱200 an
 //  hour, the Taripa items, and the business clearance whose amount now
 //  VARIES with the law violated.
+//
+//  v3.1.1 adds the rejection rules, the payment guards and the
+//  receipt-uniqueness rule, ported from Jonathan F. Del Rosario's
+//  Draft-branch test suite and adapted to this codebase's model.
 //
 //  To run it:  dotnet run --project tests/RuleChecks
 // =====================================================================
@@ -190,6 +194,78 @@ string cedulaDoc = renderer.RenderText(
 Check("the cedula prints its computation",
     cedulaDoc.Contains("₱150,000.00") && cedulaDoc.Contains("₱155.00"));
 Check("the cedula cites RA 7160", cedulaDoc.Contains("156"));
+
+// =====================================================================
+//  v3.1.1 — the checks below were ported from Jonathan F. Del Rosario's
+//  Draft-branch test suite and adapted to the real fee schedule: his
+//  rejection, payment-guard and receipt-uniqueness rules, which the
+//  harness did not cover before, expressed against THIS project's rules
+//  in DocumentRequest and the store.
+// =====================================================================
+
+Console.WriteLine("\n=== Rejection rules (v3.1.1) ===");
+var rejected = repo.CreateRequest(juan, DocumentType.BarangayClearance, "Test",
+    new RequestInput(Scope: ClearanceScope.Local));
+rejected.Reject("Resident withdrew the application");
+Check("a pending request can be rejected with a reason",
+    rejected.Status == RequestStatus.Rejected);
+
+bool refused = false;
+try { rejected.StartProcessing(); } catch (InvalidOperationException) { refused = true; }
+Check("a rejected request cannot be processed", refused);
+refused = false;
+try { rejected.Release(); } catch (InvalidOperationException) { refused = true; }
+Check("a rejected request cannot be released", refused);
+refused = false;
+try { rejected.Reject("   "); } catch (ArgumentException) { refused = true; }
+Check("a blank reason is refused", refused);
+refused = false;
+try { req.Reject("Too late"); } catch (InvalidOperationException) { refused = true; }
+Check("a released document cannot be rejected", refused);
+
+var paidThenRejected = repo.CreateRequest(juan, DocumentType.BarangayClearance, "Test",
+    new RequestInput(Scope: ClearanceScope.Local));
+paidThenRejected.StartProcessing();
+paidThenRejected.MarkReadyForRelease();
+paidThenRejected.RecordPayment("OR-V311-1");
+decimal collectedBefore = repo.GetStatistics().TotalCollected;
+paidThenRejected.Reject("Approved too late — the resident no longer needs it");
+Check("a paid request can still be rejected before release",
+    paidThenRejected.Status == RequestStatus.Rejected);
+Check("a rejected payment keeps its receipt recorded",
+    paidThenRejected.IsPaid && paidThenRejected.OfficialReceiptNo == "OR-V311-1");
+Check("rejecting a paid request does not change the collection total",
+    repo.GetStatistics().TotalCollected == collectedBefore);
+
+Console.WriteLine("\n=== Payment guards and receipt uniqueness (v3.1.1) ===");
+var freeRequest = repo.CreateRequest(maria, DocumentType.CertificateOfResidency, "Test");
+refused = false;
+try { freeRequest.RecordPayment("OR-V311-2"); } catch (InvalidOperationException) { refused = true; }
+Check("no payment is due on a free document", refused);
+
+var paidTwice = repo.CreateRequest(juan, DocumentType.BarangayClearance, "Test",
+    new RequestInput(Scope: ClearanceScope.Local));
+paidTwice.RecordPayment("OR-V311-3");
+refused = false;
+try { paidTwice.RecordPayment("OR-V311-4"); } catch (InvalidOperationException) { refused = true; }
+Check("a request cannot be paid twice", refused);
+
+var noReceipt = repo.CreateRequest(juan, DocumentType.BarangayClearance, "Test",
+    new RequestInput(Scope: ClearanceScope.Local));
+refused = false;
+try { noReceipt.RecordPayment("   "); } catch (ArgumentException) { refused = true; }
+Check("a receipt number is required", refused);
+
+Check("a fresh receipt number is not on file", !repo.ReceiptNumberExists("OR-V311-999"));
+Check("a used receipt number is detected, case-insensitively",
+    repo.ReceiptNumberExists("or-v311-3"));
+
+var clash = repo.CreateRequest(juan, DocumentType.BarangayClearance, "Test",
+    new RequestInput(Scope: ClearanceScope.Local));
+clash.RecordPayment("OR-V311-3");
+refused = false;
+try { repo.SaveRequest(clash); } catch (InvalidOperationException) { refused = true; }
+Check("the store refuses a duplicate receipt number", refused);
 
 Console.WriteLine($"\n=== {pass} passed, {fail} failed ===");
 return fail == 0 ? 0 : 1;

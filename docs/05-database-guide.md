@@ -197,3 +197,45 @@ On fees that is indefensible.
   system is meant to prevent.
 - **Do not commit `App.config` with `Storage=MySQL`.** It breaks the app for
   everyone who has not set up a database.
+
+---
+
+## 9. The reviewed persistence design (v3.1.1 — notes for whoever writes the MySQL repository)
+
+Jonathan F. Del Rosario built a complete SQL-persistence implementation on
+the `Draft` branch (SQL Server LocalDB, .NET Framework). The team decided
+V3.1.1 stays in-memory and MySQL remains the protocol engine — but his
+design is the working plan for the repository we will write in V3.2. What
+follows is the review's summary of the ideas worth keeping, and how each
+maps onto our MySQL schema in `db/`.
+
+| His idea (SQL Server) | Why it is right | How it lands in our MySQL schema |
+|---|---|---|
+| `AppState` table (schema version + "samples loaded" flag), created under `sp_getapplock` | Two laptops initialising at once must not race the schema, and a re-run must not re-seed | Same table in MySQL; MySQL 8 supports `GET_LOCK()` for the same exclusive-provisioning lock |
+| `Version` int column, bumped on every update (optimistic concurrency) | The app is single-user today, but the rule costs one column and makes an accidental overwrite visible | Already worth adding to `residents` and `document_requests` |
+| Integrity pushed into CHECK constraints (status range, payment ⇔ receipt + date, release requires paid-or-free, rejection requires a reason) | The C# state machine guards the living request; the database must guard the *row*, because other tools can write to it too | `db/01-schema.sql` already does this with triggers — same idea, MySQL's mechanism |
+| Unique index on the receipt number **among paid rows only** (`UX_Requests_Receipt`) | A receipt number identifies exactly one payment | MySQL has no filtered indexes, but a **unique index on `official_receipt_no` with NULL for unpaid rows** works: a unique index allows many NULLs. v3.1.1 already enforces the same rule in the app (`IBarangayRepository.ReceiptNumberExists`) |
+| Unique index enforcing the jobseeker benefit **once per resident** | RA 11261 is once-in-a-lifetime; the database should say so even if the app has a bug | No filtered indexes in MySQL — enforce with a `BEFORE INSERT` trigger that counts the resident's prior jobseeker rows |
+| `RequestResidentSnapshots` — the resident's details frozen at filing time | A certificate is a historical record: correcting someone's address today must not rewrite the certificate issued last year | Matches the association decision already documented on `Resident`; add the snapshot table when the repository lands |
+| Sample seeding inside one transaction, once, flagged in `AppState` | An interrupted first run must leave no half-loaded demo data | Same in MySQL: `START TRANSACTION` … update the flag … `COMMIT` |
+
+What was deliberately **not** carried over from the Draft branch, and why:
+
+- **The SQL Server engine itself.** Our protocol scripts (`db/01`, `db/02`),
+  the ERD and the database guide are MySQL; running two database stories in
+  one school project doubles the setup instructions for every teammate. The
+  `Storage=MySQL` switch and the `BarangayDb` XAMPP connection stay the
+  target.
+- **The mandatory connection string at startup.** His app refused to start
+  without a database; ours starts on sample data and *says so plainly* when
+  MySQL is asked for but missing (see `Program.CreateRepository`). For a
+  classroom demo, always-starts is the better contract.
+- **Int-coded enum columns.** His schema stored `Gender int`, `Status int`
+  with CHECK ranges; ours stores the enum **names**, so a reordered C# enum
+  cannot silently re-mean old rows (see decision 2 in §3).
+
+His original branch remains on GitHub (`Draft`) with the full T-SQL
+implementation — `SqlDatabase.cs` (provisioning + app lock),
+`SqlBarangayRepository.cs`, the row mappers, and `Tests/SqlTestDatabase.cs`
+(integration tests on throwaway databases) — if the V3.2 implementer wants
+the reference while writing the MySQL twin.

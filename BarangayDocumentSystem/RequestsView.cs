@@ -251,7 +251,10 @@ public class RequestsView : ViewBase
     /// The shared wrapper for every status move. The state machine may throw
     /// if the move is illegal - and when it does, I show the reason rather
     /// than let the program die, because the reason is exactly what the
-    /// clerk needs to read.
+    /// clerk needs to read. v3.1.1: the store is asked inside the same
+    /// guard, because the store can refuse a move too (a receipt number
+    /// already recorded on another request is a store decision, not a
+    /// status-machine one).
     /// </summary>
     private void Step(Action<DocumentRequest> move)
     {
@@ -261,6 +264,7 @@ public class RequestsView : ViewBase
         try
         {
             move(r);
+            _repo.SaveRequest(r);
         }
         catch (InvalidOperationException ex)
         {
@@ -268,7 +272,6 @@ public class RequestsView : ViewBase
             return;
         }
 
-        _repo.SaveRequest(r);
         LoadGrid();
     }
 
@@ -280,7 +283,33 @@ public class RequestsView : ViewBase
         using var form = new PaymentForm(r);
         if (form.ShowDialog(this) != DialogResult.OK) return;
 
-        _repo.SaveRequest(r);
+        try
+        {
+            // v3.1.1 FIX: before this version, the OK click never actually
+            // recorded anything - the request was saved without
+            // RecordPayment having been applied, so the queue quietly kept
+            // saying "unpaid" no matter what the clerk typed. The receipt
+            // number is now written onto the request, after the store is
+            // asked whether the number is already on file.
+            if (_repo.ReceiptNumberExists(form.ReceiptNumber, r))
+            {
+                Dialog.Warn(this,
+                    $"Official receipt number {form.ReceiptNumber} is already " +
+                    "recorded on another request. A receipt number identifies " +
+                    "exactly one payment.",
+                    "Not allowed");
+                return;
+            }
+
+            r.RecordPayment(form.ReceiptNumber);
+            _repo.SaveRequest(r);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Dialog.Warn(this, ex.Message, "Not allowed");
+            return;
+        }
+
         LoadGrid();
     }
 
@@ -289,12 +318,15 @@ public class RequestsView : ViewBase
         var r = Selected();
         if (r is null) return;
 
-        string? reason = Prompt.Text(this, "Reject request",
-            $"Why is {r.GetReferenceNumber()} being rejected?\n" +
-            "The resident is entitled to be told the reason.");
-        if (reason is null) return;
+        // v3.1.1: the dedicated rejection dialog, ported from Jonathan Del
+        // Rosario's Draft branch. It tells the clerk up front that a paid
+        // request keeps its payment in the collection history - this app
+        // does not issue refunds - and validates the reason the record
+        // requires anyway.
+        using var form = new RejectionForm(r);
+        if (form.ShowDialog(this) != DialogResult.OK) return;
 
-        Step(x => x.Reject(reason!));
+        Step(x => x.Reject(form.Reason));
     }
 
     private void PreviewSelected()

@@ -168,6 +168,30 @@ everybody under the charter.
   rates, the variable computations, where each waiver stops, the RA 11261
   once-only rule on both documents, and the RA 11032 aging.
 
+---
+
+## VI. Review note — v3.1.1 (the fee question the Draft branch raised)
+
+Jonathan F. Del Rosario's `Draft` branch priced the Barangay Clearance at a
+flat **₱50** and documented it, honestly, as a *"classroom placeholder;
+purpose-based Charter fees pending"*. During the v3.1.1 review he also
+supplied an independent re-check of the Citizen's Charter photo, which
+**confirms** this document's rates:
+
+- Residency and good-moral certifications at **₱100** — confirmed against
+  the posted charter.
+- The Barangay Clearance at **₱100** for local employment and **₱200** for
+  work abroad — confirmed, and the reason the ₱50 flat placeholder was
+  rejected: it undercharges the charter's local rate by half and has no
+  scope distinction at all.
+- His branch's flat ₱200 business clearance (exemptions "do not apply") was
+  likewise superseded: ₱200 is our **standard** rate, but the amount
+  **varies with the law violated** and is assessed at the counter.
+
+No peso values changed in v3.1.1 — the charter schedule above stands, and
+the review record exists so nobody has to re-litigate the ₱50 question
+from memory.
+
 *Sources: the Barangay Citizen's Charter posted at the hall; RA 7160; RA
 9994; RA 10754; RA 11032; RA 11261 and its IRR (JMC 001 s. 2019); RA 11291;
 RA 11861; RA 8371; RA 11310; DILG MC 2019-177; the City Budget Office

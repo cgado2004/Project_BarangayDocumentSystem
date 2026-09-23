@@ -43,9 +43,22 @@ public interface IBarangayRepository
     IEnumerable<DocumentRequest> GetRequestsByStatus(RequestStatus? status);
 
     /// <summary>I call this after a request's status or payment changed, so
-    /// the store can write it down. The in-memory version does nothing here;
-    /// the MySQL version runs an UPDATE.</summary>
+    /// the store can write it down. The in-memory version does nothing here
+    /// beyond guarding the store's own invariants; the MySQL version runs an
+    /// UPDATE.</summary>
     void SaveRequest(DocumentRequest request);
+
+    /// <summary>
+    /// True when an official receipt number is already recorded on a
+    /// DIFFERENT paid request.
+    ///
+    /// v3.1.1, adapted from Jonathan Del Rosario's Draft branch: money must
+    /// be traceable to exactly one request, so the screens ask the store
+    /// before writing a receipt number that is already on file. The SQL
+    /// version will back this with the unique index the schema already
+    /// plans for paid rows (UX_Requests_Receipt in db/01-schema.sql terms).
+    /// </summary>
+    bool ReceiptNumberExists(string officialReceiptNo, DocumentRequest? excluding = null);
 
     BarangayStatistics GetStatistics();
 }

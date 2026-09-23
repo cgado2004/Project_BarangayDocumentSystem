@@ -1,4 +1,4 @@
-# Barangay Resident and Document Request Management System — v3.1
+# Barangay Resident and Document Request Management System — v3.1.1
 
 **Barangay Magugpo Poblacion, City of Tagum, Davao del Norte**
 Windows desktop application · WinForms · .NET 8
@@ -65,6 +65,32 @@ while building this — is
 
 ---
 
+## What changed in v3.1.1
+
+The v3.1.1 round reviewed and folded in the completed work from Jonathan F.
+Del Rosario's `Draft` branch, keeping this project's structure as the one
+codebase. His branch itself is *not* merged — it was a parallel .NET
+Framework rewrite — but its genuinely new ideas were ported and adapted:
+
+| | v3.1 | **v3.1.1** |
+|---|---|---|
+| Rejecting a request | plain text prompt | **dedicated `RejectionForm`** — names the request, warns that a paid request keeps its payment (no refunds), validates the reason |
+| "Record payment" | **silently recorded nothing** — the OK click never applied the receipt to the request | **fixed** — the receipt number is written onto the request, and the queue's Paid column tells the truth |
+| Receipt numbers | trusted the clerk | **unique across requests** (case-insensitive), enforced by the store (`IBarangayRepository.ReceiptNumberExists`) |
+| Unhandled errors | vanished with the process | **logged** to `%LOCALAPPDATA%\BarangayDocumentSystem\errors.log` (`Helper/ErrorLogger`), with a plain explanation on screen |
+| Rule checks | 49 | **63** — rejection rules, payment guards, receipt uniqueness (ported from Jonathan's Draft test suite) |
+| Persistence design | verbal hand-waving | **reviewed and recorded** — his SQL layer's ideas (provisioning lock, schema versioning, optimistic concurrency, filtered unique indexes, resident snapshots) mapped onto the MySQL schema in [docs/05 §9](docs/05-database-guide.md) for V3.2 |
+| Manual demo script | — | **[docs/08-demo-walkthrough.md](docs/08-demo-walkthrough.md)** — the pre-defence click-through |
+
+Not carried over, deliberately: his branch's ₱50 classroom fee rates (the
+charter rates stand — see [docs/07 §VI](docs/07-fee-schedule-and-legal-basis.md)),
+its 7-document subset (all 24 services stay), its SQL Server LocalDB
+runtime (MySQL remains the protocol engine), and its parallel folder
+structure. Nothing from Phillippe Dagamac's `draft3` branch is included —
+that work is still TBD.
+
+---
+
 ## The six core technical fixes
 
 1. **Designer support.** `packages.config` lists the accessibility
@@ -128,9 +154,10 @@ BarangayDocumentSystem/
 │   ├── 02-erd.svg                    entity relationship diagram
 │   ├── 03-uml.svg                    UML class diagram
 │   ├── 04-project-timeline.md        the plan
-│   ├── 05-database-guide.md          running the MySQL scripts
+│   ├── 05-database-guide.md          running the MySQL scripts (+ §9: the reviewed persistence design)
 │   ├── 06-pushing-to-github.md
-│   └── 07-fee-schedule-and-legal-basis.md   every fee and its law
+│   ├── 07-fee-schedule-and-legal-basis.md   every fee and its law
+│   └── 08-demo-walkthrough.md        the manual pre-defence click-through
 ├── db/
 │   ├── 01-schema.sql                 tables, triggers, views (v3.1 columns)
 │   └── 02-seed-data.sql              the same residents as the demo
@@ -144,14 +171,15 @@ BarangayDocumentSystem/
 │   ├── DashboardView.cs   ResidentsView.cs   RequestsView.cs   ViewBase.cs
 │   ├── ResidentForm.cs    RequestForm.cs
 │   ├── PaymentForm.cs     (receipt printing)
+│   ├── RejectionForm.cs   (the no-refunds rejection dialog, v3.1.1)
 │   ├── DocumentPreviewForm.cs      (scaled print preview)
 │   ├── Prompt.cs         quick input prompts
 │   ├── Models/           Resident, DocumentRequest (state machine + fees), Enums, BarangayProfile
-│   ├── Interfaces/       IBarangayRepository, IDocumentTemplate
+│   ├── Interfaces/       IBarangayRepository (incl. receipt uniqueness, v3.1.1), IDocumentTemplate
 │   ├── Service/          FeeSchedule, DisplayFormat, DocumentRenderer
 │   │   └── Templates/    one class per document wording
 │   ├── DBContext/        InMemoryBarangayRepository (swap for MySQL later)
-│   └── Helper/           AppTheme, UiFactory, Dialog, InputValidator
+│   └── Helper/           AppTheme, UiFactory, Dialog, InputValidator, ErrorLogger (v3.1.1)
 └── tests/
     └── RuleChecks/       runnable checks against the charter and the laws
 ```
@@ -216,7 +244,7 @@ their width; dialogs are percent-gridded and resizable with minimum sizes.
 ```
 dotnet build  →  0 errors   (single project + rule checks)
 
-38 C# files parse-checked with the Roslyn grammar (tree-sitter);
+42 C# files parse-checked with the Roslyn grammar (tree-sitter);
 the checks below are what to run on Windows:
 
   real purok names · Peña renders with ñ intact
@@ -232,6 +260,10 @@ the checks below are what to run on Windows:
   RA 11261: 14 months allowed · 2 months blocked with a reason
   RA 11261 on the CLEARANCE too — released once, second claim blocked
   unpaid fee-bearing release REFUSED · released after payment
+  rejection rules: reason required · rejected is terminal · released never rejected
+  a rejected payment keeps its receipt AND the collection total
+  payment guards: nothing due on a free document · a request pays once
+  receipt numbers unique across requests, case-insensitive
   RA 11032: working days counted · 6 calendar days flagged past 3
   all 24 document types named, templated, and rendered on the letterhead
   reference BMP-2026-0007 · real Punong Barangay on the certificate

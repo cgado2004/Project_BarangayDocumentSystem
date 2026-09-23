@@ -100,14 +100,45 @@ public class InMemoryBarangayRepository : IBarangayRepository
         status is null ? _requests : _requests.Where(r => r.Status == status.Value);
 
     /// <summary>
-    /// I have nothing to do here, and that is on purpose.
+    /// I have almost nothing to do here, and that is on purpose.
     ///
     /// The objects in my lists ARE the storage, so by the time a screen calls
     /// this the change has already happened. I still provide the method so the
     /// MySQL version can implement the same interface, and so the screens can
     /// call it without knowing or caring which store is running underneath.
+    ///
+    /// v3.1.1: the one thing I DO guard is the uniqueness of an official
+    /// receipt number across paid requests, because that is a store
+    /// invariant - the kind of rule that must hold no matter who calls.
+    /// A receipt number that points at two requests is money I cannot
+    /// account for, here or in the database.
     /// </summary>
-    public void SaveRequest(DocumentRequest request) { }
+    public void SaveRequest(DocumentRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (request.IsPaid && ReceiptNumberExists(request.OfficialReceiptNo, request))
+            throw new InvalidOperationException(
+                $"Official receipt number {request.OfficialReceiptNo} is already " +
+                "recorded on another request. A receipt number identifies exactly one payment.");
+    }
+
+    /// <summary>
+    /// v3.1.1, adapted from Jonathan Del Rosario's Draft branch (his schema
+    /// enforced this with a unique filtered index; in memory I scan). The
+    /// comparison ignores case, the way the SQL collation would, so
+    /// "OR-101" and "or-101" count as the same receipt.
+    /// </summary>
+    public bool ReceiptNumberExists(string officialReceiptNo, DocumentRequest? excluding = null)
+    {
+        if (string.IsNullOrWhiteSpace(officialReceiptNo)) return false;
+
+        string candidate = officialReceiptNo.Trim();
+        return _requests.Any(other =>
+            !ReferenceEquals(other, excluding) &&
+            other.IsPaid &&
+            other.OfficialReceiptNo.Equals(candidate, StringComparison.OrdinalIgnoreCase));
+    }
 
     public BarangayStatistics GetStatistics()
     {
