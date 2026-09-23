@@ -16,10 +16,12 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Configuration" />
     <Compile Include="Program.cs" />
+    <Compile Include="SqlTestDatabase.cs" />
     <None Include="..\App.config"><Link>App.config</Link></None>
     <ProjectReference Include="..\BarangayDocumentSystem.csproj">
       <Project>{8B9A251A-4642-48FE-86BB-13DB19B978DB}</Project>

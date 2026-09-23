@@ -5,3 +5,7 @@ obj/
 *.suo
 *.userosscache
 *.sln.docstates
+*.mdf
+*.ldf
+*.ndf
+*.bak

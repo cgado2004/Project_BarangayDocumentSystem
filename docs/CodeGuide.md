@@ -7,7 +7,7 @@
 3. `Controls/ResidentsControl.cs`: opens resident dialogs.
 4. `Forms/ResidentForm.cs`: collects the typed values and asks the service to save.
 5. `Services/ResidentService.cs`: validates and saves a resident.
-6. `Data/InMemoryBarangayRepository.cs`: stores a copy of the saved record.
+6. `Data/SqlBarangayRepository.cs`: saves and retrieves records in SQL Server.
 
 The same pattern is used for document requests and payments.
 
@@ -36,7 +36,11 @@ by the compiler.
 | `DocumentRenderer` | Shared letterhead, footer, and template selection |
 | `IDocumentTemplate` | The title and body supplied by a document template |
 | `IBarangayRepository` | The storage operations used by the services |
-| `InMemoryBarangayRepository` | Lists of records for the current session |
+| `SqlBarangayRepository` | Persistent storage using parameterized SQL |
+| `SqlDatabase` | First-run schema creation and version check |
+| `InMemoryBarangayRepository` | Isolated storage for tests |
+| `ReportingService` | Dashboard counts, groups, and collection totals |
+| `BarangayStatistics` | Results displayed by the dashboard |
 | `TextPaginator` | Fit text onto a printed page and continue on the next page |
 
 To add a document type, add its enum value, template, registration in
@@ -55,7 +59,9 @@ Save button
 ```
 
 The form handles interaction. The validator rejects invalid data. The
-repository stores a copy, so canceling an edit cannot alter a saved record.
+repository saves to SQL Server and returns detached models, so canceling an edit
+cannot alter a saved record. A version check rejects stale edits. Dashboard
+calculations live in `ReportingService`; the control only displays its results.
 
 ## Request and payment rules
 
@@ -63,7 +69,7 @@ repository stores a copy, so canceling an edit cannot alter a saved record.
 - Only Processing can move to Ready for Release.
 - Only Ready for Release can move to Released.
 - Fee-bearing requests need payment and an official receipt before release.
-- Receipt numbers are unique within the session, ignoring letter case.
+- Paid receipt numbers are unique across the saved database, ignoring letter case.
 - Released and Rejected requests cannot change status again.
 - Rejection requires a reason. An earlier payment remains recorded.
 - A first-time jobseeker needs at least six months of residency and cannot
@@ -77,8 +83,9 @@ document text is stored too. Later name, address, profile, or template changes
 cannot rewrite an already released document.
 
 Residents with requests cannot be deleted. This preserves the link to request
-and collection history. A future database implementation should perform
-release and benefit-use updates within a database transaction.
+and collection history. Release and benefit-use updates run within one database
+transaction. SQL foreign keys, unique indexes, and version checks provide
+additional protection. See [database setup and tables](Database.md).
 
 ## UI layout and errors
 

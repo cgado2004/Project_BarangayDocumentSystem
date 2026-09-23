@@ -49,6 +49,7 @@ namespace BarangayDocumentSystem.Services
             clean.DateOfResidency = clean.DateOfResidency.Date;
             repository.SaveResident(clean);
             resident.ResidentId = clean.ResidentId;
+            resident.Version = clean.Version;
         }
 
         public void Delete(int residentId) { repository.DeleteResident(residentId); }

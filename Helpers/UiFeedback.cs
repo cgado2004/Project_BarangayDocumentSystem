@@ -1,4 +1,5 @@
 using System;
+using System.Data.SqlClient;
 using System.Windows.Forms;
 
 namespace BarangayDocumentSystem.Helpers
@@ -10,6 +11,12 @@ namespace BarangayDocumentSystem.Helpers
             try { action(); }
             catch (ArgumentException error) { Warn(owner, error.Message); }
             catch (InvalidOperationException error) { Warn(owner, error.Message); }
+            catch (SqlException error)
+            {
+                ErrorLogger.Write(error);
+                Warn(owner, "The database action could not be confirmed. Refresh the records before trying again. " +
+                    "If the problem continues, check the database connection and the local error log.");
+            }
             catch (Exception error) { Unexpected(owner, error); }
         }
 
