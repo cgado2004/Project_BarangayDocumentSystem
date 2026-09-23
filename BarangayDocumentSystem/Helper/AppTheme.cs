@@ -39,36 +39,38 @@ public static class AppTheme
     // =================================================================
     //  Colours
     //
-    //  I pulled these from the barangay's own seal - the deep blue of the
-    //  shield, the gold of the sun's rays, and the red of the flag triangle.
-    //  Using the seal's own colours means the app and the logo look like they
-    //  belong together, instead of the logo being pasted onto someone else's
-    //  colour scheme.
+    //  v3.1.2 retunes these to the team's dashboard design specification
+    //  (the slate/indigo system: canvas #F8FAFC, ink #0F172A, muted
+    //  #64748B, and the six tile accents), while keeping the seal's gold
+    //  for the brand. The role of every token is unchanged - this is the
+    //  one file to edit when the palette moves again.
     // =================================================================
 
-    public static readonly Color Ink        = Color.FromArgb(0x0B, 0x14, 0x2B); // near-black navy
-    public static readonly Color Primary    = Color.FromArgb(0x1B, 0x3B, 0x8B); // seal blue
-    public static readonly Color PrimaryDim = Color.FromArgb(0x2E, 0x52, 0xA8);
-    public static readonly Color Deep       = Color.FromArgb(0x0A, 0x1F, 0x54); // darkest navy
-    public static readonly Color Gold       = Color.FromArgb(0xF2, 0xB1, 0x1B); // sun gold
+    public static readonly Color Ink        = Color.FromArgb(0x0F, 0x17, 0x2A); // slate 900 - primary text
+    public static readonly Color Primary    = Color.FromArgb(0x1E, 0x3A, 0x8A); // blue 800 - residents accent
+    public static readonly Color PrimaryDim = Color.FromArgb(0x2E, 0x4A, 0x9E); // lighter sibling
+    public static readonly Color Deep       = Color.FromArgb(0x1B, 0x36, 0x5D); // hero banner navy (spec)
+    public static readonly Color SlateInk   = Color.FromArgb(0x1E, 0x29, 0x3B); // slate 800 - collected accent
+    public static readonly Color Sky        = Color.FromArgb(0x02, 0x84, 0xC7); // sky 600 - ready accent
+    public static readonly Color Gold       = Color.FromArgb(0xF2, 0xB1, 0x1B); // sun gold, from the seal
     public static readonly Color GoldSoft   = Color.FromArgb(0xFF, 0xF0, 0xCC);
-    public static readonly Color Crimson    = Color.FromArgb(0xC8, 0x2A, 0x32); // flag red
+    public static readonly Color Crimson    = Color.FromArgb(0xDC, 0x26, 0x26); // red 600 - issued-free accent
 
     public static readonly Color Lavender     = Color.FromArgb(0xD8, 0xE3, 0xFA);
     public static readonly Color LavenderSoft = Color.FromArgb(0xEE, 0xF3, 0xFD);
     public static readonly Color Periwinkle   = Color.FromArgb(0x6C, 0x84, 0xC4);
 
-    public static readonly Color Canvas  = Color.FromArgb(0xF5, 0xF7, 0xFC); // a hint of blue, not flat white
+    public static readonly Color Canvas  = Color.FromArgb(0xF8, 0xFA, 0xFC); // slate 50 - main background
     public static readonly Color Surface = Color.White;
-    public static readonly Color Border  = Color.FromArgb(0xE2, 0xE7, 0xF2);
-    public static readonly Color Muted   = Color.FromArgb(0x63, 0x6C, 0x80);
-    public static readonly Color MutedSoft = Color.FromArgb(0xA8, 0xB0, 0xC2);
+    public static readonly Color Border  = Color.FromArgb(0xE2, 0xE8, 0xF0); // slate 200
+    public static readonly Color Muted   = Color.FromArgb(0x64, 0x74, 0x8B); // slate 500 - secondary text
+    public static readonly Color MutedSoft = Color.FromArgb(0x94, 0xA3, 0xB8); // slate 400
 
     // ---- status colours ----
-    public static readonly Color Success = Color.FromArgb(0x1A, 0x7F, 0x4F);
-    public static readonly Color Warning = Color.FromArgb(0xB8, 0x78, 0x00);
-    public static readonly Color Danger  = Color.FromArgb(0xC0, 0x31, 0x39);
-    public static readonly Color Info    = Primary;
+    public static readonly Color Success = Color.FromArgb(0x05, 0x96, 0x69); // emerald 600 - released
+    public static readonly Color Warning = Color.FromArgb(0xD9, 0x77, 0x06); // amber 600 - pending
+    public static readonly Color Danger  = Color.FromArgb(0xDC, 0x26, 0x26); // red 600
+    public static readonly Color Info    = Sky;
 
     // =================================================================
     //  Fonts
@@ -92,6 +94,7 @@ public static class AppTheme
         UiFamily = FirstInstalledFont(
             "Inter",                // Google / rsms.me/inter - first choice
             "Inter Display",        // Inter's display cut, newer releases
+            "Plus Jakarta Sans",    // spec family #2 (v3.1.2 dashboard spec)
             "SF Pro Display",       // Apple's UI face
             "SF Pro Text",
             "Roboto",               // Google's other workhorse
@@ -146,7 +149,12 @@ public static class AppTheme
     public static Font BodyBold  => new(UiFamily, 10.5f, FontStyle.Bold);
     public static Font Small     => new(UiFamily, 9f, FontStyle.Regular);
     public static Font SmallBold => new(UiFamily, 9f, FontStyle.Bold);
-    public static Font StatValue => new(UiFamily, 30f, FontStyle.Bold);
+    public static Font StatValue => new(UiFamily, 27f, FontStyle.Bold);   // 36px - the dashboard spec's 34-38px band
+
+    /// <summary>The 11px uppercase face for stat-card headers. WinForms has
+    /// no ExtraBold weight and no letter-spacing, so Bold carries the role
+    /// as far as the platform allows - the size and the casing are exact.</summary>
+    public static Font Overline  => new(UiFamily, 8.25f, FontStyle.Bold);  // 11px
     public static Font MonoBody  => new(MonoFamily, 10f, FontStyle.Regular);
 
     // =================================================================

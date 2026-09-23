@@ -69,8 +69,9 @@ public class HeroBanner : Control
 
         using var shape = Draw.RoundedRect(r, RadiusCard + 4);
 
-        // The navy wash. I run it diagonally so the darker corner sits under
-        // the seal and the lighter one under the text.
+        // The navy wash - Deep is now the spec's #1B365D banner navy, and the
+        // gradient runs diagonally so the darker corner sits under the seal
+        // and the lighter one under the text.
         using (var brush = new LinearGradientBrush(
                    r, Deep, Primary, 20f))
         {
@@ -322,7 +323,7 @@ public class DashboardView : ViewBase
         _stats.Controls.Add(MakeStat("Released", s.Released.ToString(),
             "issued to date", Success, tileW, gap, () => Go("requests", "Released")));
         _stats.Controls.Add(MakeStat("Collected", Service.DisplayFormat.Peso(s.TotalCollected),
-            "against receipts", Deep, tileW, gap, () => Go("requests", null)));
+            "against receipts", SlateInk, tileW, gap, () => Go("requests", null)));
         _stats.Controls.Add(MakeStat("Issued free", s.IssuedFreeOfCharge.ToString(),
             "statutory exemptions", Crimson, tileW, gap, () => Go("requests", null)));
 
@@ -374,8 +375,11 @@ public class DashboardView : ViewBase
 
         var lbl = new Label
         {
+            // v3.1.2 spec: an 11px uppercase overline above each figure.
+            // (WinForms offers no ExtraBold weight and no letter-spacing;
+            // Bold at exactly 11px carries the intent as far as it goes.)
             Text = label.ToUpperInvariant(),
-            Font = SmallBold,
+            Font = Overline,
             ForeColor = accent,
             Dock = DockStyle.Top,
             Height = 22,
@@ -385,9 +389,11 @@ public class DashboardView : ViewBase
         {
             Text = value,
             // A peso amount is much longer than a count, so I step the size
-            // down for wide text. Otherwise "₱12,345.00" is simply cut off.
+            // down for wide text - otherwise "₱12,345.00" is simply cut off.
+            // Counts sit at the spec's 36px; peso text at 32px stays inside
+            // the tile while keeping the same weight.
             Font = value.Length > 6
-                ? new Font(UiFamily, 19f, FontStyle.Bold)
+                ? new Font(UiFamily, 24f, FontStyle.Bold)
                 : StatValue,
             ForeColor = Ink,
             Dock = DockStyle.Top,

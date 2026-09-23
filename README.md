@@ -1,4 +1,4 @@
-# Barangay Resident and Document Request Management System — v3.1.1
+# Barangay Resident and Document Request Management System — v3.1.2
 
 **Barangay Magugpo Poblacion, City of Tagum, Davao del Norte**
 Windows desktop application · WinForms · .NET 8
@@ -88,6 +88,29 @@ its 7-document subset (all 24 services stay), its SQL Server LocalDB
 runtime (MySQL remains the protocol engine), and its parallel folder
 structure. Nothing from Phillippe Dagamac's `draft3` branch is included —
 that work is still TBD.
+
+---
+
+## What changed in v3.1.2
+
+The dashboard was aligned to the team's modern-dashboard design
+specification. The structure it specifies — hero banner with the seal in a
+circular frame, six accent-barred stat cards, purok chips, document-type
+bars, sidebar with rounded active state — **already existed**; this round
+retunes the exact palette and typography, all in `Helper/AppTheme.cs`:
+
+| Token | Was | Now (spec) |
+|---|---|---|
+| Canvas / Ink / Muted | `#F5F7FC` / `#0B142B` / `#636C80` | **`#F8FAFC` / `#0F172A` / `#64748B`** |
+| Hero banner navy | `#0A1F54` | **`#1B365D`** (gradient anchor) |
+| Residents / Pending / Ready / Released / Collected / Free accents | seal-derived | **`#1E3A8A` / `#D97706` / `#0284C7` / `#059669` / `#1E293B` / `#DC2626`** |
+| Stat value | 40px | **36px** (spec 34–38) |
+| Stat header | 12px | **11px uppercase** (`Overline`) |
+| Font stack | — | **Plus Jakarta Sans** added between Inter and SF Pro |
+
+The seal's gold stays, and WinForms caps at Bold — no ExtraBold/Black
+weights and no letter-spacing exist on the platform; sizes and casing are
+exact. `docs/dashboard-preview.png` was regenerated to match.
 
 ---
 
