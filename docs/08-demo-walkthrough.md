@@ -1,4 +1,4 @@
-# Demo walkthrough and manual checks — v3.1.1
+# Demo walkthrough and manual checks — v3.1.5
 
 *Adapted from Jonathan F. Del Rosario's walkthrough for the Draft branch,
 rewritten for this codebase: the single-project structure, the charter fee
@@ -27,7 +27,7 @@ arithmetic; this covers what a human sees.
 The app seeds fictional people on start, chosen to exercise every branch of
 the fee rules. The dashboard should match the reference preview in
 [`docs/dashboard-preview.png`](dashboard-preview.png), regenerated for
-v3.1.1 — it should show:
+v3.1.5 at the default 1360×860 window — it should show:
 
 - **7 residents** across the real puroks of Magugpo Poblacion.
 - **13 requests**: 8 pending, 1 processing, 1 ready for release, 3 released.

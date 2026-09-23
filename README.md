@@ -1,4 +1,4 @@
-# Barangay Resident and Document Request Management System — v3.1.3
+# Barangay Resident and Document Request Management System — v3.1.5
 
 **Barangay Magugpo Poblacion, City of Tagum, Davao del Norte**
 Windows desktop application · WinForms · .NET 8
@@ -269,7 +269,6 @@ BarangayDocumentSystem/
 │   ├── PaymentForm.cs     (receipt printing)
 │   ├── RejectionForm.cs   (the no-refunds rejection dialog, v3.1.1)
 │   ├── DocumentPreviewForm.cs      (scaled print preview)
-│   ├── Prompt.cs         quick input prompts
 │   ├── Models/           Resident, DocumentRequest (state machine + fees), Enums, BarangayProfile
 │   ├── Interfaces/       IBarangayRepository (incl. receipt uniqueness, v3.1.1), IDocumentTemplate
 │   ├── Service/          FeeSchedule, DisplayFormat, DocumentRenderer
@@ -342,7 +341,7 @@ their width; dialogs are percent-gridded and resizable with minimum sizes.
 ```
 dotnet build  →  0 errors   (single project + rule checks)
 
-42 C# files parse-checked with the Roslyn grammar (tree-sitter);
+41 C# files parse-checked with the Roslyn grammar (tree-sitter);
 the checks below are what to run on Windows:
 
   real purok names · Peña renders with ñ intact
