@@ -113,6 +113,12 @@ public class ResidentsView : ViewBase
     /// </summary>
     internal static void StyleGrid(DataGridView g)
     {
+        // v3.1.5: DoubleBuffered is protected on DataGridView, so the one
+        // property that stops the grid flickering on every repaint has to
+        // be set through reflection. Cheap, done once per grid.
+        typeof(DataGridView).GetProperty("DoubleBuffered")
+            ?.SetValue(g, true);
+
         g.BackgroundColor = Surface;
         g.BorderStyle = BorderStyle.None;
         g.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;

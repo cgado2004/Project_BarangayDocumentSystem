@@ -163,6 +163,24 @@ refactor safety constraints (source files only; designer code untouched):
   `docs/dashboard-preview.png` is regenerated at the default window size
   to prove it.
 
+**Stability & cleanup in the same round:**
+
+- **Duplication audit:** every type has exactly one definition (the
+  form "duplicates" are `partial` pairs — no CS0101 risk). Removed the
+  genuinely orphaned: `Prompt.cs` (all three prompts lost their last
+  caller when `RejectionForm` landed in v3.1.1 — zero references
+  remained), the unused `Badge` control, and the stock-template
+  `MainShell.resx` (no real resources).
+- **Font handles are now cached per role** in `AppTheme` — every role
+  property access used to allocate a new GDI+ `Font`, and the hero
+  banner reallocated three fonts *per paint*. Resizing the window no
+  longer leaks font handles.
+- **Flicker:** the dashboard's dynamic rebuilds now run inside
+  `SuspendLayout`/`ResumeLayout`, and the data grids get
+  `DoubleBuffered` enabled (the one property that stops DataGridView
+  flicker, set once via reflection in `StyleGrid`).
+- **Accent bars** match the spec exactly: 4px, not 5px.
+
 ---
 
 ## The six core technical fixes

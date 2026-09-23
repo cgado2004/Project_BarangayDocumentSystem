@@ -215,22 +215,50 @@ public static class AppTheme
     // I build fonts through these properties so every screen asks for a role
     // ("Title", "Body") rather than naming a font family. That is what let me
     // swap the whole typography over to the Inter stack by editing one method.
-    public static Font Hero      => new(UiFamily, 30f, FontStyle.Bold);
-    public static Font Display   => new(UiFamily, 23f, FontStyle.Bold);
-    public static Font Title     => new(UiFamily, 17f, FontStyle.Bold);
-    public static Font Heading   => new(UiFamily, 13f, FontStyle.Bold);
-    public static Font Subhead   => new(UiFamily, 11f, FontStyle.Bold);
-    public static Font Body      => new(UiFamily, 10.5f, FontStyle.Regular);
-    public static Font BodyBold  => new(UiFamily, 10.5f, FontStyle.Bold);
-    public static Font Small     => new(UiFamily, 9f, FontStyle.Regular);
-    public static Font SmallBold => new(UiFamily, 9f, FontStyle.Bold);
-    public static Font StatValue => new(UiFamily, 27f, FontStyle.Bold);   // 36px - the dashboard spec's 34-38px band
+    // v3.1.5: fonts are cached per role. Every property access used to
+    // ALLOCATE a new GDI+ Font, and a screen with twenty labels repaints
+    // far more often than it disposes - resizing the window used to leak
+    // a handful of font handles per paint cycle. The roles are fixed for
+    // the life of the process (Resolve runs once, before any form is
+    // built), so one cached instance per role is correct and nothing
+    // needs disposing by hand.
+    private static readonly Dictionary<string, Font> FontCache = new();
+
+    private static Font CachedFont(string role, Func<Font> make)
+    {
+        if (!FontCache.TryGetValue(role, out var font))
+            FontCache[role] = font = make();
+        return font;
+    }
+
+    public static Font Hero      => CachedFont("Hero",      () => new(UiFamily, 30f, FontStyle.Bold));
+    public static Font Display   => CachedFont("Display",   () => new(UiFamily, 23f, FontStyle.Bold));
+    public static Font Title     => CachedFont("Title",     () => new(UiFamily, 17f, FontStyle.Bold));
+    public static Font Heading   => CachedFont("Heading",   () => new(UiFamily, 13f, FontStyle.Bold));
+    public static Font Subhead   => CachedFont("Subhead",   () => new(UiFamily, 11f, FontStyle.Bold));
+    public static Font Body      => CachedFont("Body",      () => new(UiFamily, 10.5f, FontStyle.Regular));
+    public static Font BodyBold  => CachedFont("BodyBold",  () => new(UiFamily, 10.5f, FontStyle.Bold));
+    public static Font Small     => CachedFont("Small",     () => new(UiFamily, 9f, FontStyle.Regular));
+    public static Font SmallBold => CachedFont("SmallBold", () => new(UiFamily, 9f, FontStyle.Bold));
+    public static Font StatValue => CachedFont("StatValue", () => new(UiFamily, 27f, FontStyle.Bold));   // 36px - the dashboard spec's 34-38px band
 
     /// <summary>The 11px uppercase face for stat-card headers. WinForms has
     /// no ExtraBold weight and no letter-spacing, so Bold carries the role
     /// as far as the platform allows - the size and the casing are exact.</summary>
-    public static Font Overline  => new(UiFamily, 8.25f, FontStyle.Bold);  // 11px
-    public static Font MonoBody  => new(MonoFamily, 10f, FontStyle.Regular);
+    public static Font Overline  => CachedFont("Overline", () => new(UiFamily, 8.25f, FontStyle.Bold));  // 11px
+
+    /// <summary>The peso figure face - the step-down size for wide amounts
+    /// inside a stat tile (32px), so the tile never clips the number.</summary>
+    public static Font StatValueLong => CachedFont("StatValueLong", () => new(UiFamily, 24f, FontStyle.Bold));
+
+    public static Font MonoBody  => CachedFont("MonoBody",  () => new(MonoFamily, 10f, FontStyle.Regular));
+
+    // The hero banner's three text faces. They used to be rebuilt on every
+    // OnPaint - three font allocations per repaint of the most-painted
+    // control in the app.
+    public static Font HeroTitle    => CachedFont("HeroTitle",    () => new(UiFamily, 21f, FontStyle.Bold));
+    public static Font HeroSubtitle => CachedFont("HeroSubtitle", () => new(UiFamily, 11f, FontStyle.Regular));
+    public static Font HeroFootnote => CachedFont("HeroFootnote", () => new(UiFamily, 9.5f, FontStyle.Bold));
 
     // =================================================================
     //  Spacing

@@ -136,13 +136,13 @@ public class HeroBanner : Control
         if (available > 80)
         {
             TextRenderer.DrawText(g, Title,
-                new Font(UiFamily, 21f, FontStyle.Bold),
+                HeroTitle,   // cached in AppTheme - was reallocated on every paint
                 new Rectangle(textLeft, cy - 50, available, 34),
                 Color.White,
                 TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
 
             TextRenderer.DrawText(g, Subtitle,
-                new Font(UiFamily, 11f, FontStyle.Regular),
+                HeroSubtitle,
                 new Rectangle(textLeft, cy - 16, available, 24),
                 Color.FromArgb(210, Color.White),
                 TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
@@ -154,7 +154,7 @@ public class HeroBanner : Control
                     g.DrawLine(rule, textLeft, cy + 16, textLeft + 46, cy + 16);
 
                 TextRenderer.DrawText(g, Footnote,
-                    new Font(UiFamily, 9.5f, FontStyle.Bold),
+                    HeroFootnote,
                     new Rectangle(textLeft, cy + 24, available, 22),
                     GoldSoft,
                     TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
@@ -329,6 +329,16 @@ public class DashboardView : ViewBase
         var s = _repository.GetStatistics();
         var profile = BarangayProfile.Current;
 
+        // v3.1.5: the three dynamic surfaces are rebuilt here on every
+        // show and every resize. Suspending layout across the rebuild
+        // means one layout pass instead of one per added control - this
+        // method is exactly the "wrap dynamic layout builds" case.
+        _stats.SuspendLayout();
+        _purokChips.SuspendLayout();
+        _docTypeBars.SuspendLayout();
+        try
+        {
+
         _hero.Title = profile.BarangayName;
         _hero.Subtitle = $"{profile.CityName}, {profile.ProvinceName}";
         _hero.Footnote = $"Punong Barangay   ·   {profile.PunongBarangay}";
@@ -399,6 +409,13 @@ public class DashboardView : ViewBase
                 Margin = new Padding(0, 0, 0, 6)
             });
         }
+        }
+        finally
+        {
+            _stats.ResumeLayout(true);
+            _purokChips.ResumeLayout(true);
+            _docTypeBars.ResumeLayout(true);
+        }
     }
 
     /// <summary>One clickable statistic tile.</summary>
@@ -435,7 +452,7 @@ public class DashboardView : ViewBase
             // Counts sit at the spec's 36px; peso text at 32px stays inside
             // the tile while keeping the same weight.
             Font = value.Length > 6
-                ? new Font(UiFamily, 24f, FontStyle.Bold)
+                ? StatValueLong
                 : StatValue,
             ForeColor = Ink,
             Dock = DockStyle.Top,

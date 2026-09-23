@@ -336,7 +336,7 @@ public class Card : Panel
                 var saved = e.Graphics.Save();
                 e.Graphics.SetClip(path);
                 using var bar = new SolidBrush(accent);
-                e.Graphics.FillRectangle(bar, r.X, r.Y, 5, r.Height);
+                e.Graphics.FillRectangle(bar, r.X, r.Y, 4, r.Height);
                 e.Graphics.Restore(saved);
             }
         }
@@ -435,44 +435,6 @@ public class PillButton : Button
         TextRenderer.DrawText(e.Graphics, Text, Font, r, textColor,
             TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
             TextFormatFlags.EndEllipsis);
-    }
-}
-
-/// <summary>A small rounded label I use for a status or a count.</summary>
-public class Badge : Label
-{
-    public Color Accent { get; set; } = Primary;
-
-    public Badge()
-    {
-        DoubleBuffered = true;
-        AutoSize = false;
-        BackColor = Color.Transparent;
-        Font = SmallBold;
-        TextAlign = ContentAlignment.MiddleCenter;
-        Height = 26;
-        MinimumSize = new Size(64, 24);
-    }
-
-    protected override void OnPaintBackground(PaintEventArgs e)
-    {
-        if (Parent is not null) e.Graphics.Clear(Parent.BackColor);
-    }
-
-    protected override void OnPaint(PaintEventArgs e)
-    {
-        Draw.Smooth(e.Graphics);
-        var r = new Rectangle(0, 0, Width - 1, Height - 1);
-        if (r.Width <= 0 || r.Height <= 0) return;
-
-        using var path = Draw.RoundedRect(r, Height / 2);
-        using (var b = new SolidBrush(Color.FromArgb(34, Accent)))
-            e.Graphics.FillPath(b, path);
-        using (var p = new Pen(Color.FromArgb(110, Accent), 1f))
-            e.Graphics.DrawPath(p, path);
-
-        TextRenderer.DrawText(e.Graphics, Text, Font, r, Draw.Shade(Accent, -0.25),
-            TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
     }
 }
 
