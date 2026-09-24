@@ -28,15 +28,44 @@ certificate.
 
 ## Running it
 
-**Visual Studio 2022:** open `BarangayDocumentSystem.sln`, press **F5**.
+This is a **.NET Framework 4.8** WinForms app (not .NET / .NET Core), so it
+builds with classic MSBuild — Visual Studio on Windows, not the `dotnet` CLI.
 
-**Command line:**
-```bash
-dotnet run --project BarangayDocumentSystem
+**1. Install prerequisites** (once): Visual Studio 2022 with the **".NET
+desktop development"** workload, which includes the **.NET Framework 4.8
+targeting pack**.
+
+**2. Start MySQL** (XAMPP, MySQL Server, or MariaDB — anything listening on
+port 3306).
+
+**3. Check the login** in `BarangayDocumentSystem/App.config`:
+
+```xml
+<connectionStrings>
+  <add name="BarangayDb"
+       connectionString="Server=localhost;Port=3306;Database=barangay_db;User ID=root;Password=;CharSet=utf8mb4;" />
+</connectionStrings>
+<appSettings>
+  <add key="SeedSampleData" value="true" />
+</appSettings>
 ```
 
-Requires the **.NET 8 SDK** and the **".NET desktop development"** workload.
-Sample data loads automatically — no database needed.
+The default matches a stock local install (user `root`, blank password).
+Change it to match your server. After building, the same settings live in
+`bin\Debug\BarangayDocumentSystem.exe.config` next to the .exe — edit that
+copy to reconfigure an already-built app without recompiling. To keep a real
+password out of source control, set the environment variable
+`BARANGAY_DB_CONNECTION` instead — it overrides the file.
+
+**4. Open `BarangayDocumentSystem.sln` in Visual Studio and press F5.** The
+first build restores the `MySql.Data` NuGet package automatically.
+
+**You do not create the database by hand.** On start the app creates
+`barangay_db` and its two tables if they are missing
+(`Database/schema.sql`), and — only when the `residents` table is empty —
+loads the sample data below. Set `SeedSampleData` to `false` in App.config
+for real use. If MySQL is not reachable the app tells you why and exits
+instead of crashing.
 
 ---
 
@@ -89,7 +118,7 @@ Under the **Local Government Code (RA 7160, secs. 152–186)** a barangay may
 only collect a fee fixed by a **duly enacted barangay revenue ordinance**.
 Collecting without one is **illegal exaction**.
 
-The amounts in `Service/FeeSchedule.cs` are typical Philippine ranges used so
+The amounts in `BusinessRules/FeeSchedule.cs` are typical Philippine ranges used so
 the program runs. **Replace them with the actual Magugpo Poblacion ordinance
 rates.** They are all declared as constants at the top of that one file for
 exactly that reason.
@@ -129,54 +158,87 @@ Oath of Undertaking that receiving agencies (NBI, PSA, BIR) look for.
 
 ## Project layout
 
-One WinForms project, organised into layers by folder (same shape as the
-`WindowsFormsApp1` / `EmployeeManager` sample: `DBContext`, `Helper`,
-`Interfaces`, `Models`, `Service`, forms at the root).
+One WinForms project, targeting **.NET Framework 4.8**. Each folder name says
+what its contents are for.
 
 ```
 BarangayDocumentSystem/
 ├── BarangayDocumentSystem.sln          ← open this in Visual Studio
 ├── README.md
 ├── docs/
-└── BarangayDocumentSystem/             net8.0-windows
-    ├── DBContext/
-    │   └── InMemoryBarangayRepository.cs   storage — swap for MySQL later
-    ├── Helper/
+└── BarangayDocumentSystem/             .NET Framework 4.8
+    ├── App.config                      DB connection string, DPI, .NET runtime version
+    ├── app.manifest                    execution level, supported OS, DPI awareness
+    ├── Properties/
+    │   └── AssemblyInfo.cs             assembly title, version, GUID
+    ├── Database/                       everything that talks to MySQL
+    │   ├── schema.sql                  table definitions (also embedded in the .exe)
+    │   ├── DatabaseSettings.cs         reads App.config / env variable
+    │   ├── DatabaseInitializer.cs      creates the database + tables if missing
+    │   ├── MySqlBarangayRepository.cs  all SQL: load, add, edit, delete, save
+    │   └── SampleDataSeeder.cs         demo residents for an empty database
+    ├── Models/                         the data: what a resident / request IS
+    │   ├── Resident.cs
+    │   ├── DocumentRequest.cs          request + guarded status transitions
+    │   └── Enums.cs                    DocumentType, RequestStatus, …
+    ├── Interfaces/                     contracts the rest of the app codes against
+    │   ├── IBarangayRepository.cs      storage contract (+ ResidentDetails, statistics)
+    │   ├── IDocumentTemplate.cs        one-document contract (+ BarangayProfile)
+    │   └── RepositoryException.cs      "the database failed"
+    ├── BusinessRules/                  the barangay's rules, no screens, no SQL
+    │   ├── FeeSchedule.cs              ALL fee rules and exemptions
+    │   ├── DocumentRenderer.cs         page layout, written once
+    │   └── DocumentTemplates/          one class per certificate (7)
+    ├── Views/                          the main pages (sidebar destinations)
+    │   ├── ViewBase.cs / DashboardView.cs / ResidentsView.cs / RequestsView.cs
+    ├── Forms/                          pop-up windows
+    │   ├── ResidentForm / RequestForm / PaymentForm / DocumentPreviewForm / Prompt
+    ├── CustomControls/
+    │   └── NavigationSidebar.cs        the left navigation rail
+    ├── UIHelpers/                      shared look-and-feel code
     │   ├── AppTheme.cs                 every colour, font, spacing value
     │   ├── Dialog.cs                   all message boxes
     │   ├── InputValidator.cs           reusable field validation
-    │   └── UiFactory.cs                themed control construction
-    ├── Interfaces/
-    │   ├── IBarangayRepository.cs      storage contract + ResidentDetails
-    │   └── IDocumentTemplate.cs        one-document contract + BarangayProfile
-    ├── Models/
-    │   ├── Resident.cs                 registry record
-    │   ├── DocumentRequest.cs          request + guarded status transitions
-    │   └── Enums.cs                    DocumentType, RequestStatus, …
-    ├── Service/
-    │   ├── FeeSchedule.cs              ALL fee rules and exemptions
-    │   ├── DocumentRenderer.cs         page layout, written once
-    │   └── Templates/                  one class per document (7)
-    ├── Program.cs                      composition root — wires everything
-    ├── MainShell.cs                    sidebar + content + status bar
-    ├── NavigationSidebar.cs            left nav rail
-    ├── DashboardView.cs / ResidentsView.cs / RequestsView.cs / ViewBase.cs
-    ├── ResidentForm.cs / RequestForm.cs / PaymentForm.cs
-    ├── DocumentPreviewForm.cs / Prompt.cs
-    └── BarangayDocumentSystem.csproj
+    │   ├── UiFactory.cs                themed control construction
+    │   ├── CueBanner.cs                the grey placeholder text in empty text boxes
+    │   └── CompilerShims.cs            lets `record` types compile on .NET Framework
+    ├── Program.cs                      start-up: connects DB, wires everything
+    ├── MainShell.cs                    main window: sidebar + content + status bar
+    └── BarangayDocumentSystem.csproj   classic (non-SDK) project file
 ```
 
 Namespaces follow the folders (`BarangayDocumentSystem.Models`,
-`.Interfaces`, `.Service`, `.Helper`, `.DBContext`); forms and views live in
-the root `BarangayDocumentSystem` namespace.
+`.Database`, `.Views`, …).
 
-> **Trade-off of the single project:** fee arithmetic and status rules still
-> live in `Service/` and `Models/`, not in the forms, but the compiler no
-> longer *forces* that. The earlier 3-project split made WinForms types
-> impossible in the domain layer, and kept `DocumentRequest`'s `internal`
-> constructor/setters away from the UI. Now `internal` means "the whole
-> app", so keep to the convention by hand: forms call
-> `IBarangayRepository`, never `new DocumentRequest(...)`.
+**Why PackageReference instead of `packages.config`.** The MySQL driver pulls
+in several of its own dependencies. `packages.config` requires every one of
+those to be listed and referenced by hand, with exact versions — brittle, and
+easy to get subtly wrong without a real NuGet client to generate it.
+`PackageReference` (supported in classic .NET Framework projects since Visual
+Studio 2017, and what current VS templates use by default) resolves all of
+that automatically on restore, so the `.csproj` only ever names `MySql.Data`
+itself.
+
+**What .NET 6+ WinForms gives you for free that .NET Framework doesn't:**
+those are the pieces this project had to add back by hand — `CueBanner.cs`
+(there is no `TextBox.PlaceholderText`), `CompilerShims.cs` (the `record`
+types need a marker type .NET Framework doesn't ship), and explicit `using
+System.Windows.Forms;` / `using System.Drawing;` in every file that needs
+them (.NET Framework has no implicit/global usings).
+
+**How saving works.** The app loads everything from MySQL at start and writes
+each change to MySQL *first*; only when the database accepts it does the
+screen update. Workflow actions (Start Processing, Release, Record Payment,
+Reject) change the request in memory, so the view then calls
+`Repository.SaveRequest(request)` to store it. If a save fails, the user gets
+a message and the data is reloaded from MySQL so the screen never shows
+something the database does not have. It assumes one running copy of the app.
+
+> **Trade-off of the single project:** fee arithmetic and status rules live in
+> `BusinessRules/` and `Models/`, not in the forms, but the compiler no longer
+> *forces* that. `internal` now means "the whole app", so keep to the
+> convention by hand: forms call `IBarangayRepository`, never
+> `new DocumentRequest(...)`.
 
 ---
 
@@ -258,10 +320,10 @@ Added in the v2 refactor:
 
 Honest scope notes:
 
-- **No database.** `InMemoryBarangayRepository` holds everything in memory and
-  data is lost on exit. It is the only class that knows where data lives, so a
-  MySQL version implements `IBarangayRepository` and is selected by one line
-  in `Program.cs` — no view or form changes.
+- **Single-user database access.** The data is stored in MySQL, but the app
+  caches it in memory, so two copies running at once will not see each
+  other's changes until restarted. The connection password sits in plain text
+  in `appsettings.json` (or use the environment variable).
 - **No login or user roles.** A real deployment needs at least clerk vs.
   captain separation.
 - **No photo or biometric capture** for barangay IDs.
