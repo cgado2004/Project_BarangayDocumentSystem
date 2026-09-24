@@ -122,7 +122,8 @@ employment, ₱200 work abroad**. That needed a concept neither branch had:
     `Database\schema.sql`, `Assets/` shipped as Content.
 12. `App.config` — `BarangayDatabase` connection is MySQL/XAMPP
     (blank password by default), `supportedRuntime` → v4.8. Punong Barangay
-    stays a placeholder until the real name is confirmed.
+    set to the real incumbent: Hon. Eugenia Solis Hingpit, MD (matches
+    `leader_draft`'s configuration).
 13. `Tests/BarangayDocumentSystem.Tests.csproj` — v4.8, `SqlTestDatabase.cs`
     removed, `ThemeChecks.cs` added. Project references unchanged.
 14. **Fees are data now (docs/07 into the SQL):** `Database/schema.sql`
