@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Solution>
+  <!--
+    The restructured master solution (XML format). Opens natively in
+    Visual Studio 2022 17.13+ and every later version, including 2026;
+    File > Open > Project/Solution (double-click is not associated).
+  -->
+  <Project Path="BarangayDocumentSystem/BarangayDocumentSystem.csproj"
+           Id="6f4a2d31-0009-4000-9000-000000000009" />
+  <SolutionProperties />
+</Solution>

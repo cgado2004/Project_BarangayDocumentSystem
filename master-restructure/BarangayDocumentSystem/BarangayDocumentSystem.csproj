@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The single project of the restructured master tree, following the
+    professor's folder protocol (DBContext, Helper, Interfaces, Models,
+    Service, forms at the root, Program.cs at the root).
+
+    MERGED FROM the three old SDK projects (Domain, Infrastructure, UI).
+    Every class kept its original namespace on purpose - the merge is a
+    folder and project-file restructure, not a code change, so all the
+    cross-namespace using statements still resolve exactly as before.
+
+    THE TWO PackageReferences FIX A REAL COMPILE BLOCKER in the uploaded
+    tree: MySqlBarangayRepository uses MySql.Data.MySqlClient and
+    DatabaseSettings uses System.Configuration.ConfigurationManager, but
+    none of the three old csproj files referenced any package. Neither
+    type exists in base .NET 8, so the old tree could not compile as
+    uploaded. (packages.config, as in the reference HRIS project, is the
+    legacy .NET Framework mechanism; on SDK-style .NET 8 the equivalent
+    is PackageReference right here.)
+  -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MySql.Data" Version="8.4.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>
