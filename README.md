@@ -108,21 +108,6 @@ free of charge, and breakdowns by document type and purok.
 | First-Time Jobseeker Certificate | **FREE** | RA 11261 |
 | Certificate of Good Moral Character | ₱50 | |
 
-\* **Placeholders — see the warning below.**
-
----
-
-## ⚠️ Fee amounts must be replaced before real use
-
-Under the **Local Government Code (RA 7160, secs. 152–186)** a barangay may
-only collect a fee fixed by a **duly enacted barangay revenue ordinance**.
-Collecting without one is **illegal exaction**.
-
-The amounts in `BusinessRules/FeeSchedule.cs` are typical Philippine ranges used so
-the program runs. **Replace them with the actual Magugpo Poblacion ordinance
-rates.** They are all declared as constants at the top of that one file for
-exactly that reason.
-
 ---
 
 ## Statutory exemptions built in
