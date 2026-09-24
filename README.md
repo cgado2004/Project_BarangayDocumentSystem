@@ -1,4 +1,4 @@
-# Barangay Resident and Document Request Management System — v3.2.0
+# Barangay Resident and Document Request Management System — v3.2.1
 
 **Barangay Magugpo Poblacion, City of Tagum, Davao del Norte**
 Windows desktop application · WinForms · .NET 8
@@ -187,14 +187,18 @@ refactor safety constraints (source files only; designer code untouched):
   sidebar's nav fonts are now cached (rebuilt only on size changes and
   disposed with the control) instead of being reallocated on every
   paint.
-- **Root tidied (v3.1.6):** the session hand-off folders
-  (`draft-ui-restyle/`, `master-restructure/`) and the push helper
-  (`scripts/`) were removed so the repo root reads clean: the project
-  folder plus the agreed support folders (`db/`, `docs/`, `tests/`)
-  and the toolchain files. The hand-off packages remain in git history
-  (`c9445a2` and `84e290f` — `git checkout <hash> -- <folder>` brings
-  one back), and pushing by hand is documented in `docs/06` §4. The
-  configuration files stay where the toolchain
+- **Root tidied (v3.1.6, again in v3.2.1):** every session hand-off
+  folder was removed so the repo root reads clean: the project folder
+  plus the agreed support folders (`docs/`, `tests/`) and the toolchain
+  files. Nothing is lost — the packages live in git history and come
+  back with one command each: `git checkout c9445a2 -- draft-ui-restyle`
+  (restyle v1), `git checkout b7dcee0 -- draft-ui-restyle` (restyle v2
+  with docs and diagrams — the copy Jonathan applies to Draft),
+  `git checkout 84e290f -- master-restructure` (master restructure).
+  In v3.2.1 the SQL scripts moved from the root `db/` folder into the
+  project itself, beside the repositories that use them:
+  `BarangayDocumentSystem/DBContext/db/`. Pushing by hand is documented
+  in `docs/06` §4. The configuration files stay where the toolchain
   requires them: `global.json` and `.editorconfig` must sit at the repo
   root for the SDK and VS to find them, and `App.config`,
   `app.manifest` and `packages.config` are referenced by path inside
@@ -229,6 +233,20 @@ implementation, re-built for this codebase):
   with a server it provisions a throwaway database, seeds it, reopens it
   through two fresh connections, proves a paid release reads back exactly
   so, and drops it. No server? It prints SKIP, not FAIL.
+
+---
+
+## What changed in v3.2.1
+
+A pure tidy, zero behaviour changes: the root `db/` folder moved into
+the project it belongs to — `BarangayDocumentSystem/DBContext/db/` —
+so the schema and seed scripts now sit beside the two repositories that
+read and write those tables (and show up in Solution Explorer under
+DBContext). The second copy of the Draft hand-off package
+(`draft-ui-restyle/`, v2 with the docs and diagrams) was removed; the
+team fetches it from history when applying it on Draft
+(`git checkout b7dcee0 -- draft-ui-restyle`). All references in this
+README, docs/05 and the code comments were updated to the new path.
 
 ---
 
@@ -301,9 +319,6 @@ BarangayDocumentSystem/
 │   ├── 06-pushing-to-github.md
 │   ├── 07-fee-schedule-and-legal-basis.md   every fee and its law
 │   └── 08-demo-walkthrough.md        the manual pre-defence click-through
-├── db/
-│   ├── 01-schema.sql                 tables, triggers, views (v3.1 columns)
-│   └── 02-seed-data.sql              the same residents as the demo
 ├── BarangayDocumentSystem/                    net8.0-windows
 │   ├── Assets/fonts/     Inter Regular + Bold, bundled under the SIL OFL
 │   │                     — the brand face on every machine (v3.1.3)
@@ -322,10 +337,12 @@ BarangayDocumentSystem/
 │   ├── Interfaces/       IBarangayRepository (incl. receipt uniqueness, v3.1.1), IDocumentTemplate
 │   ├── Service/          FeeSchedule, DisplayFormat, DocumentRenderer
 │   │   └── Templates/    one class per document wording
-│   ├── DBContext/        InMemoryBarangayRepository (swap for MySQL later)
+│   ├── DBContext/        InMemory + MySql repositories (v3.2.0)
+│   │   └── db/           01-schema.sql (tables, triggers, views) and
+│   │                     02-seed-data.sql — the scripts the guide runs
 │   └── Helper/           AppTheme, UiFactory, Dialog, InputValidator, ErrorLogger (v3.1.1)
 └── tests/
-    └── RuleChecks/       runnable checks against the charter and the laws
+    └── RuleChecks/       runnable checks against the charter, the laws and the MySQL round-trip
 ```
 
 ---
@@ -351,7 +368,8 @@ fee or a name.
 
 ## Database
 
-`db/01-schema.sql` then `db/02-seed-data.sql`, run in that order in
+`BarangayDocumentSystem/DBContext/db/01-schema.sql` then
+`BarangayDocumentSystem/DBContext/db/02-seed-data.sql`, run in that order in
 phpMyAdmin or MySQL Workbench. Full instructions, including the common
 errors and what they mean, are in
 [`docs/05-database-guide.md`](docs/05-database-guide.md).

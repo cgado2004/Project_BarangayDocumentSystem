@@ -23,7 +23,7 @@ namespace BarangayDocumentSystem.DBContext;
 ///     the Draft branch was deliberately rejected by the review;
 ///   * enum columns store their NAMES (Gender, CivilStatus, Status, Scope,
 ///     DocumentType), so a reordered C# enum can never silently re-mean an
-///     old row — that is decision 2 in docs/05 §3 and db/01-schema.sql;
+///     old row — that is decision 2 in docs/05 §3 and DBContext/db/01-schema.sql;
 ///   * a fresh database seeds itself with the SAME sample residents and
 ///     requests the in-memory store seeds, guarded by an app_state flag
 ///     taken under GET_LOCK(), so two laptops provisioning at once cannot
@@ -821,7 +821,7 @@ public sealed class MySqlBarangayRepository : IBarangayRepository
     }
 
     /// <summary>C# flag to the schema's classification_code. The codes live
-    /// in classification_types, seeded by db/01-schema.sql itself.</summary>
+    /// in classification_types, seeded by DBContext/db/01-schema.sql itself.</summary>
     private static string ClassificationCode(ResidentClassification flag) => flag switch
     {
         ResidentClassification.SeniorCitizen => "SENIOR_CITIZEN",

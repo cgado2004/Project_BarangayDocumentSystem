@@ -56,7 +56,7 @@ public interface IBarangayRepository
     /// be traceable to exactly one request, so the screens ask the store
     /// before writing a receipt number that is already on file. The SQL
     /// version will back this with the unique index the schema already
-    /// plans for paid rows (UX_Requests_Receipt in db/01-schema.sql terms).
+    /// plans for paid rows (UX_Requests_Receipt in DBContext/db/01-schema.sql terms).
     /// </summary>
     bool ReceiptNumberExists(string officialReceiptNo, DocumentRequest? excluding = null);
 

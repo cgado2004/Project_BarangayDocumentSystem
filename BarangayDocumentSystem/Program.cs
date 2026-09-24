@@ -143,7 +143,7 @@ internal static class Program
                 "use the database:\n\n" +
                 databaseError.Message + "\n\n" +
                 "Check that MySQL (XAMPP) is running and that " +
-                "db/01-schema.sql has been run - see docs/05-database-guide.md." +
+                "DBContext/db/01-schema.sql has been run - see docs/05-database-guide.md." +
                 "\n\n" +
                 "I am starting with the built-in sample data instead. " +
                 "Anything you change in this session will NOT be saved to " +

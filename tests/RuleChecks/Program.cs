@@ -283,7 +283,7 @@ Check("the store refuses a duplicate receipt number", refused);
 //  barangay_magugpo demo database is never touched.
 //
 //  The throwaway database gets the four tables the repository needs,
-//  mirroring db/01-schema.sql's columns. Running the FULL script (triggers,
+//  mirroring DBContext/db/01-schema.sql's columns. Running the FULL script (triggers,
 //  checks, views) is the docs/05 §3 step for a real setup, not this test's
 //  job - here I am testing MY code, not the server's.
 // =====================================================================
@@ -306,7 +306,7 @@ else
     probe.Dispose();
     const string scratchDb = "barangay_rulecheck_tmp";
 
-    // The four tables, in the shape db/01-schema.sql defines them (columns
+    // The four tables, in the shape DBContext/db/01-schema.sql defines them (columns
     // only - the triggers and CHECKs there guard hand-written SQL, and my
     // repository enforces the same rules itself).
     string[] tables =

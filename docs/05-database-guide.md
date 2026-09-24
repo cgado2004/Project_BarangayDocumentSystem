@@ -42,6 +42,9 @@ commit it as `MySQL`, everyone else gets a warning box on startup.
 
 ## 3. Setting up MySQL
 
+Since v3.2.1 the two scripts live inside the project, beside the
+repositories: `BarangayDocumentSystem/DBContext/db/`.
+
 ### 3.1 Start the server
 
 In XAMPP, open the Control Panel and press **Start** next to **MySQL**. That
@@ -52,11 +55,13 @@ is all — you do not need Apache for this.
 Open **phpMyAdmin** (`http://localhost/phpmyadmin`) or MySQL Workbench, then:
 
 1. Open the **SQL** tab.
-2. Paste the whole of **`db/01-schema.sql`** and run it.
+2. Paste the whole of
+   **`BarangayDocumentSystem/DBContext/db/01-schema.sql`** and run it.
    This creates the database, the four tables, the constraints, the triggers
    and the views. It drops and recreates everything, so it is safe to run
    again any time.
-3. Paste the whole of **`db/02-seed-data.sql`** and run it.
+3. Paste the whole of
+   **`BarangayDocumentSystem/DBContext/db/02-seed-data.sql`** and run it.
    This loads the same seven residents the app shows in Memory mode.
 
 Both scripts print a result at the end so you can confirm they worked.
@@ -174,7 +179,7 @@ On fees that is indefensible.
 | Message | What it means | Fix |
 |---|---|---|
 | `Error 1045 Access denied` | Wrong username or password | Check `Uid=` and `Pwd=` in App.config |
-| `Error 1049 Unknown database` | The schema was never created | Run `db/01-schema.sql` |
+| `Error 1049 Unknown database` | The schema was never created | Run `DBContext/db/01-schema.sql` |
 | `Error 2002 / 2003 Can't connect` | The server is not running | Start MySQL in XAMPP |
 | `Error 1452 Cannot add foreign key` | You ran the seed before the schema | Run `01-schema.sql` first |
 | `Error 1364 Field doesn't have a default` | Rows inserted by hand, missing a required column | Use the seed script as your template |
@@ -204,13 +209,13 @@ the `Draft` branch (SQL Server LocalDB, .NET Framework). The team decided
 V3.1.1 stays in-memory and MySQL remains the protocol engine — but his
 design is the working plan for the repository we will write in V3.2. What
 follows is the review's summary of the ideas worth keeping, and how each
-maps onto our MySQL schema in `db/`.
+maps onto our MySQL schema in `DBContext/db/`.
 
 | His idea (SQL Server) | Why it is right | How it lands in our MySQL schema |
 |---|---|---|
 | `AppState` table (schema version + "samples loaded" flag), created under `sp_getapplock` | Two laptops initialising at once must not race the schema, and a re-run must not re-seed | Same table in MySQL; MySQL 8 supports `GET_LOCK()` for the same exclusive-provisioning lock |
 | `Version` int column, bumped on every update (optimistic concurrency) | The app is single-user today, but the rule costs one column and makes an accidental overwrite visible | Already worth adding to `residents` and `document_requests` |
-| Integrity pushed into CHECK constraints (status range, payment ⇔ receipt + date, release requires paid-or-free, rejection requires a reason) | The C# state machine guards the living request; the database must guard the *row*, because other tools can write to it too | `db/01-schema.sql` already does this with triggers — same idea, MySQL's mechanism |
+| Integrity pushed into CHECK constraints (status range, payment ⇔ receipt + date, release requires paid-or-free, rejection requires a reason) | The C# state machine guards the living request; the database must guard the *row*, because other tools can write to it too | `DBContext/db/01-schema.sql` already does this with triggers — same idea, MySQL's mechanism |
 | Unique index on the receipt number **among paid rows only** (`UX_Requests_Receipt`) | A receipt number identifies exactly one payment | MySQL has no filtered indexes, but a **unique index on `official_receipt_no` with NULL for unpaid rows** works: a unique index allows many NULLs. v3.1.1 already enforces the same rule in the app (`IBarangayRepository.ReceiptNumberExists`) |
 | Unique index enforcing the jobseeker benefit **once per resident** | RA 11261 is once-in-a-lifetime; the database should say so even if the app has a bug | No filtered indexes in MySQL — enforce with a `BEFORE INSERT` trigger that counts the resident's prior jobseeker rows |
 | `RequestResidentSnapshots` — the resident's details frozen at filing time | A certificate is a historical record: correcting someone's address today must not rewrite the certificate issued last year | Matches the association decision already documented on `Resident`; add the snapshot table when the repository lands |
@@ -218,7 +223,7 @@ maps onto our MySQL schema in `db/`.
 
 What was deliberately **not** carried over from the Draft branch, and why:
 
-- **The SQL Server engine itself.** Our protocol scripts (`db/01`, `db/02`),
+- **The SQL Server engine itself.** Our protocol scripts (`DBContext/db/01`, `DBContext/db/02`),
   the ERD and the database guide are MySQL; running two database stories in
   one school project doubles the setup instructions for every teammate. The
   `Storage=MySQL` switch and the `BarangayDb` XAMPP connection stay the
@@ -266,7 +271,7 @@ Deliberately **not** in v3.2.0, and still owed:
   filing time needs a renderer decision (whose name prints: the row's or
   today's?) and that is a team conversation, not a quiet schema edit.
 - **The unique index on `official_receipt_no`** — same reason: worth
-  adding to `db/01` when we next touch the schema on a server we can
+  adding to `DBContext/db/01` when we next touch the schema on a server we can
   actually test against.
 
 The round-trip proof lives in `tests/RuleChecks` (v3.2.0 section): a
