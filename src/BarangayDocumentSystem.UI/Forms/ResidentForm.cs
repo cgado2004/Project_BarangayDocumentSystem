@@ -4,23 +4,13 @@ using BarangayDocumentSystem.UI.Common;
 
 namespace BarangayDocumentSystem.UI.Forms;
 
-/// <summary>
+
 /// Register or edit a resident.
-///
-/// ── DRY, two ways ───────────────────────────────────────────────────────
-/// 1. VALIDATION. v1 repeated a six-line "check, warn, focus, select, return
-///    false" block for every field. Each is now one call to InputValidator,
-///    and the whole method reads as a chain of conditions.
-///
-/// 2. OUTPUT. v1 exposed fourteen separate properties, which the caller then
-///    copied one by one. This form now exposes ONE ResidentDetails record, so
-///    adding a field does not touch any call site.
-/// </summary>
 public partial class ResidentForm : Form
 {
     private readonly Resident? _editing;
 
-    /// <summary>Everything the caller needs, in one object.</summary>
+    /// Everything the caller needs, in one object.
     public ResidentDetails Details { get; private set; } = null!;
 
     public ResidentForm() : this(null) { }
@@ -102,10 +92,8 @@ public partial class ResidentForm : Form
         Close();
     }
 
-    /// <summary>
     /// v1: roughly 60 lines of repeated check-warn-focus blocks.
     /// Now: a readable chain, because InputValidator owns the repetition.
-    /// </summary>
     private bool IsValid() =>
         InputValidator.Required(txtFirstName, "First name")
         && InputValidator.Required(txtLastName, "Last name")
@@ -117,11 +105,11 @@ public partial class ResidentForm : Form
         && InputValidator.ContactNumber(txtContact)
         && SeniorAgeIsConsistent();
 
-    /// <summary>
+    
     /// Domain-specific check that does not generalise, so it stays here rather
     /// than being forced into InputValidator. Warns instead of blocking —
     /// early senior status exists in some edge cases.
-    /// </summary>
+    
     private bool SeniorAgeIsConsistent()
     {
         if (!chkSenior.Checked) return true;
@@ -141,7 +129,7 @@ public partial class ResidentForm : Form
         return false;
     }
 
-    /// <summary>Combines the ticked boxes into the [Flags] enum.</summary>
+    /// Combines the ticked boxes into the [Flags] enum.
     private ResidentClassification BuildClassification()
     {
         var result = ResidentClassification.None;
@@ -155,7 +143,7 @@ public partial class ResidentForm : Form
         return result;
     }
 
-    /// <summary>Layer one of validation — blocks bad characters as typed.</summary>
+    /// Layer one of validation — blocks bad characters as typed.
     private void txtContact_KeyPress(object sender, KeyPressEventArgs e) =>
         InputValidator.AllowDigitsOnly(e, "+- ");
 
