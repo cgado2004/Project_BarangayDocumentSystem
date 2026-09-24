@@ -42,29 +42,15 @@ namespace BarangayDocumentSystem.Database
         }
 
         /// <summary>
-        /// Creates the database and schema (Frent's initializer), then seeds
-        /// the sample data at most once, flagged in app_state — Jonathan's
-        /// Initialize semantics, under one transaction.
+        /// Creates the database, its tables and the Citizen's Charter fee
+        /// schedule (Frent's initializer running the embedded schema.sql).
+        /// Sample seeding is gone by design: the production database starts
+        /// empty. Schema statements are idempotent, so this is safe to run
+        /// on every start and tops up older installs.
         /// </summary>
-        public void Initialize(bool loadSampleData, Action loadSamples)
+        public void Initialize()
         {
             DatabaseInitializer.EnsureCreated(connectionString);
-            ExecuteInTransaction(() =>
-            {
-                using (var command = CreateCommand(
-                    "SELECT sample_data_initialized FROM app_state WHERE id = 1 FOR UPDATE",
-                    transactionConnection, currentTransaction))
-                {
-                    if (Convert.ToInt32(command.ExecuteScalar()) != 0) return;
-                    if (loadSampleData && GetResidents().Count == 0 && GetRequests().Count == 0)
-                    {
-                        if (loadSamples == null) throw new ArgumentNullException(nameof(loadSamples));
-                        loadSamples();
-                    }
-                    command.CommandText = "UPDATE app_state SET sample_data_initialized = 1 WHERE id = 1";
-                    command.ExecuteNonQuery();
-                }
-            });
         }
 
         public IReadOnlyList<Resident> GetResidents()

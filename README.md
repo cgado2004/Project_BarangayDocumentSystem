@@ -23,13 +23,18 @@ for the full provenance and every seam):
    (the app targets **.NET Framework 4.8**).
 2. Install [XAMPP](https://www.apachefriends.org) and start **MySQL**
    from the XAMPP Control Panel. The app creates its own database
-   (`barangay_db`) and tables on first launch. Default connection is
-   `root` with a **blank password** (stock XAMPP) — change it in
-   `App.config` (`BarangayDatabase`) if yours differs, or set the
-   `BARANGAY_DB_CONNECTION` environment variable.
+   (`barangay_db`), tables, and the **Citizen's Charter fee schedule**
+   (from `docs/07-fee-schedule-and-legal-basis.md`, seeded through
+   `Database/schema.sql`) on first launch — the database starts EMPTY of
+   people and requests by design; no demo records are seeded.
+   Default connection is `root` with a **blank password** (stock XAMPP) —
+   change it in `App.config` (`BarangayDatabase`) if yours differs, or set
+   the `BARANGAY_DB_CONNECTION` environment variable.
 3. Open `BarangayDocumentSystem.sln`, restore packages (MySql.Data 8.4.0
-   restores automatically), and run. `LoadSampleData=true` seeds seven
-   residents and six requests on the first run only.
+   restores automatically), and run. **Upgrading from an older build?**
+   The fee schedule is topped up automatically; to also clear the old
+   demo residents/requests, drop the `barangay_db` database in phpMyAdmin
+   once and let the app recreate it.
 4. The console test project (`Tests`) runs 20+ behavioral checks — run it
    first from the debugger; it is the fastest way to see the rules work.
 
@@ -59,4 +64,3 @@ restored on the machine — they are not code errors. Fix:
 | `Assets/` | Barangay seal/logo and the Inter font (SIL OFL license) |
 | `Tests/` | Jonathan's behavioral checks (in-memory), plus theme checks |
 | `docs/` | Project documentation: requirements, ERD/UML, timeline, fee schedule and legal bases, the legacy v3.2.2 writeup |
-| `DBContext/db/` | Reference SQL from the earlier iteration (schema + seed data) |

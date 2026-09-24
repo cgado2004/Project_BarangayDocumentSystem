@@ -13,8 +13,9 @@ beside it (one app, no duplicates). The old app is intact on the
 `leader_draft` and `master` branches and in git history; its v3.2.2
 project writeup is preserved at `docs/00-legacy-readme-v3.2.2.md`. Kept in
 place from the old root: `docs/` (requirements, ERD/UML, fee schedule and
-legal bases), `DBContext/db/` (reference SQL schema + seed data),
-`Assets/`, `global.json`, `.editorconfig`, `.gitignore`.
+legal bases), `Assets/`, `global.json`, `.editorconfig`, `.gitignore`.
+Erased with the old app: `DBContext/db/` (its schema is superseded by
+`Database/schema.sql` and its demo seed data was purged on purpose).
 
 ## Sources
 
@@ -124,6 +125,20 @@ employment, ₱200 work abroad**. That needed a concept neither branch had:
     stays a placeholder until the real name is confirmed.
 13. `Tests/BarangayDocumentSystem.Tests.csproj` — v4.8, `SqlTestDatabase.cs`
     removed, `ThemeChecks.cs` added. Project references unchanged.
+14. **Fees are data now (docs/07 into the SQL):** `Database/schema.sql`
+    seeds a `fee_schedule` table with every Citizen's Charter rate and its
+    legal basis (clearance 100/200 by scope, certifications 100, indigency
+    and low-income free, business 200 standard, cedula formula, lupon 150,
+    facility 200/hr, RA 11261 jobseeker free). `FeeSchedule` gains a
+    `FeeSchedule(connectionString)` constructor that loads live rates from
+    that table; the parameterless constructor keeps the same figures for
+    the in-memory tests. Idempotent INSERTs top up existing installs.
+15. **Seed data purged:** the demo residents/requests seeding is gone —
+    `Data/SampleData.cs` left the app (the test fixture now lives in
+    `Tests/FixtureData.cs`), `LoadSampleData`/`SeedSampleData` settings
+    were removed, `MySqlBarangayRepository.Initialize()` takes no lambda,
+    and the old `DBContext/db/` SQL scripts were deleted. The production
+    database starts empty; only the fee schedule is seeded.
 
 Everything else in `revamp/` is a verbatim copy from the sources above.
 

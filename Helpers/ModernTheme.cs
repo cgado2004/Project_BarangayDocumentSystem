@@ -175,6 +175,44 @@ namespace BarangayDocumentSystem.Helpers
             b.Cursor = Cursors.Hand;
         }
 
+        /// <summary>Input fields: white, ink text, Inter, single border.</summary>
+        public static void StyleText(Control c)
+        {
+            c.BackColor = Color.White;
+            c.ForeColor = Ink;
+            c.Font = F(10f, false);
+            var box = c as TextBoxBase;
+            if (box != null) box.BorderStyle = BorderStyle.FixedSingle;
+            var combo = c as ComboBox;
+            if (combo != null) combo.FlatStyle = FlatStyle.Flat;
+            var date = c as DateTimePicker;
+            if (date != null) date.BorderStyle = BorderStyle.FixedSingle;
+        }
+
+        /// <summary>Field captions above or beside inputs: quiet muted grey.</summary>
+        public static void StyleCaption(Label l)
+        {
+            l.BackColor = Canvas;
+            l.ForeColor = Muted;
+            l.Font = F(9f, false);
+        }
+
+        /// <summary>Section headers inside a form: navy, bold, small caps feel.</summary>
+        public static void StyleSectionHeader(Label l)
+        {
+            l.BackColor = Canvas;
+            l.ForeColor = PrimaryNavy;
+            l.Font = F(10f, true);
+        }
+
+        /// <summary>Checkboxes: ink text, Inter.</summary>
+        public static void StyleCheck(CheckBox c)
+        {
+            c.BackColor = Canvas;
+            c.ForeColor = Ink;
+            c.Font = F(9.5f, false);
+        }
+
         public static void StyleSecondary(Button b)
         {
             b.FlatStyle = FlatStyle.Flat;

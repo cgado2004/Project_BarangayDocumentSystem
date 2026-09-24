@@ -22,7 +22,7 @@ namespace BarangayDocumentSystem.Forms
         {
             this.reporting = reporting;
             lblBarangay.Text = settings.Profile.BarangayName + Environment.NewLine + settings.Profile.CityName;
-            lblSession.Text = "Records are saved on this computer. Classroom fee schedule.";
+            lblSession.Text = "Records are saved in MySQL (barangay_db). Citizen's Charter fee schedule.";
             dashboardPage = new DashboardControl(reporting);
             residentsPage = new ResidentsControl(residents, requests, renderer);
             requestsPage = new RequestsControl(residents, requests, renderer);

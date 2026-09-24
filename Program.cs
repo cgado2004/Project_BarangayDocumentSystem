@@ -28,7 +28,8 @@ namespace BarangayDocumentSystem
                 var settings = AppSettings.Load();
                 var database = DatabaseSettings.Load();
                 var repository = new MySqlBarangayRepository(database.ConnectionString);
-                var feeSchedule = new FeeSchedule();
+                repository.Initialize();   // creates barangay_db + tables + fee schedule first
+                var feeSchedule = new FeeSchedule(database.ConnectionString);
                 var renderer = new DocumentRenderer(settings.Profile, new IDocumentTemplate[]
                 {
                     new ClearanceTemplate(), new ResidencyTemplate(), new IndigencyTemplate(),
@@ -37,7 +38,6 @@ namespace BarangayDocumentSystem
                 });
                 var residents = new ResidentService(repository);
                 var requests = new RequestService(repository, feeSchedule, renderer);
-                repository.Initialize(settings.LoadSampleData, () => SampleData.Load(residents, requests));
                 var reporting = new ReportingService(repository);
                 Application.Run(new MainForm(residents, requests, renderer, settings, reporting));
             }

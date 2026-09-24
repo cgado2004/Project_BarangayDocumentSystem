@@ -92,10 +92,24 @@
     <Compile Include="Forms\MainForm.Theme.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Forms\RequestForm.Theme.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\PaymentForm.Theme.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\RejectionForm.Theme.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ResidentForm.Theme.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\DocumentPreviewForm.Theme.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Interfaces\IDocumentTemplate.cs" />
     <Compile Include="Data\InMemoryBarangayRepository.cs" />
     <EmbeddedResource Include="Database\schema.sql" />
-    <Compile Include="Data\SampleData.cs" />
     <Compile Include="Services\DocumentRenderer.cs" />
     <Compile Include="Services\FeeSchedule.cs" />
     <Compile Include="Services\RequestService.cs" />

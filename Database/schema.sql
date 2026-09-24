@@ -112,6 +112,64 @@ CREATE TABLE IF NOT EXISTS document_requests (
     INDEX idx_requests_resident (resident_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+
+CREATE TABLE IF NOT EXISTS fee_schedule (
+    fee_code               VARCHAR(40)   NOT NULL,
+    service_name           VARCHAR(120)  NOT NULL,
+    amount                 DECIMAL(12,2) NOT NULL,
+    legal_basis            VARCHAR(300)  NOT NULL DEFAULT '',
+    notes                  VARCHAR(300)  NOT NULL DEFAULT '',
+    sort_order             INT           NOT NULL DEFAULT 0,
+    PRIMARY KEY (fee_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- The Citizen's Charter rates live here (docs/07-fee-schedule-and-legal-basis.md).
+-- Every row is idempotent: an existing database is topped up on the next start.
+INSERT INTO fee_schedule (fee_code, service_name, amount, legal_basis, notes, sort_order)
+    SELECT 'clearance_local', 'Barangay Clearance - local employment', 100.00,
+    'RA 7160 Sec. 152, Citizen''s Charter', 'charged to the applicant', 1 FROM DUAL
+    WHERE NOT EXISTS (SELECT 1 FROM fee_schedule WHERE fee_code = 'clearance_local');
+INSERT INTO fee_schedule (fee_code, service_name, amount, legal_basis, notes, sort_order)
+    SELECT 'clearance_abroad', 'Barangay Clearance - work abroad', 200.00,
+    'RA 7160 Sec. 152, Citizen''s Charter', 'charged to the applicant', 2 FROM DUAL
+    WHERE NOT EXISTS (SELECT 1 FROM fee_schedule WHERE fee_code = 'clearance_abroad');
+INSERT INTO fee_schedule (fee_code, service_name, amount, legal_basis, notes, sort_order)
+    SELECT 'certification', 'Certification (residency, good moral, other)', 100.00,
+    'Citizen''s Charter, RA 7160 Sec. 152', 'anything the Charter does not price separately', 3 FROM DUAL
+    WHERE NOT EXISTS (SELECT 1 FROM fee_schedule WHERE fee_code = 'certification');
+INSERT INTO fee_schedule (fee_code, service_name, amount, legal_basis, notes, sort_order)
+    SELECT 'indigency', 'Certificate of Indigency', 0.00,
+    'Citizen''s Charter', 'free of charge', 4 FROM DUAL
+    WHERE NOT EXISTS (SELECT 1 FROM fee_schedule WHERE fee_code = 'indigency');
+INSERT INTO fee_schedule (fee_code, service_name, amount, legal_basis, notes, sort_order)
+    SELECT 'low_income', 'Certificate of Low Income', 0.00,
+    'Citizen''s Charter', 'free of charge', 5 FROM DUAL
+    WHERE NOT EXISTS (SELECT 1 FROM fee_schedule WHERE fee_code = 'low_income');
+INSERT INTO fee_schedule (fee_code, service_name, amount, legal_basis, notes, sort_order)
+    SELECT 'business_clearance', 'Business Clearance', 200.00,
+    'RA 7160 Sec. 152, Citizen''s Charter', 'standard rate - varies with the law violated', 6 FROM DUAL
+    WHERE NOT EXISTS (SELECT 1 FROM fee_schedule WHERE fee_code = 'business_clearance');
+INSERT INTO fee_schedule (fee_code, service_name, amount, legal_basis, notes, sort_order)
+    SELECT 'barangay_id', 'Barangay ID', 100.00,
+    'classroom schedule', 'not priced in the Charter excerpt', 7 FROM DUAL
+    WHERE NOT EXISTS (SELECT 1 FROM fee_schedule WHERE fee_code = 'barangay_id');
+INSERT INTO fee_schedule (fee_code, service_name, amount, legal_basis, notes, sort_order)
+    SELECT 'first_time_jobseeker', 'First-Time Jobseeker Certificate', 0.00,
+    'RA 11261', 'free once per resident', 8 FROM DUAL
+    WHERE NOT EXISTS (SELECT 1 FROM fee_schedule WHERE fee_code = 'first_time_jobseeker');
+INSERT INTO fee_schedule (fee_code, service_name, amount, legal_basis, notes, sort_order)
+    SELECT 'cedula_basic', 'Community Tax (cedula), basic', 5.00,
+    'RA 7160 Sec. 156', 'plus 1.00 per 1,000 of income, additional capped at 5,000', 9 FROM DUAL
+    WHERE NOT EXISTS (SELECT 1 FROM fee_schedule WHERE fee_code = 'cedula_basic');
+INSERT INTO fee_schedule (fee_code, service_name, amount, legal_basis, notes, sort_order)
+    SELECT 'lupon_filing', 'Filing a case (Katarungang Pambarangay)', 150.00,
+    'RA 7160, Citizen''s Charter', 'per case filed', 10 FROM DUAL
+    WHERE NOT EXISTS (SELECT 1 FROM fee_schedule WHERE fee_code = 'lupon_filing');
+INSERT INTO fee_schedule (fee_code, service_name, amount, legal_basis, notes, sort_order)
+    SELECT 'facility_hour', 'Barangay facility rental', 200.00,
+    'RA 7160 Sec. 152, Citizen''s Charter', 'per hour or part thereof', 11 FROM DUAL
+    WHERE NOT EXISTS (SELECT 1 FROM fee_schedule WHERE fee_code = 'facility_hour');
+
 CREATE TABLE IF NOT EXISTS resident_snapshots (
     request_id             INT           NOT NULL,
     first_name             VARCHAR(80)   NOT NULL,

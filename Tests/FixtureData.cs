@@ -2,9 +2,9 @@ using System;
 using BarangayDocumentSystem.Models;
 using BarangayDocumentSystem.Services;
 
-namespace BarangayDocumentSystem.Data
+namespace BarangayDocumentSystem.Tests
 {
-    public static class SampleData
+    internal static class FixtureData
     {
         public static void Load(ResidentService residents, RequestService requests)
         {

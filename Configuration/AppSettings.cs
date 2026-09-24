@@ -7,14 +7,12 @@ namespace BarangayDocumentSystem.Configuration
     public class AppSettings
     {
         public BarangayProfile Profile { get; private set; }
-        public bool LoadSampleData { get; private set; }
         public string ConnectionString { get; private set; }
 
         public static AppSettings Load()
         {
-            bool sampleData;
-            if (!bool.TryParse(ConfigurationManager.AppSettings["LoadSampleData"], out sampleData))
-                throw new ConfigurationErrorsException("App.config: LoadSampleData must be true or false.");
+            // Sample seeding was removed: the production database starts empty
+            // and only the fee schedule is seeded (Database/schema.sql).
             var database = ConfigurationManager.ConnectionStrings["BarangayDatabase"];
             if (database == null || string.IsNullOrWhiteSpace(database.ConnectionString))
                 throw new ConfigurationErrorsException("App.config: add the BarangayDatabase connection string.");
@@ -24,7 +22,6 @@ namespace BarangayDocumentSystem.Configuration
             {
                 Profile = new BarangayProfile(ReadRequired("BarangayName"), ReadRequired("CityName"),
                     ReadRequired("ProvinceName"), ReadRequired("PunongBarangay")),
-                LoadSampleData = sampleData,
                 ConnectionString = database.ConnectionString
             };
         }

@@ -89,7 +89,7 @@ namespace BarangayDocumentSystem.Tests
             var empty = fixture.Reporting.GetStatistics();
             Check(empty.TotalResidents == 0 && empty.TotalCollected == 0m, "Empty dashboard must have zero totals.");
             Check(empty.RequestsByStatus.Count == 5 && empty.RequestsByStatus.All(item => item.Value == 0), "Empty status categories disappeared.");
-            SampleData.Load(fixture.Residents, fixture.Requests);
+            FixtureData.Load(fixture.Residents, fixture.Requests);
             var totals = fixture.Reporting.GetStatistics();
             Check(totals.TotalResidents == 7 && totals.TotalRequests == 6 && totals.TotalCollected == 200m, "Sample dashboard totals differ.");
             Check(totals.PendingRequests == 2 && totals.ReadyRequests == 1 && totals.FreeDocumentsReleased == 1, "Workflow totals differ.");
@@ -504,7 +504,7 @@ namespace BarangayDocumentSystem.Tests
         {
             var fixture = new Fixture();
             Check(fixture.Residents.Search().Count == 0 && fixture.Requests.Search().Count == 0, "Empty repository has records.");
-            SampleData.Load(fixture.Residents, fixture.Requests);
+            FixtureData.Load(fixture.Residents, fixture.Requests);
             Check(fixture.Residents.Search().Count == 7 && fixture.Requests.Search().Count == 6, "Sample counts are wrong.");
             Check(fixture.Requests.Search().Where(request => request.IsPaid).Sum(request => request.Fee) == 200m,
                 "Sample collection total is wrong.");
@@ -621,7 +621,7 @@ namespace BarangayDocumentSystem.Tests
         {
             var settings = AppSettings.Load();
             var fixture = new Fixture();
-            SampleData.Load(fixture.Residents, fixture.Requests);
+            FixtureData.Load(fixture.Residents, fixture.Requests);
             string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Screenshots");
             Directory.CreateDirectory(folder);
             using (var main = new MainForm(fixture.Residents, fixture.Requests, fixture.Renderer, settings, fixture.Reporting))

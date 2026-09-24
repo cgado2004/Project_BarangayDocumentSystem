@@ -21,6 +21,7 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Configuration" />
     <Compile Include="Program.cs" />
+    <Compile Include="FixtureData.cs" />
     <Compile Include="ThemeChecks.cs" />
     <None Include="..\App.config"><Link>App.config</Link></None>
     <ProjectReference Include="..\BarangayDocumentSystem.csproj">

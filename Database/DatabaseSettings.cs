@@ -26,18 +26,13 @@ public sealed class DatabaseSettings
     /// configuration reader and this class share one connection.</summary>
     public const string ConnectionStringName = "BarangayDatabase";
 
-    /// <summary>Name of the &lt;appSettings&gt; key that turns demo data on or off.</summary>
-    public const string SeedSettingName = "SeedSampleData";
-
     public const string EnvironmentVariable = "BARANGAY_DB_CONNECTION";
 
     public string ConnectionString { get; }
-    public bool SeedSampleData { get; }
 
-    private DatabaseSettings(string connectionString, bool seedSampleData)
+    private DatabaseSettings(string connectionString)
     {
         ConnectionString = connectionString;
-        SeedSampleData = seedSampleData;
     }
 
     public static DatabaseSettings Load()
@@ -52,11 +47,6 @@ public sealed class DatabaseSettings
         if (!string.IsNullOrWhiteSpace(fromEnvironment))
             connectionString = fromEnvironment;
 
-        bool seed = true;
-        string seedSetting = ConfigurationManager.AppSettings[SeedSettingName];
-        if (!string.IsNullOrWhiteSpace(seedSetting) && bool.TryParse(seedSetting, out bool parsed))
-            seed = parsed;
-
-        return new DatabaseSettings(connectionString, seed);
+        return new DatabaseSettings(connectionString);
     }
 }
