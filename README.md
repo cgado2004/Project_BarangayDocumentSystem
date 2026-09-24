@@ -33,10 +33,6 @@ for the full provenance and every seam):
 4. The console test project (`Tests`) runs 20+ behavioral checks — run it
    first from the debugger; it is the fastest way to see the rules work.
 
-<<<<<<< HEAD
-## Layout
-
-=======
 ## Troubleshooting the build
 
 **Errors like `CS0246: type or namespace 'MySql' could not be found` or
@@ -53,8 +49,6 @@ restored on the machine — they are not code errors. Fix:
    suggestion only — safe to ignore.
 
 ## Layout
-
->>>>>>> 880f0b7 (build: pin nuget.org via NuGet.config and document the MySql restore fix)
 | Folder | What lives there |
 | --- | --- |
 | `Models/`, `Services/`, `Documents/`, `Printing/` | Jonathan's domain (models, fees, request lifecycle, the seven document templates) |
