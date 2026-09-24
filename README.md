@@ -33,8 +33,28 @@ for the full provenance and every seam):
 4. The console test project (`Tests`) runs 20+ behavioral checks — run it
    first from the debugger; it is the fastest way to see the rules work.
 
+<<<<<<< HEAD
 ## Layout
 
+=======
+## Troubleshooting the build
+
+**Errors like `CS0246: type or namespace 'MySql' could not be found` or
+"metadata file ...exe could not be found"** mean the NuGet package was not
+restored on the machine — they are not code errors. Fix:
+
+1. In Visual Studio: **Right-click the solution → Restore NuGet Packages**
+   (needs internet access to nuget.org; `NuGet.config` in the repo pins
+   that source).
+2. If errors persist, the clone likely carries stale `bin/obj` from the
+   old .NET 8 app: close VS, delete the `bin` and `obj` folders, reopen,
+   restore again, then Build Solution.
+3. The `IDE0151 Convert to file-scoped namespace` message is a style
+   suggestion only — safe to ignore.
+
+## Layout
+
+>>>>>>> 880f0b7 (build: pin nuget.org via NuGet.config and document the MySql restore fix)
 | Folder | What lives there |
 | --- | --- |
 | `Models/`, `Services/`, `Documents/`, `Printing/` | Jonathan's domain (models, fees, request lifecycle, the seven document templates) |
