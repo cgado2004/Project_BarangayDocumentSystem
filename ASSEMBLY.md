@@ -1,10 +1,20 @@
-# ASSEMBLY.md — how `revamp/` was assembled
+# ASSEMBLY.md — how the composite app was assembled
 
-This folder is a **composite**: one buildable .NET Framework 4.8 WinForms app
-pieced together from three sources, each credited by branch and commit, with
-every junction between them documented. Nothing here is rewritten from
-scratch — where a teammate's file was reused it is **verbatim**; where it had
-to change, the change is listed in "Adaptations" below.
+The repository root is a **composite**: one buildable .NET Framework 4.8
+WinForms app pieced together from three sources, each credited by branch and
+commit, with every junction between them documented. Nothing here is
+rewritten from scratch — where a teammate's file was reused it is
+**verbatim**; where it had to change, the change is listed in "Adaptations"
+below.
+
+The composite was first staged as `revamp/` and then **extracted to the
+repository root**, replacing the previous .NET 8 app instead of sitting
+beside it (one app, no duplicates). The old app is intact on the
+`leader_draft` and `master` branches and in git history; its v3.2.2
+project writeup is preserved at `docs/00-legacy-readme-v3.2.2.md`. Kept in
+place from the old root: `docs/` (requirements, ERD/UML, fee schedule and
+legal bases), `DBContext/db/` (reference SQL schema + seed data),
+`Assets/`, `global.json`, `.editorconfig`, `.gitignore`.
 
 ## Sources
 
@@ -119,7 +129,7 @@ Everything else in `revamp/` is a verbatim copy from the sources above.
 
 ## Build order (first run on a Windows box)
 
-1. `git checkout unified` (see below), open `BarangayDocumentSystem.sln`.
+1. Open `BarangayDocumentSystem.sln` at the repository root.
 2. Build the solution — NuGet restores `MySql.Data 8.4.0` on first build.
 3. Start XAMPP → MySQL. Run the **Tests** project (in-memory checks + theme
    checks; expect all green).
@@ -131,25 +141,23 @@ Everything else in `revamp/` is a verbatim copy from the sources above.
    refuse with the receipt message (that refusal comes from the MySQL unique
    index through the seam).
 
+## Where the composite lives
+
+At the **repository root** of the Arena working branch — `revamp/` was
+extracted here so there is exactly one copy of the app. Frent's `Draft2`
+branch was never touched.
+
 ## Publishing as the `unified` branch (when ready)
 
-The revamp deliberately does **not** overwrite Frent's `Draft2` branch.
+When the team agrees, point `unified` at this branch — no file moves needed,
+the extraction is already done:
 
 ```bash
-# from the Arena working branch (which holds revamp/)
-git checkout -b unified                       # wait — see note
-```
-
-Concretely, the copy-in recipe (run on the machine holding this checkout):
-
-```bash
-git branch unified arena/01a0cf05-project-barangaydocumentsystem   # start point = this session's branch
-git checkout unified
-git add revamp/ && git commit -m "revamp: composite app (Draft UI + Draft2 MySQL + charter rates)"
+git fetch origin
+git branch unified origin/arena/01a0cf05-project-barangaydocumentsystem
 git push origin unified
 ```
 
-If the team prefers `revamp/` flattened to the repo root on `unified`, do a
-follow-up commit that `git mv revamp/* .` (solution paths then match
-Jonathan's and Frent's layouts one level up). Either shape builds; the
-csproj uses relative paths inside `revamp/` as shipped.
+The team then works on `unified` as the single project. If a rewrite of
+history is ever needed, this branch can simply be merged or fast-forwarded —
+the layout already matches Jonathan's and Frent's one-folder shape.

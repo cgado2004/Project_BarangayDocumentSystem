@@ -1,22 +1,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-# ---------------------------------------------------------------------------
-# The CLASSIC solution file, kept as a compatibility fallback for the XML
-# .slnx beside it. Both reference the same two projects with the same GUIDs;
-# use whichever your Visual Studio can open:
-#
-#   .slnx  - the team's solution (needs VS 2022 17.10+)
-#   .sln   - this file (opens everywhere; on 17.10-17.12 no preview toggle
-#            is needed either)
-#
-# Open ONE of them, never both at once. If you edit the project list, edit
-# both files in the same commit.
-# ---------------------------------------------------------------------------
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BarangayDocumentSystem", "BarangayDocumentSystem.csproj", "{6F4A2D31-0001-4000-9000-000000000001}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BarangayDocumentSystem", "BarangayDocumentSystem.csproj", "{8B9A251A-4642-48FE-86BB-13DB19B978DB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RuleChecks", "tests\RuleChecks\RuleChecks.csproj", "{6F4A2D31-0002-4000-9000-000000000002}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BarangayDocumentSystem.Tests", "Tests\BarangayDocumentSystem.Tests.csproj", "{29558A95-EE58-4B66-B1C8-8F6695398FDC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,19 +12,12 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{6F4A2D31-0001-4000-9000-000000000001}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6F4A2D31-0001-4000-9000-000000000001}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6F4A2D31-0001-4000-9000-000000000001}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6F4A2D31-0001-4000-9000-000000000001}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6F4A2D31-0002-4000-9000-000000000002}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6F4A2D31-0002-4000-9000-000000000002}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6F4A2D31-0002-4000-9000-000000000002}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6F4A2D31-0002-4000-9000-000000000002}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B9A251A-4642-48FE-86BB-13DB19B978DB}.Debug|Any CPU.ActiveCfg = Debug|AnyCPU
+		{8B9A251A-4642-48FE-86BB-13DB19B978DB}.Debug|Any CPU.Build.0 = Debug|AnyCPU
+		{8B9A251A-4642-48FE-86BB-13DB19B978DB}.Release|Any CPU.ActiveCfg = Release|AnyCPU
+		{8B9A251A-4642-48FE-86BB-13DB19B978DB}.Release|Any CPU.Build.0 = Release|AnyCPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {6F4A2D31-0003-4000-9000-000000000003}
 	EndGlobalSection
 EndGlobal

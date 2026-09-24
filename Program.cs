@@ -1,301 +1,64 @@
-using System.Globalization;
-using System.Xml.Linq;
-using BarangayDocumentSystem.DBContext;
-using BarangayDocumentSystem.Helper;
+using System;
+using System.Configuration;
+using MySql.Data.MySqlClient;
+using BarangayDocumentSystem.Database;
+using System.Windows.Forms;
+using BarangayDocumentSystem.Configuration;
+using BarangayDocumentSystem.Data;
+using BarangayDocumentSystem.Documents;
+using BarangayDocumentSystem.Forms;
+using BarangayDocumentSystem.Helpers;
 using BarangayDocumentSystem.Interfaces;
-using BarangayDocumentSystem.Models;
-using BarangayDocumentSystem.Service;
+using BarangayDocumentSystem.Services;
 
-namespace BarangayDocumentSystem;
-
-/// <summary>
-/// Where my program starts, and the only place that decides which concrete
-/// classes get used.
-///
-/// Everything below this point is handed what it needs through its
-/// constructor, so no screen ever creates its own repository. That is what
-/// lets me swap the storage without touching a single form.
-///
-/// ApplicationConfiguration.Initialize() carries the PerMonitorV2 high-DPI
-/// mode from the .csproj (core fix 2); AppTheme.Resolve() picks the best of
-/// the Inter / SF Pro / Roboto stack this machine actually has (core fix 3);
-/// then the composition happens: profile, fees, store, shell.
-/// </summary>
-internal static class Program
+namespace BarangayDocumentSystem
 {
-    [STAThread]
-    private static void Main()
+    internal static class Program
     {
-        ApplicationConfiguration.Initialize();
-
-        // v3.1.1: errors nobody expected are written to the local error log
-        // (Helper/ErrorLogger, adapted from Jonathan Del Rosario's Draft
-        // branch) instead of vanishing with the process. The handlers go on
-        // before the first form exists, which is the only moment WinForms
-        // allows SetUnhandledExceptionMode to be called.
-        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
-        Application.ThreadException += (_, args) =>
+        [STAThread]
+        private static void Main()
         {
-            ErrorLogger.Write(args.Exception);
-            Dialog.Error(null,
-                "Something went wrong and the action was cancelled. The " +
-                "details were written to the error log:\n\n" +
-                ErrorLogger.LogFilePath,
-                "Unexpected error");
-        };
-        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
-        {
-            if (args.ExceptionObject is Exception fatal) ErrorLogger.Write(fatal);
-        };
-
-        // I work out which fonts this machine actually has before I create a
-        // single control, so every form is built with the right family from
-        // the start rather than being restyled afterwards.
-        AppTheme.Resolve();
-
-        try
-        {
-            // I read App.config first, so the barangay details and the fees on
-            // every printed document come from the file rather than from numbers
-            // I hard-coded months ago.
-            BarangayProfile.Current = new BarangayProfile
-            {
-                BarangayName   = AppSettings.Text("Barangay.Name", "Barangay Magugpo Poblacion"),
-                CityName       = AppSettings.Text("Barangay.City", "City of Tagum"),
-                ProvinceName   = AppSettings.Text("Barangay.Province", "Davao del Norte"),
-                PunongBarangay = AppSettings.Text("Barangay.PunongBarangay", "HON. EUGENIA SOLIS HINGPIT, MD"),
-                OfficeHours    = AppSettings.Text("Barangay.OfficeHours", "Monday to Friday, 8:00 AM - 5:00 PM")
-            };
-
-            var fees = new FeeSchedule(
-                AppSettings.Money("Fee.Clearance.Local", 100m),
-                AppSettings.Money("Fee.Clearance.Abroad", 200m),
-                AppSettings.Money("Fee.Certification", 100m),
-                AppSettings.Money("Fee.BusinessClearance.Standard", 200m),
-                AppSettings.Money("Fee.LuponFiling", 150m),
-                AppSettings.Money("Fee.Facility.Hourly", 200m),
-                AppSettings.Money("Fee.CommunityTax.Base", 5m),
-                AppSettings.Money("Fee.CommunityTax.PerThousand", 1m),
-                AppSettings.Money("Fee.CommunityTax.Cap", 5000m),
-                AppSettings.Count("Rule.JobseekerResidencyMonths", 6),
-                AppSettings.Count("Rule.RA11032.SimpleWorkingDays", 3));
-
-            // This is the one decision I make that moves the whole system onto a
-            // real database. Every screen only ever sees IBarangayRepository, so
-            // nothing else in my program has to change.
-            IBarangayRepository repository = CreateRepository(fees);
-
-            Application.Run(new MainShell(repository, fees));
-        }
-        catch (Exception startupError)
-        {
-            // v3.1.1: even a failure this early leaves a trail. The log is the
-            // file a group-mate can be told to attach when "it won't open".
-            ErrorLogger.Write(startupError);
-            Dialog.Error(null,
-                "The application could not start. The details were written " +
-                "to the error log:\n\n" + ErrorLogger.LogFilePath,
-                "Startup error");
-        }
-    }
-
-    /// <summary>
-    /// I pick the store named in App.config.
-    ///
-    /// If MySQL is asked for but cannot be reached, I do NOT let the program
-    /// die on a raw driver exception. I explain what went wrong and fall back
-    /// to the in-memory data, because a group-mate who has not set up XAMPP
-    /// yet should still be able to open the app and see it work.
-    /// </summary>
-    private static IBarangayRepository CreateRepository(FeeSchedule fees)
-    {
-        if (!AppSettings.UseMySql())
-            return new InMemoryBarangayRepository(fees);
-
-        string connection = AppSettings.ConnectionString();
-
-        if (string.IsNullOrWhiteSpace(connection))
-        {
-            Dialog.Info(null,
-                "App.config asks for MySQL storage but the BarangayDb " +
-                "connection string is missing.\n\n" +
-                "I am starting with the built-in sample data instead.");
-            return new InMemoryBarangayRepository(fees);
-        }
-
-        // v3.2.0: the repository exists, so this is the real connection at
-        // last — and the fallback the docs promised. A MySqlException here
-        // (server not running, database not provisioned, wrong password in
-        // App.config) must never stop the app: I log it, explain it, and
-        // hand back the in-memory store, because a group-mate who has not
-        // started XAMPP today still deserves a working window. The one
-        // thing I do NOT do is silently pretend MySQL succeeded — the
-        // dialog says plainly which store you are looking at.
-        try
-        {
-            return new MySqlBarangayRepository(connection, fees);
-        }
-        catch (Exception databaseError)
-        {
-            ErrorLogger.Write(databaseError);
-            Dialog.Info(null,
-                "MySQL storage is selected in App.config, but I could not " +
-                "use the database:\n\n" +
-                databaseError.Message + "\n\n" +
-                "Check that MySQL (XAMPP) is running and that " +
-                "DBContext/db/01-schema.sql has been run - see docs/05-database-guide.md." +
-                "\n\n" +
-                "I am starting with the built-in sample data instead. " +
-                "Anything you change in this session will NOT be saved to " +
-                "the database.");
-            return new InMemoryBarangayRepository(fees);
-        }
-    }
-}
-
-/// <summary>
-/// I read App.config through this one class.
-///
-/// v3.1 reads the file with System.Xml.Linq instead of the
-/// System.Configuration.ConfigurationManager package, which keeps the whole
-/// solution building with no NuGet restore and no network - and, because I
-/// control the parse, a malformed file degrades to the built-in defaults
-/// instead of throwing from somewhere deep in a form.
-///
-/// Every read goes through a helper that falls back to a sensible default
-/// and never returns null. If my group-mate deletes a line from App.config
-/// by accident, the app still starts and still works - it just uses the
-/// built-in value instead of crashing on them.
-/// </summary>
-internal static class AppSettings
-{
-    private static XDocument? _doc;
-    private static bool _loaded;
-
-    /// <summary>
-    /// The configuration, loaded once. MSBuild names the copied file after
-    /// the assembly, so I probe the names the SDK produces as well as the
-    /// plain one, and I take the first that exists and parses.
-    /// </summary>
-    private static XDocument? Document()
-    {
-        if (_loaded) return _doc;
-        _loaded = true;
-
-        string[] candidates =
-        {
-            "BarangayDocumentSystem.dll.config",
-            "BarangayDocumentSystem.exe.config",
-            "App.config"
-        };
-
-        foreach (string name in candidates)
-        {
+            Application.EnableVisualStyles();
+            ModernTheme.Resolve();   // navy theme: resolve the font stack before any form is built
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            Application.ThreadException += (sender, args) => UiFeedback.Unexpected(null, args.Exception);
             try
             {
-                string path = Path.Combine(AppContext.BaseDirectory, name);
-                if (!File.Exists(path)) continue;
-                _doc = XDocument.Load(path);
-                break;
+                var settings = AppSettings.Load();
+                var database = DatabaseSettings.Load();
+                var repository = new MySqlBarangayRepository(database.ConnectionString);
+                var feeSchedule = new FeeSchedule();
+                var renderer = new DocumentRenderer(settings.Profile, new IDocumentTemplate[]
+                {
+                    new ClearanceTemplate(), new ResidencyTemplate(), new IndigencyTemplate(),
+                    new BusinessClearanceTemplate(), new BarangayIdTemplate(),
+                    new JobseekerTemplate(), new GoodMoralTemplate()
+                });
+                var residents = new ResidentService(repository);
+                var requests = new RequestService(repository, feeSchedule, renderer);
+                repository.Initialize(settings.LoadSampleData, () => SampleData.Load(residents, requests));
+                var reporting = new ReportingService(repository);
+                Application.Run(new MainForm(residents, requests, renderer, settings, reporting));
             }
-            catch
+            catch (ConfigurationErrorsException error)
             {
-                // unreadable or malformed - try the next candidate, and if
-                // none of them work, the defaults answer every read.
+                MessageBox.Show(error.Message, "Check App.config", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        return _doc;
-    }
-
-    /// <summary>
-    /// I read a text setting. If the key is missing or blank I hand back the
-    /// fallback rather than null, so the caller never has to null-check.
-    /// </summary>
-    public static string Text(string key, string fallback)
-    {
-        try
-        {
-            var doc = Document();
-            if (doc is null) return fallback;
-
-            var value = doc.Root?
-                .Element("appSettings")?
-                .Elements("add")
-                .FirstOrDefault(e => (string?)e.Attribute("key") == key)?
-                .Attribute("value");
-
-            string? text = (string?)value;
-            return string.IsNullOrWhiteSpace(text) ? fallback : text.Trim();
-        }
-        catch
-        {
-            return fallback;
-        }
-    }
-
-    /// <summary>
-    /// I read a peso amount.
-    ///
-    /// I parse with InvariantCulture on purpose. A Windows machine set to a
-    /// locale that uses a comma for the decimal point would otherwise read
-    /// "100.00" as one hundred thousand, and I am not willing to let a
-    /// regional setting change what the barangay charges.
-    /// </summary>
-    public static decimal Money(string key, decimal fallback)
-    {
-        string raw = Text(key, string.Empty);
-        if (raw.Length == 0) return fallback;
-
-        return decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal value)
-               && value >= 0
-            ? value
-            : fallback;   // a negative or unreadable fee is a mistake, so I ignore it
-    }
-
-    /// <summary>I read a whole number, again refusing anything negative.</summary>
-    public static int Count(string key, int fallback)
-    {
-        string raw = Text(key, string.Empty);
-        if (raw.Length == 0) return fallback;
-
-        return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value)
-               && value >= 0
-            ? value
-            : fallback;
-    }
-
-    /// <summary>
-    /// True when App.config asks for the real database.
-    ///
-    /// I compare without case so "MySQL", "mysql" and "MySql" all work - I do
-    /// not want my group-mates losing an afternoon to a capital letter.
-    /// </summary>
-    public static bool UseMySql() =>
-        Text("Storage", "Memory").Equals("MySQL", StringComparison.OrdinalIgnoreCase);
-
-    /// <summary>
-    /// The MySQL connection string. I return an empty string when it is
-    /// missing so the caller can show a clear message instead of handing a
-    /// null to the driver.
-    /// </summary>
-    public static string ConnectionString()
-    {
-        try
-        {
-            var doc = Document();
-            if (doc is null) return string.Empty;
-
-            var element = doc.Root?
-                .Element("connectionStrings")?
-                .Elements("add")
-                .FirstOrDefault(e => (string?)e.Attribute("name") == "BarangayDb");
-
-            return (string?)element?.Attribute("connectionString") ?? string.Empty;
-        }
-        catch
-        {
-            return string.Empty;
+            catch (MySqlException error)
+            {
+                ErrorLogger.Write(error);
+                MessageBox.Show("The database could not be opened. Start MySQL (XAMPP) and open phpMyAdmin once to confirm it is running, " +
+                    "then restart the app. If MySQL is running, check the BarangayDatabase connection in App.config " +
+                    "and the error log in your local application data folder.",
+                    "Database connection", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Exception error)
+            {
+                ErrorLogger.Write(error);
+                MessageBox.Show("The application could not start. Check App.config and the local application error log.",
+                    "Startup error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }
