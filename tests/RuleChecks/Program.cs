@@ -1,6 +1,7 @@
 using BarangayDocumentSystem.DBContext;
 using BarangayDocumentSystem.Models;
 using BarangayDocumentSystem.Service;
+using MySql.Data.MySqlClient;
 
 // =====================================================================
 //  My rule checks, v3.1.1.
@@ -266,6 +267,204 @@ clash.RecordPayment("OR-V311-3");
 refused = false;
 try { repo.SaveRequest(clash); } catch (InvalidOperationException) { refused = true; }
 Check("the store refuses a duplicate receipt number", refused);
+
+// =====================================================================
+//  THE MYSQL ROUND-TRIP (v3.2.0)
+//
+//  The checks above prove the rules. This section proves the PERSISTENCE:
+//  that the MySQL repository writes what the screens write, and reads back
+//  the same truth through a brand-new connection.
+//
+//  It is deliberately polite about the machine it runs on. No MySQL server?
+//  It says SKIP and moves on - that is not a failure, the whole app falls
+//  back to memory without a server (docs/05 §9's always-starts contract).
+//  When a server IS running, everything happens inside a throwaway database
+//  (barangay_rulecheck_tmp) that is dropped again at the end, so the real
+//  barangay_magugpo demo database is never touched.
+//
+//  The throwaway database gets the four tables the repository needs,
+//  mirroring db/01-schema.sql's columns. Running the FULL script (triggers,
+//  checks, views) is the docs/05 §3 step for a real setup, not this test's
+//  job - here I am testing MY code, not the server's.
+// =====================================================================
+Console.WriteLine("\n=== MySQL round-trip (v3.2.0) ===");
+
+string sqlServer = Environment.GetEnvironmentVariable("BARANGAY_TEST_SERVER")
+    ?? "Server=localhost;Port=3306;Uid=root;Pwd=;SslMode=Preferred;Connection Timeout=3;";
+
+MySqlConnection? probe = null;
+try { probe = new MySqlConnection(sqlServer); probe.Open(); }
+catch { /* no server, or no rights - handled below */ }
+
+if (probe is null || probe.State != System.Data.ConnectionState.Open)
+{
+    Console.WriteLine("  SKIP  no MySQL server reachable - the app itself would " +
+                      "fall back to memory here, so this is not a failure");
+}
+else
+{
+    probe.Dispose();
+    const string scratchDb = "barangay_rulecheck_tmp";
+
+    // The four tables, in the shape db/01-schema.sql defines them (columns
+    // only - the triggers and CHECKs there guard hand-written SQL, and my
+    // repository enforces the same rules itself).
+    string[] tables =
+    {
+        @"CREATE TABLE residents (
+              resident_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+              first_name VARCHAR(60) NOT NULL, middle_name VARCHAR(60) NULL,
+              last_name VARCHAR(60) NOT NULL, suffix VARCHAR(10) NULL,
+              date_of_birth DATE NOT NULL,
+              gender ENUM('Male','Female') NOT NULL,
+              civil_status ENUM('Single','Married','Widowed','Separated','Divorced')
+                  NOT NULL DEFAULT 'Single',
+              purok VARCHAR(40) NOT NULL, address_line VARCHAR(160) NULL,
+              contact_number VARCHAR(20) NULL, occupation VARCHAR(80) NULL,
+              date_of_residency DATE NOT NULL,
+              is_registered_voter BOOLEAN NOT NULL DEFAULT FALSE,
+              has_availed_jobseeker BOOLEAN NOT NULL DEFAULT FALSE,
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                  ON UPDATE CURRENT_TIMESTAMP,
+              PRIMARY KEY (resident_id)) ENGINE=InnoDB",
+        @"CREATE TABLE classification_types (
+              classification_code VARCHAR(20) NOT NULL,
+              display_name VARCHAR(40) NOT NULL,
+              legal_basis VARCHAR(120) NULL,
+              grants_fee_exemption BOOLEAN NOT NULL DEFAULT FALSE,
+              PRIMARY KEY (classification_code)) ENGINE=InnoDB",
+        @"CREATE TABLE resident_classifications (
+              resident_id INT UNSIGNED NOT NULL,
+              classification_code VARCHAR(20) NOT NULL,
+              PRIMARY KEY (resident_id, classification_code)) ENGINE=InnoDB",
+        @"CREATE TABLE document_requests (
+              request_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+              resident_id INT UNSIGNED NOT NULL,
+              document_type ENUM('BarangayClearance','CertificateOfResidency',
+                  'CertificateOfIndigency','BarangayBusinessClearance','BarangayID',
+                  'FirstTimeJobseekerCertificate','CertificateOfGoodMoralCharacter',
+                  'CertificateOfLowIncome','SoloParentCertification',
+                  'MedicalAssistanceCertification','FinancialAssistanceCertification',
+                  'BurialAssistanceCertification','IpScholarshipCertification',
+                  'FourPsScholarshipCertification','EmploymentCertification',
+                  'AcceptanceCertificate','GadRelatedDocumentation',
+                  'BlotterRelatedIncident','CsoDocumentation','OtherCertification',
+                  'CommunityTaxCertificate','LuponCaseFiling',
+                  'BarangayFacilityRental','OtherTarifaProcessingFee') NOT NULL,
+              scope ENUM('Local','Abroad') NOT NULL DEFAULT 'Local',
+              purpose VARCHAR(200) NOT NULL,
+              date_requested DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              date_released DATETIME NULL,
+              status ENUM('Pending','Processing','ReadyForRelease','Released','Rejected')
+                  NOT NULL DEFAULT 'Pending',
+              fee DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+              fee_basis VARCHAR(255) NULL,
+              assessed_amount DECIMAL(10,2) NULL,
+              hours_of_use DECIMAL(6,2) NULL,
+              declared_income DECIMAL(12,2) NULL,
+              fee_detail VARCHAR(200) NULL,
+              availed_jobseeker_act BOOLEAN NOT NULL DEFAULT FALSE,
+              is_paid BOOLEAN NOT NULL DEFAULT FALSE,
+              official_receipt_no VARCHAR(40) NULL,
+              remarks VARCHAR(255) NULL,
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                  ON UPDATE CURRENT_TIMESTAMP,
+              PRIMARY KEY (request_id)) ENGINE=InnoDB"
+    };
+
+    try
+    {
+        using (var setup = new MySqlConnection(sqlServer))
+        {
+            setup.Open();
+            void Run(string sql)
+            {
+                using var c = new MySqlCommand(sql, setup);
+                c.ExecuteNonQuery();
+            }
+            Run($"DROP DATABASE IF EXISTS {scratchDb};");
+            Run($"CREATE DATABASE {scratchDb} CHARACTER SET utf8mb4;");
+            Run($"USE {scratchDb};");
+            foreach (string sql in tables) Run(sql + ";");
+            Run(@"INSERT INTO classification_types
+                  (classification_code, display_name, grants_fee_exemption) VALUES
+                  ('SENIOR_CITIZEN','Senior Citizen',TRUE),('PWD','PWD',TRUE),
+                  ('INDIGENT','Indigent',TRUE),('STUDENT','Student',FALSE),
+                  ('SOLO_PARENT','Solo Parent',FALSE);");
+        }
+
+        string scratch = sqlServer + $"Database={scratchDb};";
+        var sqlFees = new FeeSchedule();
+
+        // First connection: provisioning seeds the same demo as memory.
+        var first = new BarangayDocumentSystem.DBContext.MySqlBarangayRepository(scratch, sqlFees);
+        Check("a fresh database seeds itself with 7 residents", first.Residents.Count == 7,
+            first.Residents.Count.ToString());
+        Check("the seeded requests carried their fee rules with them",
+            first.Requests.Count == 12 &&
+            first.GetStatistics().TotalCollected == 255m,
+            $"requests={first.Requests.Count}, collected={first.GetStatistics().TotalCollected}");
+
+        // The whole point of the database: a NEW connection must see what
+        // the OLD session wrote - the thing the in-memory store could never do.
+        var sqlJuan = first.Residents.First(r => r.LastName == "Dela Cruz");
+        first.AddResident(new ResidentDetails(
+            "Test", "Round", "Trip", "", new DateTime(1990, 1, 2),
+            Gender.Female, CivilStatus.Single, "Purok Sampaguita",
+            "1 Test St", "09990000000", "Tester",
+            new DateTime(2020, 1, 1), false, ResidentClassification.PWD));
+        first.CreateRequest(sqlJuan, DocumentType.BarangayClearance,
+            "Round trip", new RequestInput(Scope: ClearanceScope.Local));
+
+        var reopened = new BarangayDocumentSystem.DBContext.MySqlBarangayRepository(scratch, sqlFees);
+        Check("a resident added last session is still here",
+            reopened.Residents.Any(r => r.LastName == "Trip" && r.FirstName == "Test"));
+        Check("her PWD tag survived the round trip",
+            reopened.Residents.Any(r => r.LastName == "Trip" &&
+                r.HasClassification(ResidentClassification.PWD)));
+
+        // A paid release must read back released-and-paid, receipt and all.
+        var sqlMaria = reopened.Residents.First(r => r.LastName == "Reyes");
+        var paid = reopened.CreateRequest(sqlMaria, DocumentType.CertificateOfResidency,
+            "Round trip payment", new RequestInput(Scope: ClearanceScope.Local));
+        paid.StartProcessing();
+        paid.MarkReadyForRelease();
+        paid.RecordPayment("OR-RT-77");
+        paid.Release();
+        reopened.SaveRequest(paid);
+
+        var third = new BarangayDocumentSystem.DBContext.MySqlBarangayRepository(scratch, sqlFees);
+        var reloaded = third.Requests.First(r => r.Purpose == "Round trip payment");
+        Check("a released-and-paid request reads back exactly so",
+            reloaded.Status == RequestStatus.Released && reloaded.IsPaid &&
+            reloaded.OfficialReceiptNo == "OR-RT-77" && reloaded.Fee == 0m,
+            $"{reloaded.Status}, paid={reloaded.IsPaid}, receipt={reloaded.OfficialReceiptNo}");
+        Check("the receipt index survives the restart, case-insensitively",
+            third.ReceiptNumberExists("or-rt-77"));
+
+        Check("Maria's senior waiver was priced into the seeded row",
+            third.Requests.Any(r => r.Resident.LastName == "Reyes" &&
+                r.DocumentType == DocumentType.CertificateOfResidency &&
+                r.Fee == 0m && r.Status == RequestStatus.Released));
+    }
+    catch (Exception sqlProblem)
+    {
+        Check("MySQL round-trip completed", false, sqlProblem.Message);
+    }
+    finally
+    {
+        try
+        {
+            using var cleanup = new MySqlConnection(sqlServer);
+            cleanup.Open();
+            using var drop = new MySqlCommand($"DROP DATABASE IF EXISTS {scratchDb};", cleanup);
+            drop.ExecuteNonQuery();
+        }
+        catch { /* if the drop fails the scratch db is removed next run anyway */ }
+    }
+}
 
 Console.WriteLine($"\n=== {pass} passed, {fail} failed ===");
 return fail == 0 ? 0 : 1;

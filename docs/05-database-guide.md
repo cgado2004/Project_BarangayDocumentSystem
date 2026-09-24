@@ -93,30 +93,27 @@ set a MySQL password, put it after `Pwd=`.
 
 ## 4. Honest status — please do not misread this
 
-**The C# class that talks to MySQL is not in this version yet.**
+**v3.2.0 update: `MySqlBarangayRepository` is now in the build.** Setting
+`Storage=MySQL` gives you the real database: a fresh `barangay_magugpo`
+database seeds itself with the same sample data on first run, and every
+resident, request and payment you enter survives a restart. The promise
+made here in v3.1 held — the only code change really was wiring
+`MySqlBarangayRepository(connection, fees)` into the slot `Program.cs`
+had kept open, plus the fallback below it.
 
-The scripts in `db/` are complete and correct. What is missing is
-`MySqlBarangayRepository`, the C# side that reads and writes those tables.
+**The fallback is part of the design, not an apology.** If MySQL cannot
+be reached (XAMPP not started, scripts not run, wrong password), the app
+says exactly what happened and starts on the sample data instead. It does
+not pretend, and it does not crash — whatever you change in a fallen-back
+session is not written to the database, and the dialog tells you so.
 
-If you set `Storage=MySQL` today, the app shows a message saying exactly that
-and starts on the sample data instead. It does not pretend, and it does not
-crash.
-
-When the repository is added, the only code change is one line in
-`Program.cs`:
-
-```csharp
-return new MySqlBarangayRepository(connection, fees);
-```
-
-Nothing else in the program changes, because every screen only ever sees
-`IBarangayRepository`. That is the entire reason the interface exists.
-
-**I also have to be straight about this: I have never run these scripts.**
-There was no MySQL server on the machine I wrote them on. Every statement has
-been checked against the MySQL dialect by a parser, and the 24 document-type
-values were verified to match the C# enum exactly, in the same order — but
-"it parses" is not "it runs". **Please run them and tell me what breaks.**
+**I still have to be straight about this: the repository has never run
+against a live server.** There is no MySQL server on the machine I wrote
+it on — the same honesty as the scripts below. The SQL is parameterised
+and dialect-checked, and `tests/RuleChecks` now carries a MySQL
+round-trip section that provisions a throwaway database and proves the
+read-write-reload cycle on any machine with a server (it prints SKIP, not
+FAIL, when there is no server). **Please run it and tell me what breaks.**
 
 ---
 
@@ -239,3 +236,40 @@ implementation — `SqlDatabase.cs` (provisioning + app lock),
 `SqlBarangayRepository.cs`, the row mappers, and `Tests/SqlTestDatabase.cs`
 (integration tests on throwaway databases) — if the V3.2 implementer wants
 the reference while writing the MySQL twin.
+
+---
+
+## §9 addendum — the V3.2 landing report (what landed, what is still owed)
+
+The repository landed in v3.2.0 as `DBContext/MySqlBarangayRepository.cs`,
+built to this design. Kept from the table above:
+
+- **The provision lock.** `GET_LOCK('barangay_magugpo_provision')` plus an
+  `app_state` table (`samples_loaded` flag) — a fresh database seeds the
+  same demo the in-memory store plants, exactly once, in one transaction.
+- **Always-starts.** The mandatory connection string stays rejected. The
+  constructor throws once; `Program.CreateRepository` logs, explains, and
+  falls back to memory.
+- **Enum-name storage** end to end — every enum column is parsed and
+  written by NAME, and an unknown name fails loudly instead of silently
+  re-meaning a row.
+- **Receipt uniqueness** stays enforced in the app, exactly as v3.1.1 did;
+  a duplicate receipt is refused before the UPDATE is sent.
+
+Deliberately **not** in v3.2.0, and still owed:
+
+- **The `Version` optimistic-concurrency column** — the app is
+  single-workstation (reads come from a cache that every write updates),
+  so there is nothing to arbitrate yet. Add it with the multi-user work.
+- **`RequestResidentSnapshots`** — the certificate renderer still reads
+  the live `Resident`, exactly as it always has; freezing history at
+  filing time needs a renderer decision (whose name prints: the row's or
+  today's?) and that is a team conversation, not a quiet schema edit.
+- **The unique index on `official_receipt_no`** — same reason: worth
+  adding to `db/01` when we next touch the schema on a server we can
+  actually test against.
+
+The round-trip proof lives in `tests/RuleChecks` (v3.2.0 section): a
+throwaway database, seeded, reloaded through two fresh connections, then
+dropped. Run `dotnet run --project tests/RuleChecks` on any machine with
+XAMPP up.

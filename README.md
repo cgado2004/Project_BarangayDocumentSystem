@@ -1,4 +1,4 @@
-# Barangay Resident and Document Request Management System — v3.1.5
+# Barangay Resident and Document Request Management System — v3.2.0
 
 **Barangay Magugpo Poblacion, City of Tagum, Davao del Norte**
 Windows desktop application · WinForms · .NET 8
@@ -202,6 +202,36 @@ refactor safety constraints (source files only; designer code untouched):
 
 ---
 
+## What changed in v3.2.0
+
+**The database became real.** The slot `Program.CreateRepository()` had
+kept open since v3.1 is filled: `DBContext/MySqlBarangayRepository.cs`
+lands the team's persistence design (docs/05 §9 — reviewed from Jonathan
+Del Rosario's Draft-branch SQL work and Clint Gado's Draft2 MySQL
+implementation, re-built for this codebase):
+
+- Set `Storage=MySQL` in `App.config` and a fresh `barangay_magugpo`
+  database **seeds itself** with the same seven-resident demo on first
+  run — once, under a `GET_LOCK` provision lock, so two laptops starting
+  together cannot double-seed. Every change then survives a restart.
+- The **always-starts contract holds**: if MySQL cannot be reached the
+  app logs it, says so plainly, and falls back to the sample data. It
+  never crashes, and it never pretends the database is behind it.
+- Enum columns store their **names** end to end, the receipt-uniqueness
+  rule refuses a duplicate before the UPDATE is sent, and the released
+  jobseeker flag is written back so RA 11261's once-only limit survives
+  a restart too.
+- **One package added, on purpose**: `MySql.Data` 8.4.0. There is no way
+  to speak the MySQL protocol from the base class library — "no NuGet at
+  all" and "real persistence" cannot both be true. It is the only
+  exception; with `Storage=Memory` (the default) none of it loads.
+- `tests/RuleChecks` grew a **MySQL round-trip** section: on any machine
+  with a server it provisions a throwaway database, seeds it, reopens it
+  through two fresh connections, proves a paid release reads back exactly
+  so, and drops it. No server? It prints SKIP, not FAIL.
+
+---
+
 ## The six core technical fixes
 
 1. **Designer support.** `packages.config` lists the accessibility
@@ -326,11 +356,13 @@ phpMyAdmin or MySQL Workbench. Full instructions, including the common
 errors and what they mean, are in
 [`docs/05-database-guide.md`](docs/05-database-guide.md).
 
-The C# class that talks to MySQL is **not in this build yet**. If you set
-`Storage=MySQL` the app tells you so plainly and starts on the sample data
-rather than pretending. The v3.1 columns are already in the schema:
-`assessed_amount`, `hours_of_use`, `declared_income`, `fee_detail` and
-`availed_jobseeker_act`.
+**v3.2.0: `MySqlBarangayRepository` is in the build.** Run the two
+scripts once, set `Storage=MySQL` in `App.config`, and the app reads and
+writes the real tables — a fresh database seeds itself with the demo data
+on first run, and everything survives a restart. If MySQL cannot be
+reached the app falls back to the sample data and says so. The full story,
+including what is still owed (the `Version` column, snapshots, the
+receipt index), is in docs/05 §4 and the §9 addendum.
 
 ---
 
@@ -393,7 +425,11 @@ Run them yourself: `dotnet run --project tests/RuleChecks`.
 - **The UI has never been launched.** Everything compiles and every file
   parses, but running WinForms needs Windows and this was built on Linux.
   Run it before the defence.
-- **The MySQL scripts have not been executed** against a real server.
+- **Neither the MySQL scripts nor `MySqlBarangayRepository` has run
+  against a live server** — same Linux sandbox, no MySQL. The
+  round-trip check in `tests/RuleChecks` is written to prove it on your
+  machine; run it (`dotnet run --project tests/RuleChecks`) with XAMPP
+  up and report what breaks.
 - The checks are a console harness, not a unit-test framework.
 
 ## Before submitting

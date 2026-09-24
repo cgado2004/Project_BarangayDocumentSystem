@@ -65,10 +65,19 @@
   <!--
     NOTE ON NUGET AND THE DESIGNER, v3.1 FIX 1.
 
-    This project deliberately references no NuGet packages, so the whole
-    solution restores and builds with no network at all. App.config is read
-    through System.Xml.Linq in Program.cs instead of the
+    v3.1 deliberately referenced no NuGet packages, so the whole solution
+    restored and built with no network at all. App.config is read through
+    System.Xml.Linq in Program.cs instead of the
     System.Configuration.ConfigurationManager package.
+
+    v3.2.0 adds ONE package on purpose: MySql.Data, the driver behind the
+    MySQL repository (DBContext/MySqlBarangayRepository.cs). There is no
+    way to speak the MySQL wire protocol from the base class library, so
+    "no packages at all" and "real database persistence" cannot both be
+    true. This is the exception, agreed when the team approved the V3.2
+    persistence port - and it is still the ONLY one. Everything else in
+    the app keeps building the way it always did, and Storage=Memory (the
+    App.config default) never loads any of it.
 
     packages.config is still present because the Visual Studio WinForms
     designer surface for custom controls looks for the accessibility
@@ -76,5 +85,9 @@
     consults it - but its presence keeps the designer from complaining on a
     machine where those reference assemblies are registered the old way.
   -->
+
+  <ItemGroup>
+    <PackageReference Include="MySql.Data" Version="8.4.0" />
+  </ItemGroup>
 
 </Project>

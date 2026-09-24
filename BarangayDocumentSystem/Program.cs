@@ -123,23 +123,33 @@ internal static class Program
             return new InMemoryBarangayRepository(fees);
         }
 
-        // NOTE FOR MY GROUP-MATES
-        // The MySQL repository class is not in this version yet. The database
-        // scripts in db/ are complete and ready to run, so when the repository
-        // is added the only change needed here is the line below:
-        //
-        //     return new MySqlBarangayRepository(connection, fees);
-        //
-        // Until then, asking for MySQL gives the sample data and this warning,
-        // which is honest rather than pretending the database is wired up.
-        Dialog.Info(null,
-            "MySQL storage is selected in App.config, but the MySQL " +
-            "repository is not included in this build yet.\n\n" +
-            "The scripts in the db folder are ready to run - see " +
-            "docs/05-database-guide.md.\n\n" +
-            "I am starting with the built-in sample data for now.");
-
-        return new InMemoryBarangayRepository(fees);
+        // v3.2.0: the repository exists, so this is the real connection at
+        // last — and the fallback the docs promised. A MySqlException here
+        // (server not running, database not provisioned, wrong password in
+        // App.config) must never stop the app: I log it, explain it, and
+        // hand back the in-memory store, because a group-mate who has not
+        // started XAMPP today still deserves a working window. The one
+        // thing I do NOT do is silently pretend MySQL succeeded — the
+        // dialog says plainly which store you are looking at.
+        try
+        {
+            return new MySqlBarangayRepository(connection, fees);
+        }
+        catch (Exception databaseError)
+        {
+            ErrorLogger.Write(databaseError);
+            Dialog.Info(null,
+                "MySQL storage is selected in App.config, but I could not " +
+                "use the database:\n\n" +
+                databaseError.Message + "\n\n" +
+                "Check that MySQL (XAMPP) is running and that " +
+                "db/01-schema.sql has been run - see docs/05-database-guide.md." +
+                "\n\n" +
+                "I am starting with the built-in sample data instead. " +
+                "Anything you change in this session will NOT be saved to " +
+                "the database.");
+            return new InMemoryBarangayRepository(fees);
+        }
     }
 }
 
