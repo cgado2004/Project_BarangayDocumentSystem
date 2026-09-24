@@ -64,16 +64,10 @@ Because my commit sits on top, the push is a plain **fast-forward**. No
 
 ## 4. How to push it
 
-From the `BarangayDocumentSystemV3` folder:
-
-```bash
-bash scripts/push.sh
-```
-
-The script fetches first and refuses to push if somebody else has committed in
-the meantime, rather than blindly overwriting them.
-
-Or by hand:
+From the `BarangayDocumentSystemV3` folder, by hand (the old
+`scripts/push.sh` helper was removed in the root cleanup — it did exactly
+this: fetched first and refused to push if somebody else had committed
+in the meantime, rather than blindly overwriting them):
 
 ```bash
 git fetch origin leader_draft

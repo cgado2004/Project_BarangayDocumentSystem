@@ -187,8 +187,14 @@ refactor safety constraints (source files only; designer code untouched):
   sidebar's nav fonts are now cached (rebuilt only on size changes and
   disposed with the control) instead of being reallocated on every
   paint.
-- **Root tidied:** the leader's push helper moved to `scripts/push.sh`
-  (see `docs/06` §4). The configuration files stay where the toolchain
+- **Root tidied (v3.1.6):** the session hand-off folders
+  (`draft-ui-restyle/`, `master-restructure/`) and the push helper
+  (`scripts/`) were removed so the repo root reads clean: the project
+  folder plus the agreed support folders (`db/`, `docs/`, `tests/`)
+  and the toolchain files. The hand-off packages remain in git history
+  (`c9445a2` and `84e290f` — `git checkout <hash> -- <folder>` brings
+  one back), and pushing by hand is documented in `docs/06` §4. The
+  configuration files stay where the toolchain
   requires them: `global.json` and `.editorconfig` must sit at the repo
   root for the SDK and VS to find them, and `App.config`,
   `app.manifest` and `packages.config` are referenced by path inside
@@ -265,8 +271,6 @@ BarangayDocumentSystem/
 │   ├── 06-pushing-to-github.md
 │   ├── 07-fee-schedule-and-legal-basis.md   every fee and its law
 │   └── 08-demo-walkthrough.md        the manual pre-defence click-through
-├── scripts/
-│   └── push.sh                       the leader's safe-push helper (docs/06 §4)
 ├── db/
 │   ├── 01-schema.sql                 tables, triggers, views (v3.1 columns)
 │   └── 02-seed-data.sql              the same residents as the demo
