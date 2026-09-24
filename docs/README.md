@@ -4,7 +4,7 @@ Current, describing the composite app (Draft UI + Draft2 MySQL):
 
 | File | What it is |
 | --- | --- |
-| `01-requirements.md` | The system's requirements |
+| `01-requirements.md` | The system's requirements (Draft-era; its "no database by default" storage story is superseded by the composite's MySQL layer) |
 | `02-erd.svg` | ERD — matches `Database/schema.sql` (composite build) |
 | `03-uml.svg` | Request state machine — matches `Services/RequestService.cs` |
 | `04-project-timeline.md` | The team's project timeline |

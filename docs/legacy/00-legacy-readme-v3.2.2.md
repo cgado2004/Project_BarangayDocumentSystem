@@ -142,7 +142,7 @@ retunes the exact palette and typography, all in `Helper/AppTheme.cs`:
 
 The seal's gold stays, and WinForms caps at Bold — no ExtraBold/Black
 weights and no letter-spacing exist on the platform; sizes and casing are
-exact. `docs/dashboard-preview.png` was regenerated to match.
+exact. `dashboard-preview.png` was regenerated to match.
 
 ---
 
@@ -160,7 +160,7 @@ refactor safety constraints (source files only; designer code untouched):
 - **The six-card grid no longer wraps** at the default 1360×860 window:
   the tile floor drops 178 → 160px (six 178px tiles needed 1138px inside
   a 1056px pane; six 160px tiles need 1030px). The reference preview in
-  `docs/dashboard-preview.png` is regenerated at the default window size
+  `dashboard-preview.png` is regenerated at the default window size
   to prove it.
 
 **Stability & cleanup in the same round:**
@@ -407,7 +407,7 @@ Modelled on a digital-government service concept: white canvas,
 lavender-blue gradients, rounded cards, pill buttons, heavy headings — set
 in **Inter** when the machine has it.
 
-![Dashboard preview](docs/dashboard-preview.png)
+![Dashboard preview](dashboard-preview.png)
 
 **Everything is clickable.** Dashboard stat cards jump to the filtered list
 they summarise; purok chips open the residents of that purok; resident rows

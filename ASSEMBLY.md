@@ -132,7 +132,7 @@ employment, ₱200 work abroad**. That needed a concept neither branch had:
     facility 200/hr, RA 11261 jobseeker free). `FeeSchedule` gains a
     `FeeSchedule(connectionString)` constructor that loads live rates from
     that table; the parameterless constructor keeps the same figures for
-    the in-memory tests. Idempotent INSERTs top up existing installs.
+    the tests' compiled rates. Idempotent INSERTs top up existing installs.
 15. **Seed data purged:** the demo residents/requests seeding is gone —
     `Data/SampleData.cs` left the app (the test fixture now lives in
     `Tests/FixtureData.cs`), `LoadSampleData`/`SeedSampleData` settings
@@ -146,8 +146,9 @@ Everything else in `revamp/` is a verbatim copy from the sources above.
 
 1. Open `BarangayDocumentSystem.sln` at the repository root.
 2. Build the solution — NuGet restores `MySql.Data 8.4.0` on first build.
-3. Start XAMPP → MySQL. Run the **Tests** project (in-memory checks + theme
-   checks; expect all green).
+3. Start XAMPP → MySQL. Run the **Tests** project (behavioral checks against
+   the real MySQL seam + theme checks; expect all green — people/request
+   tables are wiped between checks, the fee schedule survives).
 4. Run the **app**. On first launch it creates `barangay_db`, the four
    tables, and (because `LoadSampleData=true`) seeds seven residents and six
    requests exactly once — reopening the app never re-seeds.

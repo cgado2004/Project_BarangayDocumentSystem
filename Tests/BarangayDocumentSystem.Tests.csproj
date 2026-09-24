@@ -25,11 +25,14 @@
     <Compile Include="Program.cs" />
     <Compile Include="FixtureData.cs" />
     <Compile Include="ThemeChecks.cs" />
-    <None Include="..\App.config"><Link>App.config</Link></None>
+    <None Include="App.config" />
     <ProjectReference Include="..\BarangayDocumentSystem.csproj">
       <Project>{8B9A251A-4642-48FE-86BB-13DB19B978DB}</Project>
       <Name>BarangayDocumentSystem</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <PackageReference Include="MySql.Data" Version="8.4.0" />
+  </ItemGroup>
 </Project>

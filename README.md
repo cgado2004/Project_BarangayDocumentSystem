@@ -69,5 +69,5 @@ restored on the machine — they are not code errors. Fix:
 | `Database/` | Frent's MySQL plumbing + the seam repository + `schema.sql` |
 | `Interfaces/` | Jonathan's `IBarangayRepository`/`IDocumentTemplate` + Frent's `RepositoryException` |
 | `Assets/` | Barangay seal/logo and the Inter font (SIL OFL license) |
-| `Tests/` | Jonathan's behavioral checks (in-memory), plus theme checks |
+| `Tests/` | Jonathan's behavioral checks, now running on the same MySQL seam, plus theme checks |
 | `docs/` | Project documentation: requirements, ERD/UML, timeline, fee schedule and legal bases, the legacy v3.2.2 writeup |
