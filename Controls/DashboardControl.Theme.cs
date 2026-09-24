@@ -7,16 +7,22 @@ using BarangayDocumentSystem.Models;
 namespace BarangayDocumentSystem.Controls
 {
     /// <summary>
-    /// The THEME half of DashboardControl. Partial class, new file, zero edits
-    /// to the original: OnLoad runs after InitializeComponent (designer-safe)
-    /// and after the constructor's first RefreshData. The original refresh
-    /// wiring is untouched - this file only listens to the StatisticsUpdated
-    /// notification the main file raises at the end of RefreshData.
+    /// The THEME half of DashboardControl, drawn to the approved dashboard
+    /// preview: hero banner, ONE row of six accent stat cards, purok chips
+    /// that filter, document-type bars, and no third grid. Partial class -
+    /// the designer file and the refresh wiring stay exactly as committed.
     /// </summary>
     public partial class DashboardControl
     {
         private FlowLayoutPanel chipFlow;
         private Panel barHost;
+        private HeroBanner heroBanner;
+        private Label pendingNote;
+        private BarangayProfile profile;
+
+        /// <summary>A purok chip was clicked - the shell switches to the
+        /// residents page and filters the registry to that purok.</summary>
+        internal event Action<string> PurokChipClicked;
 
         protected override void OnLoad(EventArgs e)
         {
@@ -24,32 +30,43 @@ namespace BarangayDocumentSystem.Controls
             ApplyTheme();
         }
 
+        /// <summary>Identity from AppSettings: the hero paints the barangay
+        /// profile instead of hardcoded strings. Safe before and after load.</summary>
+        internal void SetProfile(BarangayProfile value)
+        {
+            profile = value;
+            if (heroBanner == null || profile == null) return;
+            heroBanner.BarangayLine = profile.BarangayName;
+            heroBanner.CityLine = profile.CityName + ", " + profile.ProvinceName;
+            heroBanner.OfficialLine = profile.PunongBarangay;
+            heroBanner.Invalidate();
+        }
+
         private void ApplyTheme()
         {
             BackColor = ModernTheme.Canvas;
 
-            // ---- hero banner (new control, docked on top) ----
-            var hero = new HeroBanner();
-            Controls.Add(hero);
-            hero.BringToFront();
-            hero.Height = 150;
+            // ---- hero banner (docked on top of the page) ----
+            heroBanner = new HeroBanner();
+            SetProfile(profile);
+            Controls.Add(heroBanner);
+            heroBanner.BringToFront();
+            heroBanner.Height = 150;
 
-            // ---- the six stat cards, arranged like the reference ----
-            // The designer's TableLayoutPanel holds them 3 x 2; the theme
-            // re-orders them at RUN TIME (SetCellPosition) so the designer
-            // file stays untouched. Labels are re-titled to the short forms
-            // and each card gets its accent colour and a small caption.
-            //
-            // Every figure stays one the data really provides. The "RELEASED"
-            // count comes from the same RequestsByStatus list the Statuses
-            // grid is bound to - no new statistic is invented anywhere.
-            tblCards.SetCellPosition(pnlPending,  new TableLayoutPanelCellPosition(1, 0));
-            tblCards.SetCellPosition(pnlReady,    new TableLayoutPanelCellPosition(2, 0));
-            tblCards.SetCellPosition(pnlRequests, new TableLayoutPanelCellPosition(0, 1));
-            tblCards.SetCellPosition(pnlRevenue,  new TableLayoutPanelCellPosition(1, 1));
-            // pnlResidents already sits at (0,0) and pnlFree at (2,1).
+            // ---- the six stat cards in ONE row, like the reference ----
+            // The designer's table holds 3 columns x 2 rows; the theme widens
+            // it to six at run time so the designer file stays untouched.
+            tblCards.ColumnCount = 6;
+            tblCards.RowCount = 1;
+            while (tblCards.ColumnStyles.Count < 6)
+                tblCards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 6f));
+            for (int column = 0; column < 6; column++)
+                tblCards.ColumnStyles[column] = new ColumnStyle(SizeType.Percent, 100f / 6f);
+            var cards = new[] { pnlResidents, pnlPending, pnlReady, pnlRequests, pnlRevenue, pnlFree };
+            for (int column = 0; column < cards.Length; column++)
+                tblCards.SetCellPosition(cards[column], new TableLayoutPanelCellPosition(column, 0));
 
-            Style(pnlResidents, lblResidentsHeading, lblResidents,
+            pendingNote = Style(pnlResidents, lblResidentsHeading, lblResidents,
                 "RESIDENTS", "on the registry", ModernTheme.PrimaryNavy);
             Style(pnlPending, lblPendingHeading, lblPending,
                 "PENDING", "to be processed", ModernTheme.Amber);
@@ -62,19 +79,32 @@ namespace BarangayDocumentSystem.Controls
             Style(pnlFree, lblFreeHeading, lblFree,
                 "ISSUED FREE", "statutory exemptions", ModernTheme.Crimson);
 
-            // ---- breakdowns: keep gridStatuses as a styled table; replace
-            //      gridTypes with navy bars and gridPuroks with pills ----
-            ModernTheme.StyleGrid(gridStatuses);
-            lblStatusesHeading.Font = ModernTheme.F(10f, true);
-            lblStatusesHeading.ForeColor = ModernTheme.Ink;
-            pnlStatuses.BackColor = Color.White;
+            // ---- breakdowns: chips and bars only; the statuses table the
+            //      original wiring populates is kept but out of view ----
+            gridStatuses.Visible = false;
+            pnlStatuses.Visible = false;
+            // two cards share the row the way the reference draws it
+            // (purok chips left, document bars right); the hidden statuses
+            // card collapses into a zero-width third column.
+            tblBreakdowns.ColumnStyles[0] = new ColumnStyle(SizeType.Percent, 58f);
+            tblBreakdowns.ColumnStyles[1] = new ColumnStyle(SizeType.Percent, 42f);
+            tblBreakdowns.ColumnStyles[2] = new ColumnStyle(SizeType.Percent, 0f);
+            tblBreakdowns.SetCellPosition(pnlPuroks, new TableLayoutPanelCellPosition(0, 0));
+            tblBreakdowns.SetCellPosition(pnlTypes, new TableLayoutPanelCellPosition(1, 0));
 
+            lblTypesHeading.Font = ModernTheme.F(10f, true);
+            lblTypesHeading.ForeColor = ModernTheme.Ink;
+            pnlTypes.BackColor = Color.White;
             ModernTheme.StyleGrid(gridTypes);
             gridTypes.Visible = false;   // kept populated by the original wiring
             barHost = new Panel { BackColor = Color.White, Dock = DockStyle.Fill, AutoScroll = true };
             pnlTypes.Controls.Add(barHost);
             barHost.BringToFront();
 
+            lblPuroksHeading.Text = "Residents by purok  \u2014  click one to filter";
+            lblPuroksHeading.Font = ModernTheme.F(10f, true);
+            lblPuroksHeading.ForeColor = ModernTheme.Ink;
+            pnlPuroks.BackColor = Color.White;
             ModernTheme.StyleGrid(gridPuroks);
             gridPuroks.Visible = false;  // kept populated by the original wiring
             chipFlow = new FlowLayoutPanel
@@ -88,14 +118,6 @@ namespace BarangayDocumentSystem.Controls
             pnlPuroks.Controls.Add(chipFlow);
             chipFlow.BringToFront();
 
-            foreach (var heading in new[] { lblTypesHeading, lblPuroksHeading })
-            {
-                heading.Font = ModernTheme.F(10f, true);
-                heading.ForeColor = ModernTheme.Ink;
-            }
-            pnlTypes.BackColor = Color.White;
-            pnlPuroks.BackColor = Color.White;
-
             // first paint of the overlays from the current figures
             OnStatistics(reporting == null ? null : reporting.GetStatistics());
 
@@ -104,10 +126,10 @@ namespace BarangayDocumentSystem.Controls
         }
 
         /// <summary>Retitles a stat card, paints its accent and adds the
-        /// small caption under the value. All three labels stay on the same
-        /// panels the designer created; nothing is re-parented elsewhere.</summary>
-        private void Style(Panel card, Label heading, Label value,
-                           string title, string caption, Color accent)
+        /// small caption under the value. Returns that caption so callers
+        /// can keep it live (the PENDING card counts the aged requests).</summary>
+        private Label Style(Panel card, Label heading, Label value,
+                            string title, string caption, Color accent)
         {
             heading.Text = title;
             ModernTheme.StyleStatCard(card, heading, value, accent);
@@ -125,6 +147,7 @@ namespace BarangayDocumentSystem.Controls
             };
             card.Controls.Add(note);
             note.BringToFront();
+            return note;
         }
 
         private void OnStatistics(BarangayStatistics statistics)
@@ -137,20 +160,31 @@ namespace BarangayDocumentSystem.Controls
             // the RELEASED figure: the same list the statuses grid binds to
             lblRequests.Text = CountOf(statistics, "Released").ToString();
 
-            // ---- purok pills (display only - filtering is behaviour, and
-            //      this restyle adds none) ----
+            // the PENDING caption carries the Charter's ageing figure
+            if (pendingNote != null)
+                pendingNote.Text = statistics.AgedPendingRequests > 0
+                    ? "to be processed \u00b7 " + statistics.AgedPendingRequests + " aged"
+                    : "to be processed";
+
+            // ---- purok chips: click one to filter the residents page ----
             if (chipFlow != null)
             {
                 chipFlow.SuspendLayout();
                 chipFlow.Controls.Clear();
                 foreach (var pair in statistics.ResidentsByPurok)
                 {
-                    string label = pair.Key + "  \u00b7  " + pair.Value;
+                    string purok = pair.Key;
+                    string label = purok + "  \u00b7  " + pair.Value;
                     var chip = new PillChip
                     {
                         Text = label,
                         Width = TextRenderer.MeasureText(label, chipFlow.Font).Width + 40,
-                        Margin = new Padding(4, 4, 8, 6)
+                        Margin = new Padding(4, 4, 8, 6),
+                        Cursor = Cursors.Hand
+                    };
+                    chip.Click += (sender, args) =>
+                    {
+                        if (PurokChipClicked != null) PurokChipClicked(purok);
                     };
                     chipFlow.Controls.Add(chip);
                 }

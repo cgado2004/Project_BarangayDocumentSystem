@@ -16,6 +16,13 @@ namespace BarangayDocumentSystem.Helpers
     {
         private Image logo;
 
+        /// <summary>The three identity lines, fed from AppSettings by the
+        /// shell; the defaults match Barangay Magugpo Poblacion so a bare
+        /// control still paints the real barangay.</summary>
+        public string BarangayLine { get; set; } = "Barangay Magugpo Poblacion";
+        public string CityLine { get; set; } = "City of Tagum, Davao del Norte";
+        public string OfficialLine { get; set; } = "HON. EUGENIA SOLIS HINGPIT, MD";
+
         public HeroBanner()
         {
             DoubleBuffered = true;
@@ -94,12 +101,12 @@ namespace BarangayDocumentSystem.Helpers
             int available = Width - textLeft - 28;
             if (available > 80)
             {
-                TextRenderer.DrawText(g, "Barangay Magugpo Poblacion",
+                TextRenderer.DrawText(g, BarangayLine,
                     ModernTheme.F(15f, true),
                     new Rectangle(textLeft, cy - 50, available, 34), Color.White,
                     TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
 
-                TextRenderer.DrawText(g, "City of Tagum, Davao del Norte",
+                TextRenderer.DrawText(g, CityLine,
                     ModernTheme.F(9.5f, false),
                     new Rectangle(textLeft, cy - 16, available, 24), Color.FromArgb(210, Color.White),
                     TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
@@ -107,7 +114,7 @@ namespace BarangayDocumentSystem.Helpers
                 using (var rule = new Pen(Color.FromArgb(140, ModernTheme.Gold), 2f))
                     g.DrawLine(rule, textLeft, cy + 16, textLeft + 46, cy + 16);
 
-                TextRenderer.DrawText(g, "Punong Barangay   \u00b7   HON. EUGENIA SOLIS HINGPIT, MD",
+                TextRenderer.DrawText(g, "Punong Barangay   \u00b7   " + OfficialLine,
                     ModernTheme.F(8.5f, true),
                     new Rectangle(textLeft, cy + 24, available, 22), ModernTheme.GoldSoft,
                     TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);

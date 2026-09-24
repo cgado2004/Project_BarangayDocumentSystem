@@ -25,6 +25,17 @@ namespace BarangayDocumentSystem.Controls
             RefreshData();
         }
 
+        private string purokFilter;
+
+        /// <summary>Shows only one purok - the dashboard's purok chips land
+        /// here. Null or empty clears the filter again.</summary>
+        public void ApplyPurokFilter(string purok)
+        {
+            purokFilter = string.IsNullOrWhiteSpace(purok) ? null : purok.Trim();
+            txtSearch.Text = "";
+            RefreshData();
+        }
+
         private void SearchChanged(object sender, EventArgs e)
         {
             UiFeedback.Run(this, RefreshData);
@@ -40,6 +51,8 @@ namespace BarangayDocumentSystem.Controls
             if (residents == null) return;
             int selectedId = SelectedResident() == null ? 0 : SelectedResident().ResidentId;
             var records = residents.Search(txtSearch.Text);
+            if (purokFilter != null)
+                records = records.Where(resident => resident.Purok == purokFilter).ToList();
             gridResidents.DataSource = records;
             foreach (DataGridViewRow row in gridResidents.Rows)
             {

@@ -12,6 +12,7 @@ namespace BarangayDocumentSystem.Forms
     {
         private DashboardControl dashboardPage;
         private readonly Services.ReportingService reporting;
+        private readonly AppSettings settings;
         private ResidentsControl residentsPage;
         private RequestsControl requestsPage;
 
@@ -21,9 +22,11 @@ namespace BarangayDocumentSystem.Forms
             : this()
         {
             this.reporting = reporting;
+            this.settings = settings;
             lblBarangay.Text = settings.Profile.BarangayName + Environment.NewLine + settings.Profile.CityName;
             lblSession.Text = "Records are saved in MySQL (barangay_db). Citizen's Charter fee schedule.";
             dashboardPage = new DashboardControl(reporting);
+            dashboardPage.SetProfile(settings.Profile);
             residentsPage = new ResidentsControl(residents, requests, renderer);
             requestsPage = new RequestsControl(residents, requests, renderer);
             pnlContent.Controls.AddRange(new Control[] { dashboardPage, residentsPage, requestsPage });

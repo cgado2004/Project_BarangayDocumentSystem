@@ -13,6 +13,7 @@ namespace BarangayDocumentSystem.Forms
     public partial class MainForm
     {
         private Label pageSubtitle;
+        private Label agedWarning;
 
         protected override void OnLoad(EventArgs e)
         {
@@ -61,10 +62,29 @@ namespace BarangayDocumentSystem.Forms
             lblPageTitle.Parent.Controls.Add(pageSubtitle);
             pageSubtitle.BringToFront();
 
-            // ---- footer: the red live-figures line (no DPI text, ever) ----
+            // ---- footer: live figures, the ageing warning, the official ----
+            lblSession.AutoSize = true;
             lblSession.Font = ModernTheme.F(8.5f, false);
-            lblSession.ForeColor = ModernTheme.Crimson;
+            lblSession.ForeColor = ModernTheme.SlateInk;
             lblSession.BackColor = ModernTheme.Canvas;
+            agedWarning = new Label
+            {
+                AutoSize = true,
+                BackColor = ModernTheme.Canvas,
+                Font = ModernTheme.F(8.5f, true),
+                ForeColor = ModernTheme.Crimson
+            };
+            lblSession.Parent.Controls.Add(agedWarning);
+            lblSession.LocationChanged += delegate { PlaceAgedWarning(); };
+            lblSession.SizeChanged += delegate { PlaceAgedWarning(); };
+
+            // purok chips navigate to the residents page, pre-filtered
+            dashboardPage.PurokChipClicked += delegate(string purok)
+            {
+                residentsPage.ApplyPurokFilter(purok);
+                ShowPage(residentsPage, btnResidents, "Residents");
+            };
+
             RefreshFooter();
         }
 
@@ -75,11 +95,30 @@ namespace BarangayDocumentSystem.Forms
         {
             if (reporting == null) return;
             var statistics = reporting.GetStatistics();
+            string official = settings != null && settings.Profile != null
+                ? settings.Profile.PunongBarangay : "";
             lblSession.Text =
                 statistics.TotalResidents + " residents  \u00b7  " +
                 statistics.TotalRequests + " requests  \u00b7  \u20b1" +
-                statistics.TotalCollected.ToString("N2") +
-                " collected  \u2014  records are saved on this computer.";
+                statistics.TotalCollected.ToString("N2") + " collected" +
+                (official.Length == 0 ? "" : "  \u00b7  " + official);
+
+            if (agedWarning != null)
+            {
+                agedWarning.Text = "\u26a0  " + statistics.AgedPendingRequests +
+                    " past the " + Services.ReportingService.WorkingDayStandard +
+                    "-working-day standard";
+                agedWarning.Visible = statistics.AgedPendingRequests > 0;
+                PlaceAgedWarning();
+            }
+        }
+
+        /// <summary>Keeps the red warning just right of the live figures,
+        /// wherever the session label lands.</summary>
+        private void PlaceAgedWarning()
+        {
+            if (agedWarning != null)
+                agedWarning.Location = new Point(lblSession.Right + 18, lblSession.Top);
         }
     }
 }
