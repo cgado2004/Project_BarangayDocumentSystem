@@ -35,8 +35,15 @@ for the full provenance and every seam):
    The fee schedule is topped up automatically; to also clear the old
    demo residents/requests, drop the `barangay_db` database in phpMyAdmin
    once and let the app recreate it.
-4. The console test project (`Tests`) runs 20+ behavioral checks — run it
-   first from the debugger; it is the fastest way to see the rules work.
+4. The console test project (`Tests`) runs 20+ behavioral checks against
+   the **same MySQL database** (start XAMPP first; people/request tables
+   are wiped before each check, the fee schedule survives). Run it from
+   the debugger — it is the fastest way to see the rules work. There is
+   no in-memory repository anywhere: production and tests share the one
+   MySQL seam.
+5. The built app lands at `bin\Debug\BarangayDocumentSystem.exe`
+   (or `bin\Release\...`). If it is missing, the NuGet restore did not
+   run — see Troubleshooting above.
 
 ## Troubleshooting the build
 

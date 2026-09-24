@@ -8,7 +8,8 @@ using System.Reflection;
 using System.Windows.Forms;
 using BarangayDocumentSystem.Configuration;
 using BarangayDocumentSystem.Controls;
-using BarangayDocumentSystem.Data;
+using BarangayDocumentSystem.Database;
+using MySql.Data.MySqlClient;
 using BarangayDocumentSystem.Documents;
 using BarangayDocumentSystem.Forms;
 using BarangayDocumentSystem.Interfaces;
@@ -23,16 +24,14 @@ namespace BarangayDocumentSystem.Tests
         private static int passed;
         private static int failed;
         private static int skipped;
-        private static bool useSql;
 
         [STAThread]
         private static int Main(string[] args)
         {
-            useSql = args.Contains("--sql");
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Console.WriteLine("Process: " + (IntPtr.Size * 8) + "-bit; CLR: " + Environment.Version);
-            Console.WriteLine("Storage: in memory (the revamp\u0027s --sql switch is retired; MySQL is covered by the app itself)");
+            Console.WriteLine("Storage: MySQL (barangay_db) - start XAMPP first; tables are wiped before each check");
             Run("Dashboard totals include paid rejections and empty categories", Reporting);
             Run("Stale resident edits cannot overwrite newer records", StaleEdits);
             Run("Transactions roll back related changes", TransactionRollback);
@@ -67,15 +66,7 @@ namespace BarangayDocumentSystem.Tests
             try { test(); passed++; Console.WriteLine("PASS " + name); }
             catch (NotSupportedException error) { skipped++; Console.WriteLine("SKIP " + name + ": " + error.Message); }
             catch (Exception error) { failed++; Console.WriteLine("FAIL " + name + Environment.NewLine + error); }
-            finally
-            {
-                foreach (var database in databases)
-                {
-                    try { database.Dispose(); }
-                    catch (Exception error) { failed++; Console.WriteLine("FAIL test database cleanup: " + error.Message); }
-                }
-                databases.Clear();
-            }
+            finally { }
         }
 
         private static void Check(bool condition, string message)
@@ -707,6 +698,29 @@ namespace BarangayDocumentSystem.Tests
             form.Hide();
         }
 
+        /// <summary>The real MySQL seam - the same repository the app runs.
+        /// Requires MySQL (XAMPP) to be running; env BARANGAY_DB_CONNECTION can
+        /// redirect the tests to another server.</summary>
+        private static MySqlBarangayRepository NewRepository()
+        {
+            var repository = new MySqlBarangayRepository(DatabaseSettings.Load().ConnectionString);
+            repository.Initialize();   // creates the schema + Charter fee schedule if missing
+            return repository;
+        }
+
+        /// <summary>People and requests are wiped so every check starts from a
+        /// clean slate; the fee schedule and app_state survive.</summary>
+        private static void WipeTables()
+        {
+            using (var connection = new MySqlConnection(DatabaseSettings.Load().ConnectionString))
+            {
+                connection.Open();
+                foreach (string table in new[] { "resident_snapshots", "document_requests", "residents" })
+                    using (var command = new MySqlCommand("DELETE FROM " + table, connection))
+                        command.ExecuteNonQuery();
+            }
+        }
+
         private class Fixture
         {
             public IBarangayRepository Repository { get; private set; }
@@ -717,7 +731,11 @@ namespace BarangayDocumentSystem.Tests
 
             public Fixture(IBarangayRepository repository = null)
             {
-                if (repository == null) repository = useSql ? (IBarangayRepository)NewDatabase().OpenRepository() : new InMemoryBarangayRepository();
+                if (repository == null)
+                {
+                    repository = NewRepository();
+                    WipeTables();
+                }
                 Repository = repository;
                 Reporting = new ReportingService(repository);
                 Residents = new ResidentService(repository);
