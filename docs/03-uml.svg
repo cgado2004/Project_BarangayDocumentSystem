@@ -1,216 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 960" width="1240" height="960">
-  <defs>
-    <style>
-      text { font-family: "Segoe UI", -apple-system, "Noto Sans", "DejaVu Sans", sans-serif; }
-      .mono { font-family: Consolas, "Cascadia Mono", "DejaVu Sans Mono", monospace; }
-      .cls     { fill:#FFFFFF; stroke:#06155A; stroke-width:2; }
-      .ifc     { fill:#FFFFFF; stroke:#0616C1; stroke-width:2; stroke-dasharray:6 3; }
-      .hdr     { fill:#06155A; }
-      .hdrI    { fill:#0616C1; }
-      .hdrtxt  { fill:#FFFFFF; font-size:14px; font-weight:700; }
-      .stereo  { fill:#B7D0F2; font-size:10.5px; font-style:italic; }
-      .m       { font-size:11.5px; fill:#04060F; }
-      .mono2   { font-size:11.5px; fill:#04060F; }
-      .sep     { stroke:#E6E9F2; stroke-width:1; }
-      .rel     { stroke:#06155A; stroke-width:2; fill:none; }
-      .reld    { stroke:#0616C1; stroke-width:2; fill:none; stroke-dasharray:7 4; }
-      .lbl     { font-size:11.5px; fill:#55575B; }
-      .card    { font-size:11.5px; fill:#06155A; font-weight:700; }
-      .title   { font-size:21px; font-weight:700; fill:#04060F; }
-      .sub     { font-size:13px; fill:#7A8794; }
-      .notebox { fill:#F4F7FE; stroke:#B7D0F2; stroke-width:1.5; }
-      .note    { font-size:11.5px; fill:#55575B; }
-      .notehd  { font-size:12.5px; fill:#06155A; font-weight:700; }
-    </style>
-  </defs>
-
-  <rect width="1240" height="960" fill="#FFFFFF"/>
-  <text x="36" y="42" class="title">UML Class Diagram — Barangay Document System v3.1</text>
-  <text x="36" y="64" class="sub">One project (net8.0-windows) · folders as layers: Models · Service · Interfaces · DBContext · Helper</text>
-
-  <!-- Resident -->
-  <g>
-    <rect x="36" y="96" width="290" height="246" rx="4" class="cls"/>
-    <path d="M36 100 a4 4 0 0 1 4 -4 h282 a4 4 0 0 1 4 4 v24 h-290 z" class="hdr"/>
-    <text x="50" y="117" class="hdrtxt">Resident</text>
-    <text x="50" y="144" class="mono2">- residentId : int</text>
-    <text x="50" y="162" class="mono2">+ FirstName / MiddleName / LastName</text>
-    <text x="50" y="180" class="mono2">+ DateOfBirth : DateTime</text>
-    <text x="50" y="198" class="mono2">+ Purok : string</text>
-    <text x="50" y="216" class="mono2">+ Classification : ResidentClassification</text>
-    <text x="50" y="234" class="mono2">+ HasAvailedFirstTimeJobseeker : bool</text>
-    <line x1="36" y1="246" x2="326" y2="246" class="sep"/>
-    <text x="50" y="266" class="mono2">+ GetFullName() : string</text>
-    <text x="50" y="284" class="mono2">+ GetAge() : int</text>
-    <text x="50" y="302" class="mono2">+ GetMonthsOfResidency() : int</text>
-    <text x="50" y="320" class="mono2">+ HasClassification(c) : bool</text>
-  </g>
-
-  <!-- DocumentRequest -->
-  <g>
-    <rect x="404" y="96" width="304" height="286" rx="4" class="cls"/>
-    <path d="M404 100 a4 4 0 0 1 4 -4 h296 a4 4 0 0 1 4 4 v24 h-304 z" class="hdr"/>
-    <text x="418" y="117" class="hdrtxt">DocumentRequest</text>
-    <text x="418" y="144" class="mono2">- requestId : int</text>
-    <text x="418" y="162" class="mono2">+ Resident : Resident</text>
-    <text x="418" y="180" class="mono2">+ DocumentType : DocumentType</text>
-    <text x="418" y="198" class="mono2">+ Input : RequestInput</text>
-    <text x="418" y="216" class="mono2">+ Status : RequestStatus</text>
-    <text x="418" y="234" class="mono2">+ Fee : decimal</text>
-    <text x="418" y="252" class="mono2">+ IsPaid : bool</text>
-    <line x1="404" y1="264" x2="708" y2="264" class="sep"/>
-    <text x="418" y="284" class="mono2">+ StartProcessing()</text>
-    <text x="418" y="302" class="mono2">+ MarkReadyForRelease()</text>
-    <text x="418" y="320" class="mono2">+ RecordPayment(or)</text>
-    <text x="418" y="338" class="mono2">+ Release()   « refuses if unpaid »</text>
-    <text x="418" y="356" class="mono2">+ Reject(reason)</text>
-    <text x="418" y="374" class="mono2">+ GetReferenceNumber() : string</text>
-  </g>
-
-  <!-- FeeSchedule -->
-  <g>
-    <rect x="780" y="96" width="330" height="200" rx="4" class="cls"/>
-    <path d="M780 100 a4 4 0 0 1 4 -4 h322 a4 4 0 0 1 4 4 v24 h-330 z" class="hdr"/>
-    <text x="794" y="117" class="hdrtxt">FeeSchedule</text>
-    <text x="794" y="144" class="mono2">- ClearanceLocal = 100, Abroad = 200</text>
-    <text x="794" y="162" class="mono2">- LuponFiling = 150, Facility = 200/hr</text>
-    <text x="794" y="180" class="mono2">- Certification = 100, BusinessStd = 200</text>
-    <text x="794" y="198" class="mono2">- Cedula: 5 + 1/1,000, cap 5,000</text>
-    <line x1="780" y1="210" x2="1110" y2="210" class="sep"/>
-    <text x="794" y="230" class="mono2">+ Assess(resident, type, input)</text>
-    <text x="810" y="248" class="mono2">: FeeAssessment</text>
-    <text x="794" y="270" class="mono2">+ NameOf(type) : string  « static »</text>
-    <text x="794" y="288" class="note">All money lives here (NFR-04)</text>
-  </g>
-
-  <!-- FeeAssessment -->
-  <g>
-    <rect x="780" y="330" width="330" height="150" rx="4" class="cls"/>
-    <path d="M780 334 a4 4 0 0 1 4 -4 h322 a4 4 0 0 1 4 4 v24 h-330 z" class="hdr"/>
-    <text x="794" y="351" class="hdrtxt">FeeAssessment</text>
-    <text x="794" y="378" class="mono2">+ BaseFee / FinalFee : decimal</text>
-    <text x="794" y="396" class="mono2">+ Basis : string</text>
-    <text x="794" y="414" class="mono2">+ IsWaived : bool</text>
-    <text x="794" y="432" class="mono2">+ IsBlocked : bool</text>
-    <text x="794" y="450" class="mono2">+ BlockReason : string</text>
-    <text x="794" y="470" class="note">Carries the WHY, not just the amount</text>
-  </g>
-
-  <!-- IBarangayRepository -->
-  <g>
-    <rect x="404" y="452" width="304" height="212" rx="4" class="ifc"/>
-    <path d="M404 456 a4 4 0 0 1 4 -4 h296 a4 4 0 0 1 4 4 v34 h-304 z" class="hdrI"/>
-    <text x="418" y="470" class="stereo">«interface»</text>
-    <text x="418" y="484" class="hdrtxt">IBarangayRepository</text>
-    <text x="418" y="512" class="mono2">+ Residents : IReadOnlyList</text>
-    <text x="418" y="530" class="mono2">+ Requests : IReadOnlyList</text>
-    <text x="418" y="548" class="mono2">+ AddResident(details)</text>
-    <text x="418" y="566" class="mono2">+ UpdateResident(r, details)</text>
-    <text x="418" y="584" class="mono2">+ RemoveResident(r)</text>
-    <text x="418" y="602" class="mono2">+ SearchResidents(term)</text>
-    <text x="418" y="620" class="mono2">+ CreateRequest(r, type, purpose, input)</text>
-    <text x="418" y="638" class="mono2">+ SaveRequest(request)</text>
-    <text x="418" y="656" class="mono2">+ GetStatistics()</text>
-  </g>
-
-  <!-- implementations -->
-  <g>
-    <rect x="404" y="836" width="286" height="96" rx="4" class="cls"/>
-    <path d="M404 840 a4 4 0 0 1 4 -4 h278 a4 4 0 0 1 4 4 v24 h-286 z" class="hdr"/>
-    <text x="418" y="857" class="hdrtxt">InMemoryBarangayRepository</text>
-    <text x="418" y="884" class="mono2">- residents : List</text>
-    <text x="418" y="902" class="mono2">- requests : List</text>
-    <text x="418" y="922" class="note">Sample data, no setup needed</text>
-  </g>
-
-  <g>
-    <rect x="720" y="836" width="286" height="96" rx="4" class="cls"/>
-    <path d="M720 840 a4 4 0 0 1 4 -4 h278 a4 4 0 0 1 4 4 v24 h-286 z" class="hdr"/>
-    <text x="734" y="857" class="hdrtxt">MySqlBarangayRepository</text>
-    <text x="734" y="884" class="mono2">- connectionString : string</text>
-    <text x="734" y="902" class="mono2">+ TestConnection(...)</text>
-    <text x="734" y="922" class="note">Swapped in via Program.cs (NFR-07)</text>
-  </g>
-
-  <!-- DocumentRenderer -->
-  <g>
-    <rect x="36" y="392" width="290" height="140" rx="4" class="cls"/>
-    <path d="M36 396 a4 4 0 0 1 4 -4 h282 a4 4 0 0 1 4 4 v24 h-290 z" class="hdr"/>
-    <text x="50" y="413" class="hdrtxt">DocumentRenderer</text>
-    <text x="50" y="440" class="mono2">- profile : BarangayProfile</text>
-    <line x1="36" y1="452" x2="326" y2="452" class="sep"/>
-    <text x="50" y="472" class="mono2">+ Draw(g, bounds, request)</text>
-    <text x="50" y="490" class="mono2">+ RenderText(request) : string</text>
-    <text x="50" y="508" class="mono2">+ CreatePrintDocument(request)</text>
-    <text x="50" y="526" class="mono2">  (GDI+ page engine)</text>
-  </g>
-
-  <!-- MainShell + views -->
-  <g>
-    <rect x="850" y="530" width="330" height="170" rx="4" class="cls"/>
-    <path d="M850 534 a4 4 0 0 1 4 -4 h322 a4 4 0 0 1 4 4 v24 h-330 z" class="hdr"/>
-    <text x="864" y="551" class="hdrtxt">MainShell  (App layer)</text>
-    <text x="864" y="578" class="mono2">- sidebar : NavigationSidebar</text>
-    <text x="864" y="596" class="mono2">- dashboard / residents / requests</text>
-    <line x1="850" y1="608" x2="1180" y2="608" class="sep"/>
-    <text x="864" y="628" class="mono2">- Go(key, filter)</text>
-    <text x="864" y="646" class="mono2">- SizeToScreen()   « NFR-13 »</text>
-    <text x="864" y="672" class="note">Owns navigation only. Knows no</text>
-    <text x="864" y="689" class="note">business rule.</text>
-  </g>
-
-  <g>
-    <rect x="850" y="736" width="330" height="110" rx="4" class="cls"/>
-    <path d="M850 740 a4 4 0 0 1 4 -4 h322 a4 4 0 0 1 4 4 v24 h-330 z" class="hdr"/>
-    <text x="864" y="757" class="hdrtxt">ViewBase (abstract base)</text>
-    <text x="864" y="784" class="mono2">+ OnShown()   « virtual »</text>
-    <text x="864" y="802" class="mono2">AutoScroll + AutoScrollMinSize</text>
-    <text x="864" y="826" class="note">Dashboard · Residents · Requests inherit it</text>
-  </g>
-
-  <!-- relations -->
-  <!-- Resident 1 - 0..* DocumentRequest -->
-  <path d="M326 200 H404" class="rel"/>
-  <path d="M346 193 V207" class="rel"/>
-  <path d="M404 200 l-14 -7 M404 200 l-14 7" class="rel"/>
-  <text x="332" y="188" class="card">1</text>
-  <text x="398" y="188" class="card" text-anchor="end">0..*</text>
-  <text x="365" y="224" class="lbl" text-anchor="middle">files</text>
-
-  <!-- FeeSchedule produces FeeAssessment -->
-  <path d="M945 296 V330" class="reld"/>
-  <path d="M945 330 l-6 -11 M945 330 l6 -11" class="reld"/>
-  <text x="955" y="318" class="lbl">returns</text>
-
-  <!-- implementations realise interface -->
-  <path d="M520 836 V700 H540 V664" class="reld"/>
-  <path d="M540 664 l-7 12 M540 664 l7 12" class="reld"/>
-  <path d="M840 836 V700 H600 V664" class="reld"/>
-  <path d="M600 664 l-7 12 M600 664 l7 12" class="reld"/>
-  <text x="660" y="694" class="lbl">implements</text>
-
-  <!-- shell depends on interface -->
-  <path d="M850 596 H760 V560 H708" class="reld"/>
-  <path d="M708 560 l12 -6 M708 560 l12 6" class="reld"/>
-  <text x="760" y="552" class="lbl">uses</text>
-
-  <!-- renderer uses request -->
-  <path d="M326 452 H366 V300 H404" class="reld"/>
-  <path d="M404 300 l-12 -6 M404 300 l-12 6" class="reld"/>
-
-  <!-- legend -->
-  <g>
-    <rect x="36" y="586" width="330" height="200" rx="8" class="notebox"/>
-    <text x="54" y="612" class="notehd">Layering rule (NFR-05)</text>
-    <text x="54" y="636" class="note">One project; the arrows still point</text>
-    <text x="54" y="653" class="note">one way only: UI → Service → Models.</text>
-    <text x="54" y="670" class="note">Service and Models never reference</text>
-    <text x="54" y="694" class="note">the UI, so the business rules can</text>
-    <text x="54" y="711" class="note">still be tested and checked with</text>
-    <text x="54" y="728" class="note">no user interface at all.</text>
-    <text x="54" y="756" class="note">──── association      ┄┄┄ dependency /</text>
-    <text x="54" y="773" class="note">                              realisation</text>
-  </g>
-
-  <text x="36" y="930" class="sub">Prepared by Clint Wood Gado · IT13</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="600" viewBox="0 0 1000 600">
+<rect width="1000" height="600" fill="#f6f4ef"/>
+<marker id="ah" markerWidth="9" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 z" fill="#3f4753"/></marker>
+<text x="500" y="52" text-anchor="middle" font-size="22" font-weight="bold" fill="#111827" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">State machine diagram for</text>
+<text x="500" y="82" text-anchor="middle" font-size="22" font-weight="bold" fill="#111827" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">document requests</text>
+<path d="M600,168 C600,132 648,132 648,168" fill="none" stroke="#3f4753" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="624" y="118" text-anchor="middle" font-size="11" fill="#374151" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">record payment (OR number)</text>
+<text x="624" y="103" text-anchor="middle" font-size="9.5" fill="#8a919c" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">state unchanged</text>
+<circle cx="62" cy="192" r="7" fill="#1f2937"/>
+<path d="M69,192 H112" stroke="#3f4753" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="90" y="245" text-anchor="middle" font-size="9.5" fill="#8a919c" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">create request</text>
+<text x="90" y="258" text-anchor="middle" font-size="9.5" fill="#8a919c" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">fee assessed,</text>
+<text x="90" y="271" text-anchor="middle" font-size="9.5" fill="#8a919c" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">snapshot saved</text>
+<rect x="115" y="168" width="120" height="48" rx="10" fill="#dce4fb" stroke="#b9c6f2" stroke-width="1.4"/>
+<text x="175.0" y="196" text-anchor="middle" font-size="12" fill="#1f2937" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">Pending</text>
+<rect x="320" y="168" width="120" height="48" rx="10" fill="#dfd2f3" stroke="#c9b1ea" stroke-width="1.4"/>
+<text x="380.0" y="196" text-anchor="middle" font-size="12" fill="#1f2937" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">Processing</text>
+<rect x="540" y="168" width="140" height="48" rx="10" fill="#c9dcfd" stroke="#a6c4f2" stroke-width="1.4"/>
+<text x="610.0" y="196" text-anchor="middle" font-size="12" fill="#1f2937" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">Ready for release</text>
+<rect x="770" y="168" width="120" height="48" rx="10" fill="#d9edd9" stroke="#b3d9b3" stroke-width="1.4"/>
+<text x="830.0" y="196" text-anchor="middle" font-size="12" fill="#1f2937" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">Released</text>
+<path d="M230,192 H317" stroke="#3f4753" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="275.0" y="234" text-anchor="middle" font-size="11" fill="#374151" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">start processing</text>
+<path d="M450,192 H537" stroke="#3f4753" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="495.0" y="234" text-anchor="middle" font-size="11" fill="#374151" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">mark ready</text>
+<path d="M680,192 H767" stroke="#3f4753" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="725.0" y="234" text-anchor="middle" font-size="11" fill="#374151" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">release</text>
+<text x="725" y="262" text-anchor="middle" font-size="9.5" fill="#8a919c" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">guard: free or already paid</text>
+<text x="725" y="275" text-anchor="middle" font-size="9.5" fill="#8a919c" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">jobseeker: once only</text>
+<circle cx="928" cy="192" r="7" fill="#1f2937"/>
+<path d="M890,192 H917" stroke="#3f4753" stroke-width="1.6" marker-end="url(#ah)"/>
+<rect x="385" y="400" width="180" height="48" rx="10" fill="#f8d0bc" stroke="#f0af92" stroke-width="1.4"/>
+<text x="475" y="428" text-anchor="middle" font-size="12" fill="#1f2937" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">Rejected</text>
+<path d="M172,216 V360 H408 V397" fill="none" stroke="#3f4753" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M385,216 V320 H447 V397" fill="none" stroke="#3f4753" stroke-width="1.6" marker-end="url(#ah)"/>
+<path d="M610,216 V340 H532 V397" fill="none" stroke="#3f4753" stroke-width="1.6" marker-end="url(#ah)"/>
+<text x="196" y="352" text-anchor="middle" font-size="10" fill="#374151" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">reject</text>
+<text x="462" y="300" text-anchor="middle" font-size="10" fill="#374151" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">reject</text>
+<text x="576" y="300" text-anchor="middle" font-size="10" fill="#374151" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">reject</text>
+<path d="M565,424 H585" stroke="#3f4753" stroke-width="1.6" marker-end="url(#ah)"/>
+<circle cx="594" cy="424" r="7" fill="#1f2937"/>
+<text x="500" y="540" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">Rejected and Released are terminal · RecordPayment never changes the state (Pending / Processing / Ready for release)</text>
+<text x="500" y="558" text-anchor="middle" font-size="10.5" fill="#6b7280" font-family="ui-monospace,Cascadia Mono,Consolas,monospace">guards exactly as enforced by Services/RequestService.cs (RequireStatus) · composite build</text>
 </svg>
