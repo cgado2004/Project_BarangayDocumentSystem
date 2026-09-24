@@ -16,7 +16,7 @@ arithmetic; this covers what a human sees.
    enable the *"Use the XML solution format"* preview feature first).
 2. Confirm the startup project is **BarangayDocumentSystem** (that setting is
    gitignored — every teammate sets it once after cloning).
-3. Leave `Storage=Memory` in `BarangayDocumentSystem/App.config` — the demo
+3. Leave `Storage=Memory` in `App.config` — the demo
    needs no database.
 4. Press **F5**. Then stop, and open `MainShell`, `ResidentForm`,
    `RequestForm`, `PaymentForm`, `RejectionForm` and `DocumentPreviewForm` in

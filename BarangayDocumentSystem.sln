@@ -14,7 +14,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # ---------------------------------------------------------------------------
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BarangayDocumentSystem", "BarangayDocumentSystem\BarangayDocumentSystem.csproj", "{6F4A2D31-0001-4000-9000-000000000001}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BarangayDocumentSystem", "BarangayDocumentSystem.csproj", "{6F4A2D31-0001-4000-9000-000000000001}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RuleChecks", "tests\RuleChecks\RuleChecks.csproj", "{6F4A2D31-0002-4000-9000-000000000002}"
 EndProject

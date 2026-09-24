@@ -1,4 +1,4 @@
-# Barangay Resident and Document Request Management System — v3.2.1
+# Barangay Resident and Document Request Management System — v3.2.2
 
 **Barangay Magugpo Poblacion, City of Tagum, Davao del Norte**
 Windows desktop application · WinForms · .NET 8
@@ -196,8 +196,10 @@ refactor safety constraints (source files only; designer code untouched):
   with docs and diagrams — the copy Jonathan applies to Draft),
   `git checkout 84e290f -- master-restructure` (master restructure).
   In v3.2.1 the SQL scripts moved from the root `db/` folder into the
-  project itself, beside the repositories that use them:
-  `BarangayDocumentSystem/DBContext/db/`. Pushing by hand is documented
+  project, beside the repositories that use them (`DBContext/db/`), and
+  in v3.2.2 the project itself moved to the repo root — the folder-in-a-
+  folder with the same name is gone and the layout now matches the
+  professor's protocol picture one-for-one. Pushing by hand is documented
   in `docs/06` §4. The configuration files stay where the toolchain
   requires them: `global.json` and `.editorconfig` must sit at the repo
   root for the SDK and VS to find them, and `App.config`,
@@ -239,7 +241,7 @@ implementation, re-built for this codebase):
 ## What changed in v3.2.1
 
 A pure tidy, zero behaviour changes: the root `db/` folder moved into
-the project it belongs to — `BarangayDocumentSystem/DBContext/db/` —
+the project it belongs to — `DBContext/db/` —
 so the schema and seed scripts now sit beside the two repositories that
 read and write those tables (and show up in Solution Explorer under
 DBContext). The second copy of the Draft hand-off package
@@ -247,6 +249,22 @@ DBContext). The second copy of the Draft hand-off package
 team fetches it from history when applying it on Draft
 (`git checkout b7dcee0 -- draft-ui-restyle`). All references in this
 README, docs/05 and the code comments were updated to the new path.
+
+---
+
+## What changed in v3.2.2
+
+The duplicate-looking folder is gone. Until now the project lived in
+`BarangayDocumentSystem/` inside the `Project_BarangayDocumentSystem`
+repository — the standard Visual Studio nesting, but it read as
+duplication and put everything one level below the professor's protocol
+picture. The project now sits at the repo root: `App.config`,
+`packages.config`, `Program.cs`, the forms, and the `Models/`,
+`Interfaces/`, `Service/`, `DBContext/` (with `db/` inside) and
+`Helper/` folders are the first thing you see, exactly like the HRIS
+reference. Path-only edits followed: the `.slnx` project entry, one
+`.sln` line, the tests project reference, and the doc commands. No
+code changed, no `.csproj` content changed, no behaviour changed.
 
 ---
 
@@ -306,9 +324,10 @@ One project; the dependency arrow points inward — the views know the rules,
 the rules know nothing of the views.
 
 ```
-BarangayDocumentSystem/
+Project_BarangayDocumentSystem/
 ├── BarangayDocumentSystem.slnx       ← open this
 ├── BarangayDocumentSystem.sln        ← fallback for VS < 17.10
+├── BarangayDocumentSystem.csproj     the one project, net8.0-windows
 ├── README.md
 ├── docs/
 │   ├── 01-requirements.md            scope, FR, NFR, the v3.1 changes (§VI)
@@ -319,35 +338,33 @@ BarangayDocumentSystem/
 │   ├── 06-pushing-to-github.md
 │   ├── 07-fee-schedule-and-legal-basis.md   every fee and its law
 │   └── 08-demo-walkthrough.md        the manual pre-defence click-through
-├── BarangayDocumentSystem/                    net8.0-windows
-│   ├── Assets/fonts/     Inter Regular + Bold, bundled under the SIL OFL
-│   │                     — the brand face on every machine (v3.1.3)
-│   ├── App.config        every setting that might change
-│   ├── app.manifest      PerMonitorV2 + supportedOS
-│   ├── packages.config   designer accessibility listing
-│   ├── Program.cs        composition root + the config reader
-│   ├── MainShell(.Designer).cs     the window, WM_DPICHANGED
-│   ├── NavigationSidebar.cs         the left rail
-│   ├── DashboardView.cs   ResidentsView.cs   RequestsView.cs   ViewBase.cs
-│   ├── ResidentForm.cs    RequestForm.cs
-│   ├── PaymentForm.cs     (receipt printing)
-│   ├── RejectionForm.cs   (the no-refunds rejection dialog, v3.1.1)
-│   ├── DocumentPreviewForm.cs      (scaled print preview)
-│   ├── Models/           Resident, DocumentRequest (state machine + fees), Enums, BarangayProfile
-│   ├── Interfaces/       IBarangayRepository (incl. receipt uniqueness, v3.1.1), IDocumentTemplate
-│   ├── Service/          FeeSchedule, DisplayFormat, DocumentRenderer
-│   │   └── Templates/    one class per document wording
-│   ├── DBContext/        InMemory + MySql repositories (v3.2.0)
-│   │   └── db/           01-schema.sql (tables, triggers, views) and
-│   │                     02-seed-data.sql — the scripts the guide runs
-│   └── Helper/           AppTheme, UiFactory, Dialog, InputValidator, ErrorLogger (v3.1.1)
-└── tests/
-    └── RuleChecks/       runnable checks against the charter, the laws and the MySQL round-trip
+├── tests/
+│   └── RuleChecks/       runnable checks against the charter, the laws and the MySQL round-trip
+├── Assets/fonts/         Inter Regular + Bold, bundled under the SIL OFL
+│                         — the brand face on every machine (v3.1.3)
+├── App.config            every setting that might change
+├── app.manifest          PerMonitorV2 + supportedOS
+├── packages.config       designer accessibility listing
+├── Program.cs            composition root + the config reader
+├── MainShell(.Designer).cs     the window, WM_DPICHANGED
+├── NavigationSidebar.cs         the left rail
+├── DashboardView.cs   ResidentsView.cs   RequestsView.cs   ViewBase.cs
+├── ResidentForm.cs    RequestForm.cs
+├── PaymentForm.cs     (receipt printing)
+├── RejectionForm.cs   (the no-refunds rejection dialog, v3.1.1)
+├── DocumentPreviewForm.cs      (scaled print preview)
+├── Models/               Resident, DocumentRequest (state machine + fees), Enums, BarangayProfile
+├── Interfaces/           IBarangayRepository (incl. receipt uniqueness, v3.1.1), IDocumentTemplate
+├── Service/              FeeSchedule, DisplayFormat, DocumentRenderer
+│   └── Templates/        one class per document wording
+├── DBContext/            InMemory + MySql repositories (v3.2.0)
+│   └── db/               01-schema.sql (tables, triggers, views) and
+│                         02-seed-data.sql — the scripts the guide runs
+└── Helper/               AppTheme, UiFactory, Dialog, InputValidator, ErrorLogger (v3.1.1)
 ```
-
 ---
 
-## Settings — `BarangayDocumentSystem/App.config`
+## Settings — `App.config`
 
 Everything that might change lives here, so nobody has to rebuild to adjust a
 fee or a name.
@@ -368,8 +385,8 @@ fee or a name.
 
 ## Database
 
-`BarangayDocumentSystem/DBContext/db/01-schema.sql` then
-`BarangayDocumentSystem/DBContext/db/02-seed-data.sql`, run in that order in
+`DBContext/db/01-schema.sql` then
+`DBContext/db/02-seed-data.sql`, run in that order in
 phpMyAdmin or MySQL Workbench. Full instructions, including the common
 errors and what they mean, are in
 [`docs/05-database-guide.md`](docs/05-database-guide.md).

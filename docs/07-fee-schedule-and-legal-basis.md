@@ -162,7 +162,7 @@ everybody under the charter.
   every assessment returns both the amount **and its legal basis** as one
   object — the basis is printed on the certificate, the receipt and the
   queue, so no charge ever appears without its reason.
-- `BarangayDocumentSystem/App.config` holds every rate, so a corrected
+- `App.config` holds every rate, so a corrected
   ordinance figure never needs a rebuild.
 - `tests/RuleChecks` asserts the behaviour above against the law: the flat
   rates, the variable computations, where each waiver stops, the RA 11261

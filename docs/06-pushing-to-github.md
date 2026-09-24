@@ -208,7 +208,7 @@ Then, in order:
    on an 8.x SDK target the project directly):
 
    ```powershell
-   dotnet build BarangayDocumentSystem/BarangayDocumentSystem.csproj
+   dotnet build BarangayDocumentSystem.csproj
    dotnet run   --project BarangayDocumentSystem
    ```
 

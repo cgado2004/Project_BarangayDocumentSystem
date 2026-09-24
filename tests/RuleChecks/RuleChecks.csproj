@@ -20,7 +20,7 @@
          under test (fees, state machine, templates) live in the same
          assembly as the screens, and the checks still touch no user
          interface to run them. -->
-    <ProjectReference Include="..\..\BarangayDocumentSystem\BarangayDocumentSystem.csproj" />
+    <ProjectReference Include="..\BarangayDocumentSystem.csproj" />
   </ItemGroup>
 
 </Project>

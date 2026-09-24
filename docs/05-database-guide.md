@@ -24,7 +24,7 @@ specifically working on the MySQL part.
 
 ## 2. Which storage the app is using
 
-One line in `BarangayDocumentSystem/App.config` decides:
+One line in `App.config` decides:
 
 ```xml
 <add key="Storage" value="Memory" />
@@ -43,7 +43,7 @@ commit it as `MySQL`, everyone else gets a warning box on startup.
 ## 3. Setting up MySQL
 
 Since v3.2.1 the two scripts live inside the project, beside the
-repositories: `BarangayDocumentSystem/DBContext/db/`.
+repositories: `DBContext/db/`.
 
 ### 3.1 Start the server
 
@@ -56,12 +56,12 @@ Open **phpMyAdmin** (`http://localhost/phpmyadmin`) or MySQL Workbench, then:
 
 1. Open the **SQL** tab.
 2. Paste the whole of
-   **`BarangayDocumentSystem/DBContext/db/01-schema.sql`** and run it.
+   **`DBContext/db/01-schema.sql`** and run it.
    This creates the database, the four tables, the constraints, the triggers
    and the views. It drops and recreates everything, so it is safe to run
    again any time.
 3. Paste the whole of
-   **`BarangayDocumentSystem/DBContext/db/02-seed-data.sql`** and run it.
+   **`DBContext/db/02-seed-data.sql`** and run it.
    This loads the same seven residents the app shows in Memory mode.
 
 Both scripts print a result at the end so you can confirm they worked.
