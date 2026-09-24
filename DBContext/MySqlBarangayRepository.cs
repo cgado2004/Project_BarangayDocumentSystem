@@ -14,8 +14,8 @@ namespace BarangayDocumentSystem.DBContext;
 ///
 /// v3.2.0. Adapted for our MySQL schema from the reviewed persistence design
 /// in docs/05 §9 (itself a review of Jonathan F. Del Rosario's SQL work on
-/// the Draft branch, and of the MySQL implementation Clint Gado landed on
-/// Draft2). The contract comes from that design, unchanged:
+/// the Draft branch, and of the MySQL implementation Frent Raborar
+/// landed on Draft2). The contract comes from that design, unchanged:
 ///
 ///   * the app ALWAYS starts. If MySQL cannot be reached, my constructor
 ///     throws once, Program explains it and falls back to the in-memory

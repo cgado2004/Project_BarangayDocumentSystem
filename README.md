@@ -213,7 +213,7 @@ refactor safety constraints (source files only; designer code untouched):
 **The database became real.** The slot `Program.CreateRepository()` had
 kept open since v3.1 is filled: `DBContext/MySqlBarangayRepository.cs`
 lands the team's persistence design (docs/05 §9 — reviewed from Jonathan
-Del Rosario's Draft-branch SQL work and Clint Gado's Draft2 MySQL
+Del Rosario's Draft-branch SQL work and Frent Raborar's Draft2 MySQL
 implementation, re-built for this codebase):
 
 - Set `Storage=MySQL` in `App.config` and a fresh `barangay_magugpo`
