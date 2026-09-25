@@ -3,28 +3,22 @@ using System.Configuration;
 
 namespace BarangayDocumentSystem.Database;
 
-/// <summary>
+
 /// Where the MySQL server is and how to log in.
-///
-/// Read from <c>App.config</c> (<c>connectionStrings</c> and
-/// <c>appSettings</c>) — the standard place a .NET Framework WinForms app
-/// keeps this, via <see cref="ConfigurationManager"/>. Changing the server
-/// or password only means editing <c>BarangayDocumentSystem.exe.config</c>
-/// next to the .exe; it never needs a rebuild.
 ///
 /// The environment variable <see cref="EnvironmentVariable"/>, if set, wins
 /// over the file — handy for keeping a real password out of source control.
-/// </summary>
+
 public sealed class DatabaseSettings
 {
-    /// <summary>A stock local MySQL / XAMPP install: user root, blank password.</summary>
+    /// A stock local MySQL / XAMPP install: user root, blank password.
     public const string DefaultConnectionString =
         "Server=localhost;Port=3306;Database=barangay_db;User ID=root;Password=;CharSet=utf8mb4;";
 
-    /// <summary>Name of the &lt;connectionStrings&gt; entry in App.config.</summary>
+    /// Name of the &lt;connectionStrings&gt; entry in App.config.
     public const string ConnectionStringName = "BarangayDb";
 
-    /// <summary>Name of the &lt;appSettings&gt; key that turns demo data on or off.</summary>
+    /// Name of the &lt;appSettings&gt; key that turns demo data on or off.
     public const string SeedSettingName = "SeedSampleData";
 
     public const string EnvironmentVariable = "BARANGAY_DB_CONNECTION";
