@@ -4,18 +4,12 @@ using BarangayDocumentSystem.Models;
 
 namespace BarangayDocumentSystem.Database;
 
-/// <summary>
+
 /// Puts seven demonstration residents (and a few requests) into an EMPTY
 /// database so the app has something to show on first run.
 ///
-/// It talks only to <see cref="IBarangayRepository"/>, so it works with any
-/// store. Program.cs runs it only when the residents table is empty and
-/// <c>SeedSampleData</c> is true in App.config — it never touches a
-/// database that already has data. Set it to false for real use.
-///
 /// The residents are chosen to exercise every fee rule and the RA 11261
 /// (First Time Jobseekers) test — see the README for the list.
-/// </summary>
 public static class SampleDataSeeder
 {
     public static void Seed(IBarangayRepository repository)
