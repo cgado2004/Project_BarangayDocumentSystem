@@ -25,18 +25,6 @@
 --     exactly one live jobseeker request per resident — no trigger needed.
 -- ============================================================================
 
-CREATE TABLE IF NOT EXISTS app_state (
-    id                      INT           NOT NULL,
-    schema_version          INT           NOT NULL,
-    sample_data_initialized TINYINT(1)    NOT NULL DEFAULT 0,
-    PRIMARY KEY (id),
-    CONSTRAINT ck_app_state_id CHECK (id = 1)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO app_state (id, schema_version, sample_data_initialized)
-    SELECT 1, 1, 0 FROM DUAL
-    WHERE NOT EXISTS (SELECT 1 FROM app_state WHERE id = 1);
-
 CREATE TABLE IF NOT EXISTS residents (
     resident_id            INT           NOT NULL AUTO_INCREMENT,
     version                INT           NOT NULL DEFAULT 1,

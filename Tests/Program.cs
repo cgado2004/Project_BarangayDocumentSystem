@@ -709,7 +709,7 @@ namespace BarangayDocumentSystem.Tests
         }
 
         /// <summary>People and requests are wiped so every check starts from a
-        /// clean slate; the fee schedule and app_state survive.</summary>
+        /// clean slate; the fee schedule survives.</summary>
         private static void WipeTables()
         {
             using (var connection = new MySqlConnection(DatabaseSettings.Load().ConnectionString))
