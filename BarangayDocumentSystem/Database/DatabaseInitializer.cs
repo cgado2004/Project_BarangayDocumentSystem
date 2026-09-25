@@ -69,7 +69,7 @@ public static class DatabaseInitializer
         return reader.ReadToEnd();
     }
 
-    /// <summary>Drops "-- comment" lines, then splits on ';' into statements.</summary>
+    /// Drops "-- comment" lines, then splits on ';' into statements.
     private static IEnumerable<string> SplitStatements(string script)
     {
         var lines = script.Split('\n')
