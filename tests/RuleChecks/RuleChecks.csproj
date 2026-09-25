@@ -1,26 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+<Project ToolsVersion="Current" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" />
   <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <UseWindowsForms>true</UseWindowsForms>
-    <RootNamespace>BarangayDocumentSystem.RuleChecks</RootNamespace>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-
-    <!-- Same reason as the main project: this harness builds on Linux/macOS
-         too, where a net8.0-windows target needs the targeting packs
-         allowed. -->
-    <EnableWindowsTargeting Condition="'$(OS)' != 'Windows_NT'">true</EnableWindowsTargeting>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <AssemblyName>RuleChecks</AssemblyName>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <LangVersion>10.0</LangVersion>
   </PropertyGroup>
-
   <ItemGroup>
-    <!-- The v3.1 layout is one project, so the checks reference it directly.
-         It is a WinExe, which is fine for a project reference - the rules
-         under test (fees, state machine, templates) live in the same
-         assembly as the screens, and the checks still touch no user
-         interface to run them. -->
-    <ProjectReference Include="..\..\BarangayDocumentSystem\BarangayDocumentSystem.csproj" />
+    <Reference Include="System" /><Reference Include="System.Core" />
+    <Compile Include="Program.cs" />
+    <ProjectReference Include="..\..\BarangayDocumentSystem\BarangayDocumentSystem.csproj">
+      <Project>{9077BDF9-C14F-4BC1-A068-2BF52A9FA8CB}</Project>
+      <Name>BarangayDocumentSystem</Name>
+    </ProjectReference>
   </ItemGroup>
-
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

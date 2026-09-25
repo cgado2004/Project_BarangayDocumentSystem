@@ -1,11 +1,18 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.IO;
+using BarangayDocumentSystem.Forms;
+using BarangayDocumentSystem.Views;
+using BarangayDocumentSystem.CustomControls;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using BarangayDocumentSystem.Helper;
+using BarangayDocumentSystem.UIHelpers;
 using BarangayDocumentSystem.Interfaces;
 using BarangayDocumentSystem.Models;
-using BarangayDocumentSystem.Service;
-using static BarangayDocumentSystem.Helper.AppTheme;
+using BarangayDocumentSystem.BusinessRules;
+using static BarangayDocumentSystem.UIHelpers.AppTheme;
 
 namespace BarangayDocumentSystem;
 
@@ -97,9 +104,7 @@ public partial class MainShell : Form
     /// without the picture - which is far better than a crash on startup in
     /// front of a panel.
     ///
-    /// I build TWO Image instances from the bytes on purpose: the sidebar's
-    /// picture and the dashboard's hero each dispose their own image, and two
-    /// owners sharing one bitmap would eventually dispose it twice.
+    /// The sidebar owns a detached bitmap, so the source file is not locked.
     /// </summary>
     private void LoadLogo()
     {
@@ -108,16 +113,8 @@ public partial class MainShell : Form
             string path = Path.Combine(AppContext.BaseDirectory, "Assets", "barangay-logo.png");
             if (!File.Exists(path)) return;
 
-            byte[] bytes = File.ReadAllBytes(path);
-
-            using (var ms = new MemoryStream(bytes))
-                sidebar.Logo = Image.FromStream(ms);
-
-            if (_dashboardView is not null)
-            {
-                using (var ms = new MemoryStream(bytes))
-                    _dashboardView.Logo = Image.FromStream(ms);
-            }
+            using (var source = Image.FromFile(path))
+                sidebar.Logo = new Bitmap(source);
         }
         catch (Exception)
         {
@@ -192,7 +189,6 @@ public partial class MainShell : Form
                 if (e.View == "residents") ShowResidents(e.Filter);
                 else ShowRequests(e.Filter);
             };
-            LoadLogo();
         }
 
         sidebar.SetActive("dashboard");
@@ -248,7 +244,7 @@ public partial class MainShell : Form
     {
         try
         {
-            lblStatusRight.Text = $"PerMonitorV2 · {DeviceDpi} DPI";
+            lblStatusRight.Text = $"Demo • not saved • {DeviceDpi} DPI";
         }
         catch
         {

@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.IO;
 namespace BarangayDocumentSystem.Models;
 
 /// <summary>
@@ -138,7 +142,7 @@ public class Resident
 
     internal void AddRequest(DocumentRequest request)
     {
-        ArgumentNullException.ThrowIfNull(request);
+        if (request is null) throw new ArgumentNullException(nameof(request));
         if (!_requests.Contains(request))
             _requests.Add(request);
     }

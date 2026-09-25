@@ -1,258 +1,110 @@
-# Barangay Resident and Document Request Management System — v3.1
+# Barangay Resident and Document Request Management System
 
-**Barangay Magugpo Poblacion, City of Tagum, Davao del Norte**
-Windows desktop application · WinForms · .NET 8
-
----
+**Barangay Magugpo Poblacion · City of Tagum · Davao del Norte**
+Windows Forms · **.NET Framework 4.8** · Visual Studio 2022
 
 ## Group
 
-| Member |
-|---|
-| Dagamac, Emmanuelle Philippe |
-| Del Rosario, Jonathan F. |
-| Gado, Clint Wood |
-| Raborar, Frent Dhieniel |
-
----
-
-## Running it
-
-**Visual Studio 2022:** open **`BarangayDocumentSystem.slnx`** — the XML
-solution — set **BarangayDocumentSystem** as the startup project if it is
-not already the only one, and press **F5**. On Visual Studio 17.10–17.12
-the `.slnx` format needs the *"Use the XML solution format"* preview
-feature enabled (Settings → Environment → Preview Features); 17.13 and
-later read it out of the box.
-
-```bash
-dotnet run --project BarangayDocumentSystem
-```
-
-Requires the **.NET 8 SDK** with the **".NET desktop development"**
-workload. Sample data loads on start — no database needed. The project
-references **no NuGet packages**, so it builds with no network at all.
-
-> `tests/RuleChecks` is a console harness, not the app. If Visual Studio
-> says *"a project with an Output Type of Class Library cannot be started
-> directly"*, the startup project is wrong. That setting lives in a
-> gitignored file, so **every teammate must set it once after cloning.**
-
----
-
-## What changed in v3.1
-
-| | v3 | **v3.1** |
-|---|---|---|
-| Structure | 2 projects (`src/Core`, `src/App`) | **1 project** with the layers as folders |
-| Solution | `.sln` | **`.slnx`** (XML) |
-| Document types | 20 | **24** — the four charter money services added |
-| Business Clearance | flat ₱200 | **VARIES with the law violated**; ₱200 standard |
-| Cedula | — | **₱5 + ₱1/₱1,000 sworn income** (RA 7160 §156) |
-| Filing a case | — | **₱150** (Katarungang Pambarangay) |
-| Barangay facilities | — | **₱200/hr**, hour or part |
-| Taripa items | — | **assessed**, with the item stated |
-| RA 11261 | covers the certificate | **covers the clearance too**, once |
-| Documents | monospaced text preview | **GDI+ templates** + true print preview + printing |
-| Receipts | — | **printed** with amount and legal basis |
-| Queue | status only | **RA 11032 aging** — 3 working days flagged |
-| Fees basis text | `"DILG MC 2019-177"` for indigency | **corrected** — RA 11291; see docs/07 |
-
-The full legal reference behind every peso — the charter rates, the four
-waivers and exactly where each stops, and the other barangay laws read
-while building this — is
-[`docs/07-fee-schedule-and-legal-basis.md`](docs/07-fee-schedule-and-legal-basis.md).
-
----
-
-## The six core technical fixes
-
-1. **Designer support.** `packages.config` lists the accessibility
-   assemblies the designer surface looks for; every form is a `partial`
-   class with a parameterless constructor and an `InitializeComponent`, so
-   Visual Studio opens `MainShell`, `ResidentForm`, `RequestForm`,
-   `PaymentForm` and `DocumentPreviewForm` on its design surface.
-2. **High-DPI, three agreeing places.** `ApplicationHighDpiMode` /
-   `PerMonitorV2` in the `.csproj` (applied by
-   `ApplicationConfiguration.Initialize()`), the `dpiAwareness` block in
-   `app.manifest`, and a documented section in `App.config`.
-3. **Modern fonts.** `AppTheme.Resolve()` picks the first of **Inter →
-   SF Pro → Roboto → Segoe UI Variable → Segoe UI** the machine actually
-   has (install Inter from rsms.me/inter for the intended look), and all
-   custom drawing runs through ClearType.
-4. **Responsive gridding.** `UiFactory.Grid` builds TableLayoutPanels with
-   **percentage** columns; every dialog and card row reflows instead of
-   clipping.
-5. **Smooth scrolling.** `SmoothPanel` sets `WS_EX_COMPOSITED` and
-   double-buffering; every scrolling surface in the app is one.
-6. **Multi-monitor preview.** `MainShell` and `DocumentPreviewForm` handle
-   `WM_DPICHANGED` — the suggested window rectangle is applied, the shell
-   restyles, and the preview rescales its zoom with the DPI ratio.
-
----
-
-## Fees actually charged
-
-| Service | Fee |
+| Member | Working branch |
 |---|---|
-| Barangay Clearance — local employment | ₱100 |
-| Barangay Clearance — for work abroad | ₱200 |
-| Certification (residency, good moral, other) | ₱100 |
-| Certificate of Indigency | FREE |
-| Certificate of Low Income | FREE |
-| Business Clearance | **VARIES** with the law violated — ₱200 standard |
-| Cedula | **VARIES** — ₱5 + ₱1 per ₱1,000 sworn gross income |
-| Filing a case (Katarungang Pambarangay) | ₱150 |
-| Barangay facilities | ₱200/hr |
-| Other processing fees (Barangay Taripa) | assessed per item |
+| Clint Wood Gado | `leader_draft` |
+| Del Rosario, Jonathan F. | `Draft` |
+| Raborar, Frent Dhieniel | `Draft2` |
+| Dagamac, Emmanuelle Philippe | `Draft3` |
 
-Waivers on top, on personal certificates only: **RA 9994** senior citizens ·
-**RA 10754** PWDs · **RA 11291** indigents · **RA 11261** first-time
-jobseekers (six months' residency, once only, certificate *and* clearance).
-The regulatory amounts — business, cedula, filing, facilities, Taripa — are
-never waived, and the rule checks prove it.
+## Build and run on Windows
 
----
+1. Install Visual Studio 2022 with **.NET desktop development** and the
+   **.NET Framework 4.8 targeting pack/developer pack**.
+2. Open **`BarangayDocumentSystem.sln`**.
+3. Set **BarangayDocumentSystem** as the startup project and press **F5**.
 
-## Project layout
+This is a classic Framework WinForms project, not .NET 8 or a web app.
+It uses the C# 10 compiler supplied by Visual Studio 2022, but targets the
+Framework 4.8 runtime. `CompilerShims.cs` supplies the `init` marker used by
+immutable records. No NuGet packages are needed for the current demo.
 
-One project; the dependency arrow points inward — the views know the rules,
-the rules know nothing of the views.
+From a Visual Studio Developer Command Prompt:
 
+```bat
+msbuild BarangayDocumentSystem.sln /t:Rebuild /p:Configuration=Debug
+msbuild tests\RuleChecks\RuleChecks.csproj /t:Rebuild /p:Configuration=Debug
+tests\RuleChecks\bin\Debug\RuleChecks.exe
 ```
+
+## Integration baseline
+
+- **Draft2 (Frent):** single application project with `BusinessRules`,
+  `CustomControls`, `Database`, `Forms`, `Interfaces`, `Models`, `UIHelpers`,
+  and `Views` folders; main shell and entry point at the project root.
+- **Draft:** flat sidebar, six dashboard summary cards, tabular status,
+  document and purok breakdowns. Native navigation buttons support keyboard
+  activation. The existing resident/request workflows remain; this is not
+  a wholesale copy of Draft's screens or database implementation.
+- **leader_draft:** retained logo, navy/blue/gold/red palette, document
+  templates and fee rules. The fee reference remains unchanged:
+  [`docs/07-fee-schedule-and-legal-basis.md`](docs/07-fee-schedule-and-legal-basis.md).
+
+See [integration notes](docs/08-integration-notes.md) for boundaries and pending work.
+
+## Layout and OOP
+
+```text
+BarangayDocumentSystem.sln
 BarangayDocumentSystem/
-├── BarangayDocumentSystem.slnx       ← open this
-├── README.md
-├── docs/
-│   ├── 01-requirements.md            scope, FR, NFR, the v3.1 changes (§VI)
-│   ├── 02-erd.svg                    entity relationship diagram
-│   ├── 03-uml.svg                    UML class diagram
-│   ├── 04-project-timeline.md        the plan
-│   ├── 05-database-guide.md          running the MySQL scripts
-│   ├── 06-pushing-to-github.md
-│   └── 07-fee-schedule-and-legal-basis.md   every fee and its law
-├── db/
-│   ├── 01-schema.sql                 tables, triggers, views (v3.1 columns)
-│   └── 02-seed-data.sql              the same residents as the demo
-├── BarangayDocumentSystem/                    net8.0-windows
-│   ├── App.config        every setting that might change
-│   ├── app.manifest      PerMonitorV2 + supportedOS
-│   ├── packages.config   designer accessibility listing
-│   ├── Program.cs        composition root + the config reader
-│   ├── MainShell(.Designer).cs     the window, WM_DPICHANGED
-│   ├── NavigationSidebar.cs         the left rail
-│   ├── DashboardView.cs   ResidentsView.cs   RequestsView.cs   ViewBase.cs
-│   ├── ResidentForm.cs    RequestForm.cs
-│   ├── PaymentForm.cs     (receipt printing)
-│   ├── DocumentPreviewForm.cs      (scaled print preview)
-│   ├── Prompt.cs         quick input prompts
-│   ├── Models/           Resident, DocumentRequest (state machine + fees), Enums, BarangayProfile
-│   ├── Interfaces/       IBarangayRepository, IDocumentTemplate
-│   ├── Service/          FeeSchedule, DisplayFormat, DocumentRenderer
-│   │   └── Templates/    one class per document wording
-│   ├── DBContext/        InMemoryBarangayRepository (swap for MySQL later)
-│   └── Helper/           AppTheme, UiFactory, Dialog, InputValidator
-└── tests/
-    └── RuleChecks/       runnable checks against the charter and the laws
+  Program.cs                 composition root and configuration reader
+  MainShell.cs               navigation and shared page headings
+  Assets/                    original barangay seal
+  BusinessRules/             fee schedule, formatting, document rendering
+    DocumentTemplates/       IDocumentTemplate implementations
+  CustomControls/            navigation sidebar
+  Database/                  in-memory repository
+  Forms/                     dialogs and their Designer files
+  Interfaces/                repository and template contracts
+  Models/                    residents, requests, enums, barangay profile
+  UIHelpers/                 palette, validation, reusable controls, DPI support
+  Views/                     dashboard, residents, requests, shared base view
+  App.config                 profile, fee and storage settings
+  app.manifest               Windows compatibility and visual styles
+ db/                         existing reference SQL; pending ERD reconciliation
+ docs/                       existing reference documents; updated diagrams pending
+ tests/RuleChecks/           Framework 4.8 regression-check console application
+ scripts/check_structure.py  cross-platform structural checks
 ```
 
----
+Forms receive the repository and fee schedule through constructors. Request
+state transitions and payment guards live in the model, fee decisions in
+`FeeSchedule`, and document wording behind `IDocumentTemplate`. Shared grid
+styling and a single shell heading avoid per-screen duplication.
 
-## Settings — `BarangayDocumentSystem/App.config`
+## Storage and fees
 
-Everything that might change lives here, so nobody has to rebuild to adjust a
-fee or a name.
+**Current storage is an in-memory demo. Changes are lost when the app closes.**
+The sidebar status explicitly labels it as not saved. Leave `Storage=Memory`
+in `App.config`. Selecting MySQL warns and falls back to sample data; no
+persistent repository is connected in this integration baseline.
 
-| Key | Meaning |
-|---|---|
-| `Storage` | `Memory` (sample data, the default) or `MySQL` |
-| `Barangay.*` | Name, city, province, Punong Barangay, office hours |
-| `Fee.*` | The charter rates — clearance local/abroad, certification, business standard, lupon filing, facility hourly, community tax base/per-₱1,000/cap |
-| `Rule.JobseekerResidencyMonths` | The RA 11261 residency requirement |
-| `Rule.RA11032.SimpleWorkingDays` | The aging standard in the request queue |
-| `BarangayDb` | The MySQL connection string |
+The existing `db/` scripts, ERD and UML are reference material, not confirmation
+of an approved final schema. Database integration and model/schema reconciliation
+are deferred until the team's ERD, UML and compiled documents arrive.
 
-**Leave `Storage` on `Memory` unless you are testing the database** — see
-[`docs/05-database-guide.md`](docs/05-database-guide.md).
+Fees and waivers continue to use the leader branch's documented rules. This
+integration does not independently certify their legal interpretation; review
+them against the documents the team supplies. The community-tax template now
+uses the injected fee schedule instead of duplicating its base/rate amounts.
 
----
+## Verification status
 
-## Database
+- `python scripts/check_structure.py`: checks Framework target, source inclusion,
+  duplicate project entries, layout, XML, assets and known incompatible APIs.
+- `git diff --check`: whitespace validation.
+- Existing C# regression harness migrated for fees, residency restrictions, payment/release
+  guards, document-template coverage and accented-name search.
+- **Build, regression execution, designer, printing and UI behavior have not
+  been verified here.** The editing environment is Linux without .NET/MSBuild;
+  SDK download attempts failed. Run the commands above on Windows.
 
-`db/01-schema.sql` then `db/02-seed-data.sql`, run in that order in
-phpMyAdmin or MySQL Workbench. Full instructions, including the common
-errors and what they mean, are in
-[`docs/05-database-guide.md`](docs/05-database-guide.md).
-
-The C# class that talks to MySQL is **not in this build yet**. If you set
-`Storage=MySQL` the app tells you so plainly and starts on the sample data
-rather than pretending. The v3.1 columns are already in the schema:
-`assessed_amount`, `hours_of_use`, `declared_income`, `fee_detail` and
-`availed_jobseeker_act`.
-
----
-
-## Interface
-
-Modelled on a digital-government service concept: white canvas,
-lavender-blue gradients, rounded cards, pill buttons, heavy headings — set
-in **Inter** when the machine has it.
-
-**Everything is clickable.** Dashboard stat cards jump to the filtered list
-they summarise; purok chips open the residents of that purok; resident rows
-show that person's request history underneath; double-clicking a request
-opens the printable document.
-
-**It adapts to the screen.** The window takes 92% of the available work area
-up to 1360×860 and never below 1000×640; PerMonitorV2 scaling is on, with
-`WM_DPICHANGED` handled in the shell and the preview; every view scrolls
-(rather than clipping) on a composited, double-buffered surface; grids fill
-their width; dialogs are percent-gridded and resizable with minimum sizes.
-
----
-
-## Verified
-
-```
-dotnet build  →  0 errors   (single project + rule checks)
-
-38 C# files parse-checked with the Roslyn grammar (tree-sitter);
-the checks below are what to run on Windows:
-
-  real purok names · Peña renders with ñ intact
-  clearance ₱100 local · ₱200 abroad · certification ₱100
-  indigency FREE · low income FREE · assistance papers FREE
-  business VARIES — 500 assessed under a violated ordinance stands
-  cedula ₱5 + ₱1/₱1,000 — ₱120,000 income → ₱125 · capped at ₱5,005
-  cedula REFUSED for a minor (RA 7160 §156)
-  lupon filing ₱150 · facilities 2.5 h → 3 × ₱200 = ₱600
-  Taripa item required and priced
-  senior waived (RA 9994) · PWD waived (RA 10754) · indigent (RA 11291)
-  senior STILL pays the business fee, the cedula, the filing fee
-  RA 11261: 14 months allowed · 2 months blocked with a reason
-  RA 11261 on the CLEARANCE too — released once, second claim blocked
-  unpaid fee-bearing release REFUSED · released after payment
-  RA 11032: working days counted · 6 calendar days flagged past 3
-  all 24 document types named, templated, and rendered on the letterhead
-  reference BMP-2026-0007 · real Punong Barangay on the certificate
-  no placeholder text anywhere
-```
-
-Run them yourself: `dotnet run --project tests/RuleChecks`.
-
-## Not verified — please read
-
-- **The UI has never been launched.** Everything compiles and every file
-  parses, but running WinForms needs Windows and this was built on Linux.
-  Run it before the defence.
-- **The MySQL scripts have not been executed** against a real server.
-- The checks are a console harness, not a unit-test framework.
-
-## Before submitting
-
-- [ ] Run it on Windows and click through every screen
-- [ ] Take screenshots for the documentation
-- [ ] Set **BarangayDocumentSystem** as the startup project
-- [ ] Each member fills in their own row of `docs/04-project-timeline.md`
-- [x] ~~Confirm the ₱200 business clearance rate~~ — it **varies**; ₱200 is
-      the standard rate and the clerk assesses violations
+Before submission, check navigation by mouse and keyboard, add/edit/search,
+request creation and status changes, paid/free releases, print preview, actual
+printing, and layout at 100%, 125%, 150% DPI and across monitors. Framework DPI
+opt-in is in `App.config`, not the .NET 8 startup API.
