@@ -76,6 +76,30 @@ calculations live in `ReportingService`; the control only displays its results.
   already have used the benefit or have another active request for it.
 - Eligibility is checked again at release.
 
+## Tracing a request change
+
+The Start processing button calls `ProcessRequest` in `RequestsControl.cs`.
+That passes the selected request ID to `RequestService.StartProcessing`:
+
+```csharp
+var request = Get(requestId);
+RequireStatus(request, RequestStatus.Pending);
+request.Status = RequestStatus.Processing;
+repository.SaveRequest(request);
+```
+
+The four lines retrieve the request, check its current status, change the
+status, and save it. The page then reloads the saved records.
+
+If `SaveRequest` is removed, the code still builds, but only the retrieved
+object changes. Refreshing the page shows the old saved status.
+
+To check a broken action, put a breakpoint in its button handler and step
+through the service call. Inspect the request ID and status, follow the save,
+then check the result after refreshing. If the handler is never reached,
+check the button's Click event connection and whether the button is enabled.
+Use a separate practice copy and database when deliberately removing code.
+
 ## Protecting history
 
 A request copies the resident's details when filed. On release, the generated
