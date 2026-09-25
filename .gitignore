@@ -9,3 +9,8 @@ obj/
 *.ldf
 *.ndf
 *.bak
+*.tmp
+*.cache
+
+# Local-only notes
+docs/CodeGuide.md
