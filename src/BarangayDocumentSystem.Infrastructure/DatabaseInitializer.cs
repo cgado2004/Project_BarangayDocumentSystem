@@ -10,13 +10,10 @@ using BarangayDocumentSystem.Interfaces;
 
 namespace BarangayDocumentSystem.Database;
 
-/// <summary>
-/// Makes sure the database and its tables exist before the app starts using
-/// them, so a fresh machine needs nothing but a running MySQL server.
-///
+
 /// The table definitions live in schema.sql (embedded in the .exe) — one copy
 /// only, so this class and the SQL file can never disagree.
-/// </summary>
+
 public static class DatabaseInitializer
 {
     public static void EnsureCreated(string connectionString)
