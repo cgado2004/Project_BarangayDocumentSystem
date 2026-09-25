@@ -2,14 +2,16 @@
 <rect width="940" height="840" fill="#ffffff"/>
 <text x="26" y="34" font-size="15" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">Entity Relationship Diagram — Barangay Document System</text>
 <text x="26" y="52" font-size="11" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">MySQL 8.0 · database barangay_db · matches Database/schema.sql (composite build)</text>
-<line x1="290" y1="285" x2="356" y2="285" stroke="#3f4753" stroke-width="1.2"/>
+<line x1="290" y1="285" x2="370" y2="285" stroke="#3f4753" stroke-width="1.2"/>
+<line x1="298" y1="278" x2="298" y2="292" stroke="#3f4753" stroke-width="1.2"/>
 <path d="M356,277 L370,285 M356,285 L370,285 M356,293 L370,285" stroke="#3f4753" stroke-width="1.2" fill="none"/>
-<text x="310" y="273" text-anchor="middle" font-size="10" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">1 ∶ N</text>
-<text x="310" y="303" text-anchor="middle" font-size="9.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">resident_id</text>
-<line x1="620" y1="285" x2="676" y2="285" stroke="#3f4753" stroke-width="1.2"/>
-<path d="M676,279 L688,285 L676,291 z" fill="#ffffff" stroke="#3f4753" stroke-width="1.2"/>
-<text x="654" y="273" text-anchor="middle" font-size="10" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">1 ∶ 1</text>
-<text x="654" y="303" text-anchor="middle" font-size="9.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">request_id</text>
+<text x="330" y="271" text-anchor="middle" font-size="10" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">1 ∶ N</text>
+<text x="330" y="305" text-anchor="middle" font-size="9.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">resident_id</text>
+<line x1="620" y1="285" x2="690" y2="285" stroke="#3f4753" stroke-width="1.2"/>
+<line x1="628" y1="278" x2="628" y2="292" stroke="#3f4753" stroke-width="1.2"/>
+<path d="M678,279 L690,285 L678,291 z" fill="#ffffff" stroke="#3f4753" stroke-width="1.2"/>
+<text x="658" y="271" text-anchor="middle" font-size="10" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">1 ∶ 1</text>
+<text x="658" y="305" text-anchor="middle" font-size="9.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">request_id</text>
 <rect x="40" y="80" width="250" height="410" fill="#ffffff" stroke="#c9ced4" stroke-width="1"/>
 <rect x="40" y="80" width="250" height="26" fill="#ececec" stroke="#c9ced4" stroke-width="1"/>
 <text x="165.0" y="97" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">residents</text>
@@ -101,6 +103,14 @@
 <text x="94" y="653.5" font-size="11" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">legal_basis</text>
 <text x="94" y="671.5" font-size="11" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">notes</text>
 <text x="94" y="689.5" font-size="11" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">sort_order</text>
+<rect x="540" y="560" width="380" height="124" fill="#ffffff" stroke="#c9ced4" stroke-width="1"/>
+<text x="730" y="581" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">Legend — how to read the connectors</text>
+<line x1="562" y1="604" x2="622" y2="604" stroke="#3f4753" stroke-width="1.2"/><line x1="612" y1="598" x2="612" y2="610" stroke="#3f4753" stroke-width="1.2"/>
+<text x="636" y="608" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">tick = exactly one (the referenced row)</text>
+<line x1="562" y1="630" x2="622" y2="630" stroke="#3f4753" stroke-width="1.2"/><path d="M608,623 L622,630 M608,630 L622,630 M608,637 L622,630" stroke="#3f4753" stroke-width="1.2" fill="none"/>
+<text x="636" y="634" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">crow's foot = many (one or more rows)</text>
+<line x1="562" y1="656" x2="622" y2="656" stroke="#3f4753" stroke-width="1.2"/><path d="M610,650 L622,656 L610,662 z" fill="#ffffff" stroke="#3f4753" stroke-width="1.2"/>
+<text x="636" y="660" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">hollow arrow = exactly one, joined 1:1</text>
 <text x="26" y="748" font-size="10" font-style="italic" fill="#9aa0a6" font-family="Helvetica,Arial,sans-serif">ux_requests_receipt — official_receipt_no is UNIQUE; unpaid rows stay NULL, so unpaid requests never collide.</text>
 <text x="26" y="764" font-size="10" font-style="italic" fill="#9aa0a6" font-family="Helvetica,Arial,sans-serif">ux_requests_jobseeker — jobseeker_guard is a generated column repeating resident_id while a first-time jobseeker</text>
 <text x="26" y="780" font-size="10" font-style="italic" fill="#9aa0a6" font-family="Helvetica,Arial,sans-serif">request is live: one per resident, no trigger.  resident_snapshots freezes the resident's details at request time.</text>
