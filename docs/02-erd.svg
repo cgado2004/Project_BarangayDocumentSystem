@@ -1,188 +1,191 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1090" height="840" viewBox="0 0 1090 840">
-<rect width="1090" height="840" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1260" height="840" viewBox="0 0 1260 840">
+<rect width="1260" height="840" fill="#ffffff"/>
 <text x="26" y="34" font-size="15" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">Entity Relationship Diagram — Barangay Document System</text>
 <text x="26" y="52" font-size="11" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">MySQL 8.0 · database barangay_db · matches Database/schema.sql (composite build)</text>
-<line x1="330" y1="285" x2="430" y2="285" stroke="#3f4753" stroke-width="1.2"/>
-<line x1="338" y1="278" x2="338" y2="292" stroke="#3f4753" stroke-width="1.2"/>
-<path d="M416,277 L430,285 M416,285 L430,285 M416,293 L430,285" stroke="#3f4753" stroke-width="1.2" fill="none"/>
-<text x="383" y="271" text-anchor="middle" font-size="10" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">1 ∶ N</text>
-<text x="383" y="305" text-anchor="middle" font-size="9.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">resident_id</text>
-<line x1="730" y1="285" x2="778" y2="285" stroke="#3f4753" stroke-width="1.2"/>
-<line x1="738" y1="278" x2="738" y2="292" stroke="#3f4753" stroke-width="1.2"/>
-<path d="M766,279 L778,285 L766,291 z" fill="#ffffff" stroke="#3f4753" stroke-width="1.2"/>
-<text x="760" y="271" text-anchor="middle" font-size="10" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">1 ∶ 1</text>
-<text x="760" y="305" text-anchor="middle" font-size="9.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">request_id</text>
-<rect x="40" y="80" width="290" height="410" fill="#ffffff" stroke="#c9ced4" stroke-width="1"/>
-<rect x="40" y="80" width="290" height="26" fill="#ececec" stroke="#c9ced4" stroke-width="1"/>
-<text x="185.0" y="97" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">residents</text>
+<line x1="370" y1="285" x2="460" y2="285" stroke="#3f4753" stroke-width="1.2"/>
+<line x1="378" y1="278" x2="378" y2="292" stroke="#3f4753" stroke-width="1.2"/>
+<path d="M446,277 L460,285 M446,285 L460,285 M446,293 L460,285" stroke="#3f4753" stroke-width="1.2" fill="none"/>
+<text x="415" y="276" text-anchor="middle" font-size="10" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">1 ∶ N</text>
+<text x="415" y="306" text-anchor="middle" font-size="9.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">resident_id</text>
+<line x1="800" y1="285" x2="890" y2="285" stroke="#3f4753" stroke-width="1.2"/>
+<line x1="808" y1="278" x2="808" y2="292" stroke="#3f4753" stroke-width="1.2"/>
+<path d="M878,279 L890,285 L878,291 z" fill="#ffffff" stroke="#3f4753" stroke-width="1.2"/>
+<text x="845" y="276" text-anchor="middle" font-size="10" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">1 ∶ 1</text>
+<text x="845" y="306" text-anchor="middle" font-size="9.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">request_id</text>
+<rect x="40" y="80" width="330" height="410" rx="8" fill="#ffffff" stroke="#c9ced4" stroke-width="1"/>
+<path d="M40,88 a8,8 0 0 1 8,-8 h314 a8,8 0 0 1 8,8 v18 h-330 z" fill="#f2f2f2" stroke="#c9ced4" stroke-width="1"/>
+<text x="205.0" y="97.5" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">residents</text>
 <line x1="86" y1="106" x2="86" y2="489" stroke="#c9ced4" stroke-width="1"/>
+<line x1="265" y1="106" x2="265" y2="489" stroke="#c9ced4" stroke-width="1"/>
 <text x="47" y="119.5" font-size="9" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">PK</text>
 <text x="94" y="119.5" font-size="10.5" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">resident_id</text>
-<text x="322" y="119.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT · AI</text>
+<text x="358" y="119.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
 <text x="94" y="137.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">version</text>
-<text x="322" y="137.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
+<text x="358" y="137.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
 <text x="94" y="155.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">first_name</text>
-<text x="322" y="155.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(80)</text>
+<text x="358" y="155.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(80)</text>
 <text x="94" y="173.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">middle_name</text>
-<text x="322" y="173.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(80)</text>
+<text x="358" y="173.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(80)</text>
 <text x="94" y="191.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">last_name</text>
-<text x="322" y="191.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(80)</text>
+<text x="358" y="191.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(80)</text>
 <text x="94" y="209.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">suffix</text>
-<text x="322" y="209.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(20)</text>
+<text x="358" y="209.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(20)</text>
 <text x="94" y="227.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">date_of_birth</text>
-<text x="322" y="227.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DATE</text>
+<text x="358" y="227.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DATE</text>
 <text x="94" y="245.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">gender</text>
-<text x="322" y="245.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
+<text x="358" y="245.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
 <text x="94" y="263.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">civil_status</text>
-<text x="322" y="263.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
+<text x="358" y="263.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
 <text x="94" y="281.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">purok</text>
-<text x="322" y="281.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(60)</text>
+<text x="358" y="281.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(60)</text>
 <text x="94" y="299.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">address</text>
-<text x="322" y="299.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(250)</text>
+<text x="358" y="299.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(250)</text>
 <text x="94" y="317.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">contact_number</text>
-<text x="322" y="317.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(15)</text>
+<text x="358" y="317.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(15)</text>
 <text x="94" y="335.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">occupation</text>
-<text x="322" y="335.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(100)</text>
+<text x="358" y="335.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(100)</text>
 <text x="94" y="353.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">date_of_residency</text>
-<text x="322" y="353.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DATE</text>
+<text x="358" y="353.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DATE</text>
 <text x="94" y="371.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_registered_voter</text>
-<text x="322" y="371.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<text x="358" y="371.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
 <text x="94" y="389.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_senior_citizen</text>
-<text x="322" y="389.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<text x="358" y="389.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
 <text x="94" y="407.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_person_with_disability</text>
-<text x="322" y="407.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<text x="358" y="407.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
 <text x="94" y="425.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_indigent</text>
-<text x="322" y="425.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<text x="358" y="425.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
 <text x="94" y="443.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_student</text>
-<text x="322" y="443.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<text x="358" y="443.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
 <text x="94" y="461.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_solo_parent</text>
-<text x="322" y="461.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<text x="358" y="461.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
 <text x="94" y="479.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">has_used_jobseeker_benefit</text>
-<text x="322" y="479.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
-<rect x="430" y="80" width="300" height="410" fill="#ffffff" stroke="#c9ced4" stroke-width="1"/>
-<rect x="430" y="80" width="300" height="26" fill="#ececec" stroke="#c9ced4" stroke-width="1"/>
-<text x="580.0" y="97" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">document_requests</text>
-<line x1="476" y1="106" x2="476" y2="489" stroke="#c9ced4" stroke-width="1"/>
-<text x="437" y="119.5" font-size="9" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">PK</text>
-<text x="484" y="119.5" font-size="10.5" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">request_id</text>
-<text x="722" y="119.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT · AI</text>
-<text x="484" y="137.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">version</text>
-<text x="722" y="137.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
-<text x="437" y="155.5" font-size="9" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">FK</text>
-<text x="484" y="155.5" font-size="10.5" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">resident_id</text>
-<text x="722" y="155.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
-<text x="484" y="173.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">document_type</text>
-<text x="722" y="173.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
-<text x="484" y="191.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">scope</text>
-<text x="722" y="191.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
-<text x="484" y="209.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">document_name</text>
-<text x="722" y="209.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(120)</text>
-<text x="484" y="227.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">purpose</text>
-<text x="722" y="227.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(300)</text>
-<text x="484" y="245.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">business_name</text>
-<text x="722" y="245.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(120)</text>
-<text x="484" y="263.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">business_address</text>
-<text x="722" y="263.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(250)</text>
-<text x="484" y="281.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">business_nature</text>
-<text x="722" y="281.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(150)</text>
-<text x="484" y="299.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">date_requested</text>
-<text x="722" y="299.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DATETIME(6)</text>
-<text x="484" y="317.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">date_released</text>
-<text x="722" y="317.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DATETIME(6) · NULL</text>
-<text x="484" y="335.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">status</text>
-<text x="722" y="335.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
-<text x="484" y="353.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">fee</text>
-<text x="722" y="353.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DECIMAL(12,2)</text>
-<text x="484" y="371.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">fee_basis</text>
-<text x="722" y="371.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(1000)</text>
-<text x="484" y="389.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_paid</text>
-<text x="722" y="389.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
-<text x="437" y="407.5" font-size="9" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">UQ</text>
-<text x="484" y="407.5" font-size="10.5" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">official_receipt_no</text>
-<text x="722" y="407.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(50) · NULL</text>
-<text x="484" y="425.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">date_paid</text>
-<text x="722" y="425.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DATETIME(6) · NULL</text>
-<text x="484" y="443.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">rejection_reason</text>
-<text x="722" y="443.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(300)</text>
-<text x="484" y="461.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">released_document_text</text>
-<text x="722" y="461.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">MEDIUMTEXT</text>
-<text x="437" y="479.5" font-size="9" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">UQ</text>
-<text x="484" y="479.5" font-size="10.5" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">jobseeker_guard</text>
-<text x="722" y="479.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT · GENERATED</text>
-<rect x="790" y="80" width="240" height="392" fill="#ffffff" stroke="#c9ced4" stroke-width="1"/>
-<rect x="778" y="80" width="300" height="26" fill="#ececec" stroke="#c9ced4" stroke-width="1"/>
-<text x="910.0" y="97" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">resident_snapshots</text>
-<line x1="836" y1="106" x2="836" y2="471" stroke="#c9ced4" stroke-width="1"/>
-<text x="785" y="119.5" font-size="9" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">PK,FK</text>
-<text x="844" y="119.5" font-size="10.5" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">request_id</text>
-<text x="1070" y="119.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
-<text x="844" y="137.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">first_name</text>
-<text x="1070" y="137.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(80)</text>
-<text x="844" y="155.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">middle_name</text>
-<text x="1070" y="155.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(80)</text>
-<text x="844" y="173.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">last_name</text>
-<text x="1070" y="173.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(80)</text>
-<text x="844" y="191.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">suffix</text>
-<text x="1070" y="191.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(20)</text>
-<text x="844" y="209.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">date_of_birth</text>
-<text x="1070" y="209.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DATE</text>
-<text x="844" y="227.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">gender</text>
-<text x="1070" y="227.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
-<text x="844" y="245.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">civil_status</text>
-<text x="1070" y="245.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
-<text x="844" y="263.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">purok</text>
-<text x="1070" y="263.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(60)</text>
-<text x="844" y="281.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">address</text>
-<text x="1070" y="281.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(250)</text>
-<text x="844" y="299.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">contact_number</text>
-<text x="1070" y="299.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(15)</text>
-<text x="844" y="317.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">occupation</text>
-<text x="1070" y="317.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(100)</text>
-<text x="844" y="335.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">date_of_residency</text>
-<text x="1070" y="335.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DATE</text>
-<text x="844" y="353.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_registered_voter</text>
-<text x="1070" y="353.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
-<text x="844" y="371.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_senior_citizen</text>
-<text x="1070" y="371.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
-<text x="844" y="389.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_person_with_disability</text>
-<text x="1070" y="389.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
-<text x="844" y="407.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_indigent</text>
-<text x="1070" y="407.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
-<text x="844" y="425.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_student</text>
-<text x="1070" y="425.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
-<text x="844" y="443.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_solo_parent</text>
-<text x="1070" y="443.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
-<text x="844" y="461.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">has_used_jobseeker_benefit</text>
-<text x="1070" y="461.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
-<rect x="40" y="560" width="280" height="140" fill="#ffffff" stroke="#c9ced4" stroke-width="1"/>
-<rect x="40" y="560" width="280" height="26" fill="#ececec" stroke="#c9ced4" stroke-width="1"/>
-<text x="180.0" y="577" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">fee_schedule</text>
+<text x="358" y="479.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<rect x="460" y="80" width="340" height="410" rx="8" fill="#ffffff" stroke="#c9ced4" stroke-width="1"/>
+<path d="M460,88 a8,8 0 0 1 8,-8 h324 a8,8 0 0 1 8,8 v18 h-340 z" fill="#f2f2f2" stroke="#c9ced4" stroke-width="1"/>
+<text x="630.0" y="97.5" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">document_requests</text>
+<line x1="506" y1="106" x2="506" y2="489" stroke="#c9ced4" stroke-width="1"/>
+<line x1="665" y1="106" x2="665" y2="489" stroke="#c9ced4" stroke-width="1"/>
+<text x="467" y="119.5" font-size="9" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">PK</text>
+<text x="514" y="119.5" font-size="10.5" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">request_id</text>
+<text x="788" y="119.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
+<text x="514" y="137.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">version</text>
+<text x="788" y="137.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
+<text x="467" y="155.5" font-size="9" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">FK</text>
+<text x="514" y="155.5" font-size="10.5" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">resident_id</text>
+<text x="788" y="155.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
+<text x="514" y="173.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">document_type</text>
+<text x="788" y="173.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
+<text x="514" y="191.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">scope</text>
+<text x="788" y="191.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<text x="514" y="209.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">document_name</text>
+<text x="788" y="209.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(120)</text>
+<text x="514" y="227.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">purpose</text>
+<text x="788" y="227.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(300)</text>
+<text x="514" y="245.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">business_name</text>
+<text x="788" y="245.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(120)</text>
+<text x="514" y="263.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">business_address</text>
+<text x="788" y="263.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(250)</text>
+<text x="514" y="281.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">business_nature</text>
+<text x="788" y="281.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(150)</text>
+<text x="514" y="299.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">date_requested</text>
+<text x="788" y="299.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DATETIME(6)</text>
+<text x="514" y="317.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">date_released</text>
+<text x="788" y="317.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DATETIME(6) · NULL</text>
+<text x="514" y="335.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">status</text>
+<text x="788" y="335.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
+<text x="514" y="353.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">fee</text>
+<text x="788" y="353.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DECIMAL(12,2)</text>
+<text x="514" y="371.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">fee_basis</text>
+<text x="788" y="371.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(1000)</text>
+<text x="514" y="389.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_paid</text>
+<text x="788" y="389.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<text x="467" y="407.5" font-size="9" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">UQ</text>
+<text x="514" y="407.5" font-size="10.5" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">official_receipt_no</text>
+<text x="788" y="407.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(50) · NULL</text>
+<text x="514" y="425.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">date_paid</text>
+<text x="788" y="425.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DATETIME(6) · NULL</text>
+<text x="514" y="443.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">rejection_reason</text>
+<text x="788" y="443.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(300)</text>
+<text x="514" y="461.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">released_document_text</text>
+<text x="788" y="461.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">MEDIUMTEXT</text>
+<text x="467" y="479.5" font-size="9" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">UQ</text>
+<text x="514" y="479.5" font-size="10.5" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">jobseeker_guard</text>
+<text x="788" y="479.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT · GENERATED</text>
+<rect x="890" y="80" width="330" height="392" rx="8" fill="#ffffff" stroke="#c9ced4" stroke-width="1"/>
+<path d="M890,88 a8,8 0 0 1 8,-8 h314 a8,8 0 0 1 8,8 v18 h-330 z" fill="#f2f2f2" stroke="#c9ced4" stroke-width="1"/>
+<text x="1055.0" y="97.5" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">resident_snapshots</text>
+<line x1="936" y1="106" x2="936" y2="471" stroke="#c9ced4" stroke-width="1"/>
+<line x1="1115" y1="106" x2="1115" y2="471" stroke="#c9ced4" stroke-width="1"/>
+<text x="897" y="119.5" font-size="9" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">PK,FK</text>
+<text x="944" y="119.5" font-size="10.5" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">request_id</text>
+<text x="1208" y="119.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
+<text x="944" y="137.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">first_name</text>
+<text x="1208" y="137.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(80)</text>
+<text x="944" y="155.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">middle_name</text>
+<text x="1208" y="155.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(80)</text>
+<text x="944" y="173.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">last_name</text>
+<text x="1208" y="173.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(80)</text>
+<text x="944" y="191.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">suffix</text>
+<text x="1208" y="191.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(20)</text>
+<text x="944" y="209.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">date_of_birth</text>
+<text x="1208" y="209.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DATE</text>
+<text x="944" y="227.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">gender</text>
+<text x="1208" y="227.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
+<text x="944" y="245.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">civil_status</text>
+<text x="1208" y="245.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
+<text x="944" y="263.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">purok</text>
+<text x="1208" y="263.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(60)</text>
+<text x="944" y="281.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">address</text>
+<text x="1208" y="281.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(250)</text>
+<text x="944" y="299.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">contact_number</text>
+<text x="1208" y="299.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(15)</text>
+<text x="944" y="317.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">occupation</text>
+<text x="1208" y="317.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(100)</text>
+<text x="944" y="335.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">date_of_residency</text>
+<text x="1208" y="335.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DATE</text>
+<text x="944" y="353.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_registered_voter</text>
+<text x="1208" y="353.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<text x="944" y="371.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_senior_citizen</text>
+<text x="1208" y="371.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<text x="944" y="389.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_person_with_disability</text>
+<text x="1208" y="389.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<text x="944" y="407.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_indigent</text>
+<text x="1208" y="407.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<text x="944" y="425.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_student</text>
+<text x="1208" y="425.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<text x="944" y="443.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">is_solo_parent</text>
+<text x="1208" y="443.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<text x="944" y="461.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">has_used_jobseeker_benefit</text>
+<text x="1208" y="461.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">TINYINT(1)</text>
+<rect x="40" y="560" width="250" height="140" rx="8" fill="#ffffff" stroke="#c9ced4" stroke-width="1"/>
+<path d="M40,568 a8,8 0 0 1 8,-8 h234 a8,8 0 0 1 8,8 v18 h-250 z" fill="#f2f2f2" stroke="#c9ced4" stroke-width="1"/>
+<text x="165.0" y="577.5" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">fee_schedule</text>
 <line x1="86" y1="586" x2="86" y2="699" stroke="#c9ced4" stroke-width="1"/>
+<line x1="185" y1="586" x2="185" y2="699" stroke="#c9ced4" stroke-width="1"/>
 <text x="47" y="599.5" font-size="9" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">PK</text>
 <text x="94" y="599.5" font-size="10.5" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">fee_code</text>
-<text x="312" y="599.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(40)</text>
+<text x="278" y="599.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(40)</text>
 <text x="94" y="617.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">service_name</text>
-<text x="312" y="617.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(120)</text>
+<text x="278" y="617.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(120)</text>
 <text x="94" y="635.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">amount</text>
-<text x="312" y="635.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DECIMAL(12,2)</text>
+<text x="278" y="635.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">DECIMAL(12,2)</text>
 <text x="94" y="653.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">legal_basis</text>
-<text x="312" y="653.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(300)</text>
+<text x="278" y="653.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(300)</text>
 <text x="94" y="671.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">notes</text>
-<text x="312" y="671.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(300)</text>
+<text x="278" y="671.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">VARCHAR(300)</text>
 <text x="94" y="689.5" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">sort_order</text>
-<text x="312" y="689.5" text-anchor="end" font-size="8.5" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
-<rect x="580" y="560" width="440" height="124" fill="#ffffff" stroke="#c9ced4" stroke-width="1"/>
-<text x="800" y="581" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">Legend — how to read the connectors</text>
-<line x1="602" y1="604" x2="662" y2="604" stroke="#3f4753" stroke-width="1.2"/><line x1="652" y1="598" x2="652" y2="610" stroke="#3f4753" stroke-width="1.2"/>
-<text x="676" y="608" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">tick = exactly one (the referenced row)</text>
-<line x1="602" y1="630" x2="662" y2="630" stroke="#3f4753" stroke-width="1.2"/><path d="M648,623 L662,630 M648,630 L662,630 M648,637 L662,630" stroke="#3f4753" stroke-width="1.2" fill="none"/>
-<text x="676" y="634" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">crow's foot = many (one or more rows)</text>
-<line x1="602" y1="656" x2="662" y2="656" stroke="#3f4753" stroke-width="1.2"/><path d="M650,650 L662,656 L650,662 z" fill="#ffffff" stroke="#3f4753" stroke-width="1.2"/>
-<text x="676" y="660" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">hollow arrow = exactly one, joined 1:1</text>
-<text x="26" y="748" font-size="9.5" font-style="italic" fill="#9aa0a6" font-family="Helvetica,Arial,sans-serif">Types are exactly as declared in Database/schema.sql. Unmarked = NOT NULL · NULL = nullable · AI = AUTO_INCREMENT ·</text>
-<text x="26" y="763" font-size="9.5" font-style="italic" fill="#9aa0a6" font-family="Helvetica,Arial,sans-serif">GENERATED = computed column (no trigger).</text>
-<text x="26" y="778" font-size="9.5" font-style="italic" fill="#9aa0a6" font-family="Helvetica,Arial,sans-serif">ux_requests_receipt — official_receipt_no is UNIQUE; unpaid rows stay NULL, so unpaid requests never collide.</text>
-<text x="26" y="793" font-size="9.5" font-style="italic" fill="#9aa0a6" font-family="Helvetica,Arial,sans-serif">ux_requests_jobseeker — jobseeker_guard repeats resident_id while a first-time jobseeker request is live: one per resident.</text>
-<text x="26" y="808" font-size="9.5" font-style="italic" fill="#9aa0a6" font-family="Helvetica,Arial,sans-serif">resident_snapshots freezes the resident's details at request time; fee_schedule holds the Citizen's Charter rates + legal</text>
-<text x="26" y="823" font-size="9.5" font-style="italic" fill="#9aa0a6" font-family="Helvetica,Arial,sans-serif">bases (docs/07), seeded by schema.sql, read by FeeSchedule at startup; scope prices the clearance: local PHP 100, abroad PHP 200.</text>
+<text x="278" y="689.5" text-anchor="end" font-size="9" fill="#8a8f94" font-family="Helvetica,Arial,sans-serif">INT</text>
+<rect x="460" y="560" width="440" height="124" rx="8" fill="#ffffff" stroke="#c9ced4" stroke-width="1"/>
+<text x="680" y="581" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">Legend — how to read the connectors</text>
+<line x1="482" y1="604" x2="542" y2="604" stroke="#3f4753" stroke-width="1.2"/><line x1="532" y1="598" x2="532" y2="610" stroke="#3f4753" stroke-width="1.2"/>
+<text x="556" y="608" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">tick = exactly one (the referenced row)</text>
+<line x1="482" y1="630" x2="542" y2="630" stroke="#3f4753" stroke-width="1.2"/><path d="M528,623 L542,630 M528,630 L542,630 M528,637 L542,630" stroke="#3f4753" stroke-width="1.2" fill="none"/>
+<text x="556" y="634" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">crow's foot = many (one or more rows)</text>
+<line x1="482" y1="656" x2="542" y2="656" stroke="#3f4753" stroke-width="1.2"/><path d="M530,650 L542,656 L530,662 z" fill="#ffffff" stroke="#3f4753" stroke-width="1.2"/>
+<text x="556" y="660" font-size="10.5" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">hollow arrow = exactly one, joined 1:1</text>
+<text x="26" y="748" font-size="9.5" font-style="italic" fill="#9aa0a6" font-family="Helvetica,Arial,sans-serif">Types are exactly as declared in Database/schema.sql. Unmarked = NOT NULL · NULL = nullable · GENERATED = computed column (no trigger).</text>
+<text x="26" y="763" font-size="9.5" font-style="italic" fill="#9aa0a6" font-family="Helvetica,Arial,sans-serif">ux_requests_receipt — official_receipt_no is UNIQUE; unpaid rows stay NULL, so unpaid requests never collide.</text>
+<text x="26" y="778" font-size="9.5" font-style="italic" fill="#9aa0a6" font-family="Helvetica,Arial,sans-serif">ux_requests_jobseeker — jobseeker_guard repeats resident_id while a first-time jobseeker request is live: one per resident.</text>
+<text x="26" y="793" font-size="9.5" font-style="italic" fill="#9aa0a6" font-family="Helvetica,Arial,sans-serif">resident_snapshots freezes the resident's details at request time; fee_schedule holds the Citizen's Charter rates + legal bases</text>
+<text x="26" y="808" font-size="9.5" font-style="italic" fill="#9aa0a6" font-family="Helvetica,Arial,sans-serif">(docs/07), seeded by schema.sql, read by FeeSchedule at startup; scope prices the clearance: local PHP 100, abroad PHP 200.</text>
 </svg>
