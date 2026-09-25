@@ -1,10 +1,19 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.IO;
+using System.Drawing;
+using System.Windows.Forms;
+using BarangayDocumentSystem.Forms;
+using BarangayDocumentSystem.Views;
+using BarangayDocumentSystem.CustomControls;
 using System.Globalization;
 using System.Xml.Linq;
-using BarangayDocumentSystem.DBContext;
-using BarangayDocumentSystem.Helper;
+using BarangayDocumentSystem.Database;
+using BarangayDocumentSystem.UIHelpers;
 using BarangayDocumentSystem.Interfaces;
 using BarangayDocumentSystem.Models;
-using BarangayDocumentSystem.Service;
+using BarangayDocumentSystem.BusinessRules;
 
 namespace BarangayDocumentSystem;
 
@@ -16,8 +25,8 @@ namespace BarangayDocumentSystem;
 /// constructor, so no screen ever creates its own repository. That is what
 /// lets me swap the storage without touching a single form.
 ///
-/// ApplicationConfiguration.Initialize() carries the PerMonitorV2 high-DPI
-/// mode from the .csproj (core fix 2); AppTheme.Resolve() picks the best of
+/// App.config opts into Framework 4.8 PerMonitorV2 DPI support.
+/// AppTheme.Resolve() picks the best of
 /// the Inter / SF Pro / Roboto stack this machine actually has (core fix 3);
 /// then the composition happens: profile, fees, store, shell.
 /// </summary>
@@ -26,7 +35,8 @@ internal static class Program
     [STAThread]
     private static void Main()
     {
-        ApplicationConfiguration.Initialize();
+        Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
 
         // I work out which fonts this machine actually has before I create a
         // single control, so every form is built with the right family from

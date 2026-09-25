@@ -1,3 +1,8 @@
+using BarangayDocumentSystem.BusinessRules;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.IO;
 namespace BarangayDocumentSystem.Models;
 
 /// <summary>
@@ -137,9 +142,9 @@ public class DocumentRequest
     /// one move, so the two can never disagree. The screens never call
     /// this - only the store that creates the request does.
     /// </summary>
-    internal void ApplyAssessment(Service.FeeAssessment assessment)
+    internal void ApplyAssessment(BusinessRules.FeeAssessment assessment)
     {
-        ArgumentNullException.ThrowIfNull(assessment);
+        if (assessment is null) throw new ArgumentNullException(nameof(assessment));
         Fee = assessment.FinalFee;
         FeeBasis = assessment.Basis;
         AvailedUnderJobseekerAct = assessment.MarksJobseekerAvailment;
@@ -182,7 +187,7 @@ public class DocumentRequest
 
         if (Fee > 0 && !IsPaid)
             throw new InvalidOperationException(
-                $"This document has an unpaid fee of {Service.DisplayFormat.Peso(Fee)}. Record the payment before releasing.");
+                $"This document has an unpaid fee of {BusinessRules.DisplayFormat.Peso(Fee)}. Record the payment before releasing.");
 
         Status = RequestStatus.Released;
         DateReleased = DateTime.Now;

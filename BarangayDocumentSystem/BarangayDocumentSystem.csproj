@@ -1,71 +1,83 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{9077BDF9-C14F-4BC1-A068-2BF52A9FA8CB}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>BarangayDocumentSystem</RootNamespace>
     <AssemblyName>BarangayDocumentSystem</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>latest</LangVersion>
-
-    <!-- ============================================================
-         HIGH-DPI, FIX 2 OF THE v3.1 CORE TECHNICAL FIXES
-
-         ApplicationConfiguration.Initialize() in Program.cs reads this
-         property and calls Application.SetHighDpiMode(PerMonitorV2) for
-         me, which is the supported way to switch DPI modes on .NET 8.
-         app.manifest carries the same setting as well, so the mode holds
-         even for the parts of the runtime that read the manifest, and
-         App.config records it for documentation. Belt, braces and a note.
-         ============================================================ -->
-    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
-
-    <!-- app.manifest carries the PerMonitorV2 dpiAwareness block and the
-         supportedOS list. Visual Studio picks it up from here. -->
+    <Deterministic>true</Deterministic>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-
-    <!-- ============================================================
-         BUILDING ON LINUX / macOS
-
-         A net8.0-windows project normally refuses to build off Windows.
-         EnableWindowsTargeting lets the Windows targeting packs be
-         downloaded and the project compiled from a Linux box (the way the
-         v3 code was verified before this ever ran on Windows). On Windows
-         the condition is false and nothing changes.
-         ============================================================ -->
-    <EnableWindowsTargeting Condition="'$(OS)' != 'Windows_NT'">true</EnableWindowsTargeting>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
   </PropertyGroup>
-
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols><DebugType>full</DebugType>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <Optimize>true</Optimize><DebugType>pdbonly</DebugType>
+    <DefineConstants>TRACE</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
-    <!-- I make sure App.config travels with the build output so the running
-         program can actually find it, whatever MSBuild decides to call it.
-         AppSettings probes the usual candidate names at startup. -->
-    <None Update="App.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
-    <!-- The barangay seal has to be beside the .exe at run time, or the
-         dashboard banner and the sidebar come up without it. -->
-    <None Update="Assets\barangay-logo.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
-
-  <!--
-    NOTE ON NUGET AND THE DESIGNER, v3.1 FIX 1.
-
-    This project deliberately references no NuGet packages, so the whole
-    solution restores and builds with no network at all. App.config is read
-    through System.Xml.Linq in Program.cs instead of the
-    System.Configuration.ConfigurationManager package.
-
-    packages.config is still present because the Visual Studio WinForms
-    designer surface for custom controls looks for the accessibility
-    assemblies it lists. It is inert at compile time - the build never
-    consults it - but its presence keeps the designer from complaining on a
-    machine where those reference assemblies are registered the old way.
-  -->
-
+  <ItemGroup>
+    <Compile Include="BusinessRules\DisplayFormat.cs" />
+    <Compile Include="BusinessRules\DocumentRenderer.cs" />
+    <Compile Include="BusinessRules\DocumentTemplates\BarangayClearanceTemplate.cs" />
+    <Compile Include="BusinessRules\DocumentTemplates\CharacterAndAssistanceTemplates.cs" />
+    <Compile Include="BusinessRules\DocumentTemplates\DocumentTemplateBase.cs" />
+    <Compile Include="BusinessRules\DocumentTemplates\EmploymentAndBlotterTemplates.cs" />
+    <Compile Include="BusinessRules\DocumentTemplates\IndigencyAndJobseekerTemplates.cs" />
+    <Compile Include="BusinessRules\DocumentTemplates\MoneyDocumentTemplates.cs" />
+    <Compile Include="BusinessRules\DocumentTemplates\ResidencyTemplates.cs" />
+    <Compile Include="BusinessRules\FeeSchedule.cs" />
+    <Compile Include="CustomControls\NavigationSidebar.cs" />
+    <Compile Include="Database\InMemoryBarangayRepository.cs" />
+    <Compile Include="Forms\DocumentPreviewForm.Designer.cs"><DependentUpon>DocumentPreviewForm.cs</DependentUpon></Compile>
+    <Compile Include="Forms\DocumentPreviewForm.cs"><SubType>Form</SubType></Compile>
+    <Compile Include="Forms\PaymentForm.Designer.cs"><DependentUpon>PaymentForm.cs</DependentUpon></Compile>
+    <Compile Include="Forms\PaymentForm.cs"><SubType>Form</SubType></Compile>
+    <Compile Include="Forms\Prompt.cs" />
+    <Compile Include="Forms\RequestForm.Designer.cs"><DependentUpon>RequestForm.cs</DependentUpon></Compile>
+    <Compile Include="Forms\RequestForm.cs"><SubType>Form</SubType></Compile>
+    <Compile Include="Forms\ResidentForm.Designer.cs"><DependentUpon>ResidentForm.cs</DependentUpon></Compile>
+    <Compile Include="Forms\ResidentForm.cs"><SubType>Form</SubType></Compile>
+    <Compile Include="Interfaces\IBarangayRepository.cs" />
+    <Compile Include="Interfaces\IDocumentTemplate.cs" />
+    <Compile Include="MainShell.Designer.cs"><DependentUpon>MainShell.cs</DependentUpon></Compile>
+    <Compile Include="MainShell.cs"><SubType>Form</SubType></Compile>
+    <Compile Include="Models\BarangayProfile.cs" />
+    <Compile Include="Models\DocumentRequest.cs" />
+    <Compile Include="Models\Enums.cs" />
+    <Compile Include="Models\Resident.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="UIHelpers\AppTheme.cs" />
+    <Compile Include="UIHelpers\CompilerShims.cs" />
+    <Compile Include="UIHelpers\CueTextBox.cs" />
+    <Compile Include="UIHelpers\Dialog.cs" />
+    <Compile Include="UIHelpers\InputValidator.cs" />
+    <Compile Include="UIHelpers\UiFactory.cs" />
+    <Compile Include="Views\DashboardView.cs" />
+    <Compile Include="Views\RequestsView.cs" />
+    <Compile Include="Views\ResidentsView.cs" />
+    <Compile Include="Views\ViewBase.cs" />
+    <EmbeddedResource Include="MainShell.resx"><DependentUpon>MainShell.cs</DependentUpon></EmbeddedResource>
+    <None Include="App.config" />
+    <None Include="app.manifest" />
+    <Content Include="Assets\barangay-logo.png"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

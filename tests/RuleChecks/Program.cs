@@ -1,6 +1,8 @@
-using BarangayDocumentSystem.DBContext;
+using System;
+using System.Linq;
+using BarangayDocumentSystem.Database;
 using BarangayDocumentSystem.Models;
-using BarangayDocumentSystem.Service;
+using BarangayDocumentSystem.BusinessRules;
 
 // =====================================================================
 //  My rule checks, v3.1.
@@ -15,7 +17,7 @@ using BarangayDocumentSystem.Service;
 //  hour, the Taripa items, and the business clearance whose amount now
 //  VARIES with the law violated.
 //
-//  To run it:  dotnet run --project tests/RuleChecks
+//  Build with MSBuild, then run tests\RuleChecks\bin\Debug\RuleChecks.exe
 // =====================================================================
 
 int pass = 0, fail = 0;
@@ -156,12 +158,12 @@ Check("a released request never counts as aged",
 Console.WriteLine("\n=== The printed documents ===");
 var renderer = new DocumentRenderer(BarangayProfile.Current, fees);
 Check("all 24 document types have a readable name",
-    Enum.GetValues<DocumentType>().All(t => !string.IsNullOrWhiteSpace(FeeSchedule.NameOf(t))));
+    ((DocumentType[])Enum.GetValues(typeof(DocumentType))).All(t => !string.IsNullOrWhiteSpace(FeeSchedule.NameOf(t))));
 Check("all 24 document types have a template",
-    Enum.GetValues<DocumentType>().All(t => renderer.TemplateFor(t) is not null));
+    ((DocumentType[])Enum.GetValues(typeof(DocumentType))).All(t => renderer.TemplateFor(t) is not null));
 
 int rendered = 0;
-foreach (DocumentType type in Enum.GetValues<DocumentType>())
+foreach (DocumentType type in ((DocumentType[])Enum.GetValues(typeof(DocumentType))))
 {
     var sample = DocumentRequest.Rehydrate(1, juan, type, "the stated purpose of this request",
         DateTime.Today, null, RequestStatus.ReadyForRelease, 100m, "test", false, "", "");
@@ -173,8 +175,8 @@ foreach (DocumentType type in Enum.GetValues<DocumentType>())
     else
         Console.WriteLine($"     !! {type} rendered incompletely");
 }
-Check("every document type renders on the real letterhead", rendered == Enum.GetValues<DocumentType>().Length,
-    $"{rendered}/{Enum.GetValues<DocumentType>().Length}");
+Check("every document type renders on the real letterhead", rendered == ((DocumentType[])Enum.GetValues(typeof(DocumentType))).Length,
+    $"{rendered}/{((DocumentType[])Enum.GetValues(typeof(DocumentType))).Length}");
 
 string jobseekerDoc = renderer.RenderText(
     DocumentRequest.Rehydrate(2, jose, DocumentType.FirstTimeJobseekerCertificate,
@@ -190,6 +192,8 @@ string cedulaDoc = renderer.RenderText(
 Check("the cedula prints its computation",
     cedulaDoc.Contains("₱150,000.00") && cedulaDoc.Contains("₱155.00"));
 Check("the cedula cites RA 7160", cedulaDoc.Contains("156"));
+
+Check("accented-name search is case-insensitive", repo.SearchResidents("PEÑA").Any());
 
 Console.WriteLine($"\n=== {pass} passed, {fail} failed ===");
 return fail == 0 ? 0 : 1;

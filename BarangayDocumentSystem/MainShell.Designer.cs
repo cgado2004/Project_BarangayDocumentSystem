@@ -1,3 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.IO;
+using System.Drawing;
+using System.Windows.Forms;
+using BarangayDocumentSystem.Forms;
+using BarangayDocumentSystem.Views;
+using BarangayDocumentSystem.CustomControls;
 namespace BarangayDocumentSystem;
 
 /// <summary>
@@ -16,7 +25,7 @@ partial class MainShell
 {
     private System.ComponentModel.IContainer components = null;
 
-    private BarangayDocumentSystem.NavigationSidebar sidebar;
+    private BarangayDocumentSystem.CustomControls.NavigationSidebar sidebar;
     private System.Windows.Forms.Panel pnlHeader;
     private System.Windows.Forms.Label lblPageTitle;
     private System.Windows.Forms.Label lblPageSubtitle;
@@ -30,6 +39,9 @@ partial class MainShell
         if (disposing && (components != null))
         {
             components.Dispose();
+            _dashboardView?.Dispose();
+            _residentsView?.Dispose();
+            _requestsView?.Dispose();
         }
         base.Dispose(disposing);
     }
@@ -37,7 +49,7 @@ partial class MainShell
     private void InitializeComponent()
     {
         this.components = new System.ComponentModel.Container();
-        this.sidebar = new BarangayDocumentSystem.NavigationSidebar();
+        this.sidebar = new BarangayDocumentSystem.CustomControls.NavigationSidebar();
         this.pnlHeader = new System.Windows.Forms.Panel();
         this.lblPageTitle = new System.Windows.Forms.Label();
         this.lblPageSubtitle = new System.Windows.Forms.Label();
