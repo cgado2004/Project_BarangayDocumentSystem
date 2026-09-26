@@ -49,14 +49,15 @@ is all — you do not need Apache for this.
 
 ### 3.2 Run the two scripts, in order
 
-Open **phpMyAdmin** (`http://localhost/phpmyadmin`) or MySQL Workbench, then:
+Both scripts live in `BarangayDocumentSystem/Database/`. Open **phpMyAdmin**
+(`http://localhost/phpmyadmin`) or MySQL Workbench, then:
 
 1. Open the **SQL** tab.
-2. Paste the whole of **`db/01-schema.sql`** and run it.
+2. Paste the whole of **`01-schema.sql`** and run it.
    This creates the database, the four tables, the constraints, the triggers
    and the views. It drops and recreates everything, so it is safe to run
    again any time.
-3. Paste the whole of **`db/02-seed-data.sql`** and run it.
+3. Paste the whole of **`02-seed-data.sql`** and run it.
    This loads the same seven residents the app shows in Memory mode.
 
 Both scripts print a result at the end so you can confirm they worked.
@@ -95,7 +96,8 @@ set a MySQL password, put it after `Pwd=`.
 
 **The C# class that talks to MySQL is not in this version yet.**
 
-The scripts in `db/` are complete and correct. What is missing is
+The scripts in `BarangayDocumentSystem/Database/` are complete and correct.
+What is missing is
 `MySqlBarangayRepository`, the C# side that reads and writes those tables.
 
 If you set `Storage=MySQL` today, the app shows a message saying exactly that
@@ -177,7 +179,7 @@ On fees that is indefensible.
 | Message | What it means | Fix |
 |---|---|---|
 | `Error 1045 Access denied` | Wrong username or password | Check `Uid=` and `Pwd=` in App.config |
-| `Error 1049 Unknown database` | The schema was never created | Run `db/01-schema.sql` |
+| `Error 1049 Unknown database` | The schema was never created | Run `BarangayDocumentSystem/Database/01-schema.sql` |
 | `Error 2002 / 2003 Can't connect` | The server is not running | Start MySQL in XAMPP |
 | `Error 1452 Cannot add foreign key` | You ran the seed before the schema | Run `01-schema.sql` first |
 | `Error 1364 Field doesn't have a default` | Rows inserted by hand, missing a required column | Use the seed script as your template |

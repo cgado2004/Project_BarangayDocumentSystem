@@ -58,7 +58,7 @@ BarangayDocumentSystem/
   BusinessRules/             fee schedule, formatting, document rendering
     DocumentTemplates/       IDocumentTemplate implementations
   CustomControls/            navigation sidebar
-  Database/                  in-memory repository
+  Database/                  MySQL scripts and the in-memory repository
   Forms/                     dialogs and their Designer files
   Interfaces/                repository and template contracts
   Models/                    residents, requests, enums, barangay profile
@@ -66,7 +66,6 @@ BarangayDocumentSystem/
   Views/                     dashboard, residents, requests, shared base view
   App.config                 profile, fee and storage settings
   app.manifest               Windows compatibility and visual styles
- db/                         existing reference SQL; pending ERD reconciliation
  docs/                       existing reference documents; updated diagrams pending
  tests/RuleChecks/           Framework 4.8 regression-check console application
  scripts/check_structure.py  cross-platform structural checks
@@ -84,9 +83,10 @@ The sidebar status explicitly labels it as not saved. Leave `Storage=Memory`
 in `App.config`. Selecting MySQL warns and falls back to sample data; no
 persistent repository is connected in this integration baseline.
 
-The existing `db/` scripts, ERD and UML are reference material, not confirmation
-of an approved final schema. Database integration and model/schema reconciliation
-are deferred until the team's ERD, UML and compiled documents arrive.
+The existing `Database/` scripts, ERD and UML are reference material, not
+confirmation of an approved final schema. Database integration and
+model/schema reconciliation are deferred until the team's ERD, UML and
+compiled documents arrive.
 
 Fees and waivers continue to use the leader branch's documented rules. This
 integration does not independently certify their legal interpretation; review

@@ -35,8 +35,9 @@ schedule and one model set.
 
 ## Pending supplied documents
 
-The existing docs/02-erd.svg, docs/03-uml.svg and db/ scripts are left intact as
-reference artifacts. They are not treated as the newly approved designs.
+The existing docs/02-erd.svg, docs/03-uml.svg and the SQL scripts in
+BarangayDocumentSystem/Database/ are left intact as reference artifacts.
+They are not treated as the newly approved designs.
 When the team supplies its documents, reconcile entity fields, relationships,
 cardinalities, validation, request states, retention/deletion behavior, storage
 provider and fee evidence before implementing persistence or replacing diagrams.
