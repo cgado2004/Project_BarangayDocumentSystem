@@ -1,7 +1,12 @@
+// =====================================================================
+//  PART:    Interfaces - the storage contract every screen depends on
+//  ORIGIN:  leader_draft - Clint Wood Gado (v3.1 contract)
+//           Fdraft - Frent Dhieniel Raborar (Reload, the RepositoryException rule)
+//  EDITS:   Clint Wood Gado - merged the two contracts; added StorageDescription
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.IO;
 using BarangayDocumentSystem.Models;
 
 namespace BarangayDocumentSystem.Interfaces;
@@ -10,17 +15,27 @@ namespace BarangayDocumentSystem.Interfaces;
 /// Everything my application can ask of storage.
 ///
 /// My screens only ever talk to this interface, never to a concrete class.
-/// That is what lets me swap the in-memory store for a MySQL one by changing
-/// a single line in Program.cs, without touching a single form.
+/// That is what lets Program.cs choose between Frent's MySQL repository and
+/// my in-memory one by changing a single line, without touching a form.
 ///
-/// v3.1 adds the focused resident query methods - FindResident and
-/// ResidentsOfPurok - so the screens ask the store for what they want
-/// instead of filtering the whole registry themselves.
+/// I merged two versions of this contract. Mine had the focused resident
+/// queries (FindResident, ResidentsOfPurok) and the RequestInput that my
+/// v3.1 fee schedule needs. Frent's had Reload, and the rule that any
+/// method may throw <see cref="RepositoryException"/> when the database
+/// cannot be reached or rejects a write. Both survive here.
 /// </summary>
 public interface IBarangayRepository
 {
     IReadOnlyList<Resident> Residents { get; }
     IReadOnlyList<DocumentRequest> Requests { get; }
+
+    /// <summary>
+    /// Where the data actually is, in words fit for the status bar:
+    /// "MySQL - localhost/barangay_db" or "In-memory demo - nothing is
+    /// saved". I put this on the interface so the shell can say it
+    /// without asking which concrete class it was given.
+    /// </summary>
+    string StorageDescription { get; }
 
     /// <summary>One resident by id, or null. The history panel and the
     /// request form use this after a grid row is picked.</summary>
@@ -34,7 +49,7 @@ public interface IBarangayRepository
     /// occupation. A blank term returns everyone.</summary>
     IEnumerable<Resident> SearchResidents(string term);
 
-    /// <summary>Every resident of one purok, for the dashboard chips.</summary>
+    /// <summary>Every resident of one purok, for the dashboard table.</summary>
     IEnumerable<Resident> ResidentsOfPurok(string purok);
 
     /// <summary>
@@ -46,12 +61,25 @@ public interface IBarangayRepository
 
     IEnumerable<DocumentRequest> GetRequestsByStatus(RequestStatus? status);
 
-    /// <summary>I call this after a request's status or payment changed, so
-    /// the store can write it down. The in-memory version does nothing here;
-    /// the MySQL version runs an UPDATE.</summary>
+    /// <summary>
+    /// I call this after a request's status or payment changed, so the
+    /// store can write it down. The workflow methods on DocumentRequest
+    /// change the object in memory only; this is what makes it permanent.
+    /// The in-memory version does nothing here; the MySQL version runs an
+    /// UPDATE inside a transaction.
+    /// </summary>
     void SaveRequest(DocumentRequest request);
 
     BarangayStatistics GetStatistics();
+
+    /// <summary>
+    /// Discard everything held in memory and read it again from storage.
+    ///
+    /// Frent's rule, and I kept it: after a failed save the screen must
+    /// never show something the database does not have, so the view
+    /// reloads instead of guessing which half of the change went through.
+    /// </summary>
+    void Reload();
 }
 
 /// <summary>
