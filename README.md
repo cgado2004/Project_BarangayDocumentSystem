@@ -5,12 +5,17 @@ Windows Forms · **.NET Framework 4.8** · Visual Studio 2022
 
 ## Group
 
-| Member | Working branch |
-|---|---|
-| Clint Wood Gado | `leader_draft` |
-| Del Rosario, Jonathan F. | `Draft` |
-| Raborar, Frent Dhieniel | `Draft2` |
-| Dagamac, Emmanuelle Philippe | `Draft3` |
+| Member | Working branch | What of theirs is in this build |
+|---|---|---|
+| Clint Wood Gado | `leader_draft` | Fee rules and legal basis, palette and logo, models, document templates, the shared repository skeleton, tests, docs |
+| Del Rosario, Jonathan F. | `Draft` | The screen design: flat sidebar, page header, six summary cards, breakdown tables, status strip |
+| Raborar, Frent Dhieniel | `Fdraft` | The project structure and the MySQL persistence (repository, initializer, settings, schema) |
+| Dagamac, Emmanuelle Philippe | `draft3` | — (stale .NET 8 layout; not integrated) |
+
+Every source file opens with a `PART / ORIGIN / EDITS / VOICE` header that
+says which branch and teammate the part came from and what was changed, so
+each part can be attributed. All comments are written in the first person by
+Clint.
 
 ## Build and run on Windows
 
@@ -22,30 +27,45 @@ Windows Forms · **.NET Framework 4.8** · Visual Studio 2022
 This is a classic Framework WinForms project, not .NET 8 or a web app.
 It uses the C# 10 compiler supplied by Visual Studio 2022, but targets the
 Framework 4.8 runtime. `CompilerShims.cs` supplies the `init` marker used by
-immutable records. No NuGet packages are needed for the current demo.
+immutable records. The one NuGet package, **MySql.Data 8.4.0**, is a
+`PackageReference`; Visual Studio restores it on the first build (a
+Developer Command Prompt needs `msbuild /t:Restore` first, as below).
+
+Before F5: start **MySQL** in the XAMPP Control Panel. The program creates
+the `barangay_db` database and its tables by itself on first run and loads
+sample data into it. Nothing has to be pasted into phpMyAdmin. If MySQL is
+not running the program says so and closes; see
+[the database guide](docs/05-database-guide.md).
 
 From a Visual Studio Developer Command Prompt:
 
 ```bat
+msbuild BarangayDocumentSystem.sln /t:Restore
 msbuild BarangayDocumentSystem.sln /t:Rebuild /p:Configuration=Debug
 msbuild tests\RuleChecks\RuleChecks.csproj /t:Rebuild /p:Configuration=Debug
 tests\RuleChecks\bin\Debug\RuleChecks.exe
 ```
 
-## Integration baseline
+The RuleChecks harness uses the in-memory store, so it needs no MySQL.
 
-- **Draft2 (Frent):** single application project with `BusinessRules`,
-  `CustomControls`, `Database`, `Forms`, `Interfaces`, `Models`, `UIHelpers`,
-  and `Views` folders; main shell and entry point at the project root.
-- **Draft:** flat sidebar, six dashboard summary cards, tabular status,
-  document and purok breakdowns. Native navigation buttons support keyboard
-  activation. The existing resident/request workflows remain; this is not
-  a wholesale copy of Draft's screens or database implementation.
-- **leader_draft:** retained logo, navy/blue/gold/red palette, document
-  templates and fee rules. The fee reference remains unchanged:
-  [`docs/07-fee-schedule-and-legal-basis.md`](docs/07-fee-schedule-and-legal-basis.md).
+## Integration baseline (v3.2)
 
-See [integration notes](docs/08-integration-notes.md) for boundaries and pending work.
+- **Fdraft (Frent):** the baseline. One application project with
+  `BusinessRules`, `CustomControls`, `Database`, `Forms`, `Interfaces`,
+  `Models`, `UIHelpers` and `Views`; shell and entry point at the root; the
+  working MySQL persistence, ported as it was and extended for the richer
+  request model. `Fdraft` itself was not modified.
+- **Draft (Jonathan):** the screen design — flat sidebar with the seal,
+  page title and subtitle over the content, six summary cards, tabular
+  status / document / purok breakdowns, status strip.
+- **leader_draft (Clint):** the rules and regulations
+  ([`docs/07`](docs/07-fee-schedule-and-legal-basis.md), unchanged), the
+  palette and logo, the models, document templates and tests.
+
+The order of work was pseudocode → object model
+([`docs/09`](docs/09-object-model.md)) → code. The
+[integration notes](docs/08-integration-notes.md) list what came from whom,
+the duplication that was removed, and the bugs fixed on the way.
 
 ## Layout and OOP
 
@@ -57,8 +77,9 @@ BarangayDocumentSystem/
   Assets/                    original barangay seal
   BusinessRules/             fee schedule, formatting, document rendering
     DocumentTemplates/       IDocumentTemplate implementations
-  CustomControls/            navigation sidebar
-  Database/                  MySQL scripts and the in-memory repository
+  CustomControls/            navigation sidebar, dashboard summary card
+  AppSettings.cs             the one reader of App.config
+  Database/                  RepositoryBase, MySQL and in-memory stores, initializer, schema.sql, sample data
   Forms/                     dialogs and their Designer files
   Interfaces/                repository and template contracts
   Models/                    residents, requests, enums, barangay profile
@@ -66,43 +87,51 @@ BarangayDocumentSystem/
   Views/                     dashboard, residents, requests, shared base view
   App.config                 profile, fee and storage settings
   app.manifest               Windows compatibility and visual styles
- docs/                       existing reference documents; updated diagrams pending
+ docs/                       guides, fee/legal basis, object model (09), integration notes (08)
  tests/RuleChecks/           Framework 4.8 regression-check console application
  scripts/check_structure.py  cross-platform structural checks
 ```
 
-Forms receive the repository and fee schedule through constructors. Request
-state transitions and payment guards live in the model, fee decisions in
-`FeeSchedule`, and document wording behind `IDocumentTemplate`. Shared grid
-styling and a single shell heading avoid per-screen duplication.
+Forms and views receive the repository and fee schedule through their
+constructors; `Program.cs` is the only file that names a concrete store.
+Request state transitions and payment guards live in the model, fee
+decisions in `FeeSchedule`, document wording behind `IDocumentTemplate`, and
+everything both storages share — queries, statistics, the price-on-filing
+rule, the sample data — in `RepositoryBase`, so the MySQL and in-memory
+repositories are each only the part that differs. The SOLID/DRY map is in
+[`docs/09-object-model.md`](docs/09-object-model.md) §7.
 
 ## Storage and fees
 
-**Current storage is an in-memory demo. Changes are lost when the app closes.**
-The sidebar status explicitly labels it as not saved. Leave `Storage=Memory`
-in `App.config`. Selecting MySQL warns and falls back to sample data; no
-persistent repository is connected in this integration baseline.
+**Storage is MySQL by default** (`Storage=MySQL` in `App.config`, connection
+string `BarangayDb`, XAMPP defaults: `root`, no password, database
+`barangay_db`). The program creates the database and tables on first run and
+upgrades an older table in place. The status bar always says where the data
+is. `Storage=Memory` keeps the sample-data demo for a machine without MySQL;
+it is labelled *nothing is saved*.
 
-The existing `Database/` scripts, ERD and UML are reference material, not
-confirmation of an approved final schema. Database integration and
-model/schema reconciliation are deferred until the team's ERD, UML and
-compiled documents arrive.
+Never commit a real password in `App.config` — the repository is public. The
+environment variable `BARANGAY_DB_CONNECTION` overrides the file.
 
-Fees and waivers continue to use the leader branch's documented rules. This
-integration does not independently certify their legal interpretation; review
-them against the documents the team supplies. The community-tax template now
-uses the injected fee schedule instead of duplicating its base/rate amounts.
+Fees and waivers are the leader branch's documented rules
+([`docs/07`](docs/07-fee-schedule-and-legal-basis.md)): ₱100 / ₱200
+clearance, ₱100 certification, indigency and low-income free, RA 9994 /
+10754 / 11291 exemptions, RA 11261 once-only with six months' residency, RA
+7160 §156 cedula, ₱150 lupon filing, ₱200/hour facilities, Taripa items. The
+numbers live in `App.config`; the law behind each lives in `FeeSchedule`.
 
 ## Verification status
 
 - `python scripts/check_structure.py`: checks Framework target, source inclusion,
   duplicate project entries, layout, XML, assets and known incompatible APIs.
 - `git diff --check`: whitespace validation.
-- Existing C# regression harness migrated for fees, residency restrictions, payment/release
-  guards, document-template coverage and accented-name search.
-- **Build, regression execution, designer, printing and UI behavior have not
-  been verified here.** The editing environment is Linux without .NET/MSBuild;
-  SDK download attempts failed. Run the commands above on Windows.
+- `tests/RuleChecks`: fees, residency restrictions, payment/release guards,
+  document-template coverage and accented-name search, against the
+  in-memory store.
+- **Build, regression execution, designer, printing, the first MySQL run and
+  UI behavior have not been verified here.** The editing environment is Linux
+  without .NET/MSBuild and without NuGet access. Run the commands above on
+  Windows; `docs/08` §6 lists what the first run should confirm.
 
 Before submission, check navigation by mouse and keyboard, add/edit/search,
 request creation and status changes, paid/free releases, print preview, actual

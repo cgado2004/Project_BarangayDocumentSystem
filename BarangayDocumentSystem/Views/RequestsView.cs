@@ -1,3 +1,12 @@
+// =====================================================================
+//  PART:    Views - the request queue and the buttons that move a request along
+//  ORIGIN:  Draft - Jonathan F. Del Rosario (the screen: status filters over a grid, actions below)
+//           Fdraft - Frent Dhieniel Raborar (this file's place in the tree)
+//           the code and comments are my v3.1 rewrite (leader_draft - Clint Wood Gado)
+//  EDITS:   Clint Wood Gado - v3.2: writes go through ViewBase.Persist; RecordPayment now
+//           records the payment on the request (the bug PR #3 flagged); UiFactory.StyleGrid
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,9 +41,8 @@ namespace BarangayDocumentSystem.Views;
 /// standard the Ease of Doing Business Act prescribes for a simple frontline
 /// transaction. A barangay document is one.
 /// </summary>
-public class RequestsView : ViewBase
+public sealed class RequestsView : ViewBase
 {
-    private readonly IBarangayRepository _repo;
     private readonly FeeSchedule _fees;
 
     private readonly DataGridView _grid = new();
@@ -49,15 +57,14 @@ public class RequestsView : ViewBase
     private readonly PillButton _btnReject  = new() { Text = "Reject",           Look = PillButton.Style.Outline, Accent = Danger };
     private readonly PillButton _btnPreview = new() { Text = "Preview document", Look = PillButton.Style.Quiet };
 
-    public RequestsView(IBarangayRepository repo, FeeSchedule fees)
+    public RequestsView(IBarangayRepository repository, FeeSchedule fees) : base(repository)
     {
-        _repo = repo;
-        _fees = fees;
+        _fees = fees ?? throw new ArgumentNullException(nameof(fees));
 
         var body = new SmoothPanel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
 
         var gridCard = new Card { Dock = DockStyle.Fill };
-        ResidentsView.StyleGrid(_grid);
+        UiFactory.StyleGrid(_grid);
         _grid.Dock = DockStyle.Fill;
         _grid.SelectionChanged += (_, _) => UpdateButtons();
         _grid.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) PreviewSelected(); };
@@ -169,7 +176,7 @@ public class RequestsView : ViewBase
 
     private void LoadGrid()
     {
-        var rows = _repo.GetRequestsByStatus(_filter)
+        var rows = Repository.GetRequestsByStatus(_filter)
             .OrderByDescending(r => r.DateRequested)
             .ToList();
 
@@ -235,7 +242,7 @@ public class RequestsView : ViewBase
         if (_grid.CurrentRow is null) return null;
         var reference = _grid.CurrentRow.Cells["Reference"].Value?.ToString();
         if (string.IsNullOrEmpty(reference)) return null;
-        return _repo.Requests.FirstOrDefault(r => r.GetReferenceNumber() == reference);
+        return Repository.Requests.FirstOrDefault(r => r.GetReferenceNumber() == reference);
     }
 
     private void UpdateButtons()
@@ -253,10 +260,15 @@ public class RequestsView : ViewBase
     }
 
     /// <summary>
-    /// The shared wrapper for every status move. The state machine may throw
-    /// if the move is illegal - and when it does, I show the reason rather
-    /// than let the program die, because the reason is exactly what the
-    /// clerk needs to read.
+    /// The shared wrapper for every change to a request: apply the move,
+    /// then save it.
+    ///
+    /// Two different things can go wrong, and I treat them differently. The
+    /// state machine may throw because the move is illegal - I show the
+    /// reason as a warning, because the reason is exactly what the clerk
+    /// needs to read, and nothing has changed. Or the database may refuse
+    /// the save - Persist shows that and reloads, so the grid goes back to
+    /// what is really stored rather than showing a move that did not stick.
     /// </summary>
     private void Step(Action<DocumentRequest> move)
     {
@@ -273,10 +285,20 @@ public class RequestsView : ViewBase
             return;
         }
 
-        _repo.SaveRequest(r);
+        Persist(() => Repository.SaveRequest(r), "The change to " + r.GetReferenceNumber());
         LoadGrid();
     }
 
+    /// <summary>
+    /// Take the official receipt number from the payment dialog, then record
+    /// the payment through the request's own rule (which refuses a second
+    /// payment or a payment on a free document) and save it.
+    ///
+    /// Earlier versions saved the request without ever calling
+    /// RecordPayment, so the receipt was printed and the row still said
+    /// unpaid. The dialog only collects and validates the number; the
+    /// request is the only thing that may mark itself paid.
+    /// </summary>
     private void RecordPayment()
     {
         var r = Selected();
@@ -285,8 +307,8 @@ public class RequestsView : ViewBase
         using var form = new PaymentForm(r);
         if (form.ShowDialog(this) != DialogResult.OK) return;
 
-        _repo.SaveRequest(r);
-        LoadGrid();
+        string receipt = form.ReceiptNumber;
+        Step(x => x.RecordPayment(receipt));
     }
 
     private void Reject()

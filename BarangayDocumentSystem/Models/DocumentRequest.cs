@@ -1,3 +1,12 @@
+// =====================================================================
+//  PART:    Models - one request for one document, and the rules that move it along
+//  ORIGIN:  the group's shared design - first modelled in Draft - Jonathan F. Del Rosario,
+//           given this place in the tree by Fdraft - Frent Dhieniel Raborar;
+//           the code and comments in this file are my v3.1 rewrite (leader_draft - Clint Wood Gado)
+//  EDITS:   Clint Wood Gado - v3.1: RequestInput, guarded transitions, Rehydrate, RA 11032 aging;
+//           v3.2: the internal constructor takes the filing time so both stores agree on it
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using BarangayDocumentSystem.BusinessRules;
 using System;
 using System.Collections.Generic;
@@ -116,16 +125,27 @@ public class DocumentRequest
     /// </summary>
     public bool AvailedUnderJobseekerAct { get; private set; }
 
+    /// <summary>
+    /// A brand-new, Pending request.
+    ///
+    /// Only the repository calls this (it is internal), because the store is
+    /// the one that hands out ids and prices the request. The filing time is
+    /// a parameter rather than always DateTime.Now so that the repository can
+    /// write the same instant to MySQL that it keeps in memory - MySQL's
+    /// DATETIME has whole-second precision, and the two must not disagree -
+    /// and so the sample data can file one request in the past for the RA
+    /// 11032 aging demonstration.
+    /// </summary>
     internal DocumentRequest(
         int requestId, Resident resident, DocumentType documentType, string purpose,
-        RequestInput? input = null)
+        RequestInput? input = null, DateTime? filedOn = null)
     {
         RequestId = requestId;
         Resident = resident ?? throw new ArgumentNullException(nameof(resident));
         DocumentType = documentType;
         Purpose = purpose;
         Input = input ?? RequestInput.Default;
-        DateRequested = DateTime.Now;
+        DateRequested = filedOn ?? DateTime.Now;
         Status = RequestStatus.Pending;
     }
 
@@ -297,9 +317,10 @@ public class DocumentRequest
     /// unpaid-release check would reject rows that were legitimately released
     /// years ago.
     ///
-    /// So I gave loading its own door. I marked it internal, which means only
-    /// code inside this assembly can open it. The screens still cannot set a
-    /// status without going through the proper method.
+    /// So I gave loading its own door. It is public only because my RuleChecks
+    /// harness lives in its own assembly and needs to build historical rows
+    /// for its checks; no screen in this project calls it. The screens still
+    /// cannot set a status without going through the proper method.
     /// </summary>
     public static DocumentRequest Rehydrate(
         int requestId, Resident resident, DocumentType documentType, string purpose,

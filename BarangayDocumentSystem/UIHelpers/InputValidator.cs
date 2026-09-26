@@ -1,3 +1,10 @@
+// =====================================================================
+//  PART:    UIHelpers - the field rules: names, contact numbers, dates, receipt numbers
+//  ORIGIN:  the group's shared design - Draft had Jonathan's ResidentValidator, Fdraft this
+//           file; the rules and comments here are my v3.1 rewrite (leader_draft - Clint Wood Gado)
+//  EDITS:   Clint Wood Gado - header only
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;

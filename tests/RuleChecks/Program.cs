@@ -1,3 +1,9 @@
+// =====================================================================
+//  PART:    Tests - my rule checks, run against the in-memory store
+//  ORIGIN:  leader_draft - Clint Wood Gado
+//  EDITS:   Clint Wood Gado - header only; the checks are unchanged and must keep passing
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Linq;
 using BarangayDocumentSystem.Database;

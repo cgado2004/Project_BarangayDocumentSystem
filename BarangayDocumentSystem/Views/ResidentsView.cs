@@ -1,3 +1,12 @@
+// =====================================================================
+//  PART:    Views - the resident registry: search, add, edit, delete, file a request
+//  ORIGIN:  Draft - Jonathan F. Del Rosario (the screen: search box, action buttons, grid)
+//           Fdraft - Frent Dhieniel Raborar (this file's place in the tree)
+//           the code and comments are my v3.1 rewrite (leader_draft - Clint Wood Gado)
+//  EDITS:   Clint Wood Gado - v3.2: writes go through ViewBase.Persist; StyleGrid moved
+//           to UiFactory; the base class now holds the repository
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,9 +31,8 @@ namespace BarangayDocumentSystem.Views;
 /// underneath the grid. I did that so a clerk can answer "has he already got
 /// one of these?" without navigating away and losing their place.
 /// </summary>
-public class ResidentsView : ViewBase
+public sealed class ResidentsView : ViewBase
 {
-    private readonly IBarangayRepository _repo;
     private readonly FeeSchedule _fees;
 
     public event EventHandler<(string View, string? Filter)>? RequestNavigate;
@@ -39,10 +47,9 @@ public class ResidentsView : ViewBase
     private readonly PillButton _btnDelete = new() { Text = "Delete", Look = PillButton.Style.Outline, Accent = Danger };
     private readonly PillButton _btnNewReq = new() { Text = "New request" };
 
-    public ResidentsView(IBarangayRepository repo, FeeSchedule fees)
+    public ResidentsView(IBarangayRepository repository, FeeSchedule fees) : base(repository)
     {
-        _repo = repo;
-        _fees = fees;
+        _fees = fees ?? throw new ArgumentNullException(nameof(fees));
 
         var body = new SmoothPanel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
 
@@ -54,14 +61,14 @@ public class ResidentsView : ViewBase
         _historyTitle.Dock = DockStyle.Top;
         _historyTitle.Height = 28;
         _historyTitle.BackColor = Color.Transparent;
-        StyleGrid(_history);
+        UiFactory.StyleGrid(_history);
         _history.Dock = DockStyle.Fill;
         historyCard.Controls.Add(_history);
         historyCard.Controls.Add(_historyTitle);
 
         // ---- the main grid ----
         var gridCard = new Card { Dock = DockStyle.Fill };
-        StyleGrid(_grid);
+        UiFactory.StyleGrid(_grid);
         _grid.Dock = DockStyle.Fill;
         _grid.SelectionChanged += (_, _) => { UpdateButtons(); ShowHistory(); };
         _grid.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) EditSelected(); };
@@ -110,46 +117,6 @@ public class ResidentsView : ViewBase
         Controls.Add(body);
     }
 
-    /// <summary>
-    /// One place where I make a grid look like the rest of my design.
-    ///
-    /// I styled the grids per-view once before and my professor pointed out
-    /// the duplication, so now every grid in the app comes through this
-    /// method.
-    /// </summary>
-    internal static void StyleGrid(DataGridView g)
-    {
-        g.BackgroundColor = Surface;
-        g.BorderStyle = BorderStyle.None;
-        g.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
-        g.GridColor = AppTheme.Border;
-        g.EnableHeadersVisualStyles = false;
-        g.ColumnHeadersDefaultCellStyle.BackColor = Surface;
-        g.ColumnHeadersDefaultCellStyle.ForeColor = Muted;
-        g.ColumnHeadersDefaultCellStyle.Font = SmallBold;
-        g.ColumnHeadersDefaultCellStyle.Padding = new Padding(8, 6, 8, 6);
-        g.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
-        g.ColumnHeadersHeight = 38;
-        g.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-        g.RowHeadersVisible = false;
-        g.AllowUserToAddRows = false;
-        g.AllowUserToDeleteRows = false;
-        g.AllowUserToResizeRows = false;
-        g.ReadOnly = true;
-        g.MultiSelect = false;
-        g.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-        g.DefaultCellStyle.Font = Body;
-        g.DefaultCellStyle.ForeColor = Ink;
-        g.DefaultCellStyle.SelectionBackColor = LavenderSoft;
-        g.DefaultCellStyle.SelectionForeColor = Ink;
-        g.DefaultCellStyle.Padding = new Padding(8, 4, 8, 4);
-        g.RowTemplate.Height = 34;
-        // Fill mode is what keeps my columns sensible at any window width,
-        // instead of leaving a stripe of empty grey on a wide monitor.
-        g.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-        g.ScrollBars = ScrollBars.Both;
-    }
-
     public override void OnShown() => LoadGrid();
 
     /// <summary>I apply a purok filter that arrived from the dashboard.</summary>
@@ -161,7 +128,7 @@ public class ResidentsView : ViewBase
 
     private void LoadGrid()
     {
-        var rows = _repo.SearchResidents(_search.Text).ToList();
+        var rows = Repository.SearchResidents(_search.Text).ToList();
 
         _grid.DataSource = rows.Select(r => new
         {
@@ -194,7 +161,7 @@ public class ResidentsView : ViewBase
         var idCell = _grid.CurrentRow.Cells["ResidentId"].Value;
         if (idCell is null) return null;
         int id = Convert.ToInt32(idCell);
-        return _repo.FindResident(id);
+        return Repository.FindResident(id);
     }
 
     private void UpdateButtons()
@@ -231,7 +198,9 @@ public class ResidentsView : ViewBase
     {
         using var form = new ResidentForm();
         if (form.ShowDialog(this) != DialogResult.OK || form.Result is null) return;
-        _repo.AddResident(form.Result);
+
+        ResidentDetails details = form.Result;
+        Persist(() => Repository.AddResident(details), "The new resident");
         LoadGrid();
     }
 
@@ -242,7 +211,9 @@ public class ResidentsView : ViewBase
 
         using var form = new ResidentForm(r);
         if (form.ShowDialog(this) != DialogResult.OK || form.Result is null) return;
-        _repo.UpdateResident(r, form.Result);
+
+        ResidentDetails details = form.Result;
+        Persist(() => Repository.UpdateResident(r, details), "The change to " + r.GetFullName());
         LoadGrid();
     }
 
@@ -261,7 +232,7 @@ public class ResidentsView : ViewBase
                 "Confirm deletion"))
             return;
 
-        _repo.RemoveResident(r);
+        Persist(() => Repository.RemoveResident(r), "The deletion");
         LoadGrid();
     }
 
@@ -273,7 +244,14 @@ public class ResidentsView : ViewBase
         using var form = new RequestForm(r, _fees);
         if (form.ShowDialog(this) != DialogResult.OK || form.Input is null) return;
 
-        _repo.CreateRequest(r, form.SelectedType, form.Purpose, form.Input);
-        RequestNavigate?.Invoke(this, ("requests", null));
+        var type = form.SelectedType;
+        var purpose = form.Purpose;
+        RequestInput input = form.Input;
+
+        // The form has already refused a blocked assessment, so the only
+        // way this throws is the database - and then I stay on this screen
+        // instead of jumping to a queue that does not have the request.
+        if (Persist(() => Repository.CreateRequest(r, type, purpose, input), "The request"))
+            RequestNavigate?.Invoke(this, ("requests", null));
     }
 }

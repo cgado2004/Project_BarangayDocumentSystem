@@ -1,3 +1,10 @@
+// =====================================================================
+//  PART:    Models - one resident of the barangay
+//  ORIGIN:  the group's shared model - Fdraft - Frent Dhieniel Raborar carries this file
+//           almost line for line; Draft - Jonathan F. Del Rosario modelled it first
+//  EDITS:   Clint Wood Gado - the MiddleInitial fix (punctuation never reaches a document) and the comments
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;

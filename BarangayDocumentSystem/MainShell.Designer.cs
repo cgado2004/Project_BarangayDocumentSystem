@@ -1,3 +1,10 @@
+// =====================================================================
+//  PART:    Shell - the window layout: sidebar, page header, content area, status strip
+//  ORIGIN:  Draft - Jonathan F. Del Rosario (MainForm: sidebar left, title and subtitle
+//           over the content, status strip along the bottom)
+//  EDITS:   Clint Wood Gado - rebuilt around my NavigationSidebar and AppTheme; wider status readout for the storage description (v3.2)
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -120,11 +127,11 @@ partial class MainShell
         this.lblStatus.BackColor = System.Drawing.Color.Transparent;
 
         //
-        // lblStatusRight - the DPI readout on the other end of the bar
+        // lblStatusRight - storage and DPI readout on the other end of the bar
         //
         this.lblStatusRight.Name = "lblStatusRight";
         this.lblStatusRight.Dock = System.Windows.Forms.DockStyle.Right;
-        this.lblStatusRight.Width = 220;
+        this.lblStatusRight.Width = 340;
         this.lblStatusRight.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
         this.lblStatusRight.Padding = new System.Windows.Forms.Padding(0, 0, 28, 0);
         this.lblStatusRight.Text = "";

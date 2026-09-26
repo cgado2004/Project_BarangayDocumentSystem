@@ -1,3 +1,12 @@
+// =====================================================================
+//  PART:    Shell - navigation, theming, sizing and the status bar
+//  ORIGIN:  Draft - Jonathan F. Del Rosario (the shell design: one window, sidebar navigation,
+//           long-lived views swapped into a content panel, status strip)
+//           Fdraft - Frent Dhieniel Raborar (this file's place in the tree)
+//  EDITS:   Clint Wood Gado - v3.1: theme from AppTheme, logo, per-monitor DPI handling;
+//           v3.2: the status bar reads the repository's StorageDescription
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -240,15 +249,23 @@ public partial class MainShell : Form
             $"{BarangayProfile.Current.PunongBarangay}";
     }
 
+    /// <summary>
+    /// The right-hand status: where the data is, and the DPI.
+    ///
+    /// The storage description comes from the repository itself, so this
+    /// reads "MySQL - localhost/barangay_db" on a real install and
+    /// "In-memory demo - nothing is saved" in demo mode. Nobody should have
+    /// to guess which one they are typing into.
+    /// </summary>
     private void UpdateDpiReadout()
     {
         try
         {
-            lblStatusRight.Text = $"Demo • not saved • {DeviceDpi} DPI";
+            lblStatusRight.Text = $"{_repository.StorageDescription}  •  {DeviceDpi} DPI";
         }
         catch
         {
-            lblStatusRight.Text = string.Empty;
+            lblStatusRight.Text = _repository.StorageDescription;
         }
     }
 

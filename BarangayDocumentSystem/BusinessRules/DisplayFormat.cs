@@ -1,3 +1,9 @@
+// =====================================================================
+//  PART:    BusinessRules - peso and date formatting shared by screens and documents
+//  ORIGIN:  leader_draft - Clint Wood Gado
+//  EDITS:   Clint Wood Gado - header only
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;

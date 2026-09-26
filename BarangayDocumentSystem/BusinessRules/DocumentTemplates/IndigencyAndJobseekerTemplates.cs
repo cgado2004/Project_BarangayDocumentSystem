@@ -1,3 +1,9 @@
+// =====================================================================
+//  PART:    Document templates - indigency, low income and the RA 11261 jobseeker certificate
+//  ORIGIN:  leader_draft - Clint Wood Gado
+//  EDITS:   Clint Wood Gado - my v3.1 templates written against my fee model (Fdraft carried Frent's one-file-per-document templates for the core documents; these replace them)
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;
