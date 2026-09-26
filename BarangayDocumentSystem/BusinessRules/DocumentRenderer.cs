@@ -91,8 +91,9 @@ public class DocumentRenderer
     {
         sb.AppendLine(Centre(template.Title));
 
-        if (!string.IsNullOrWhiteSpace(template.Subtitle))
-            sb.AppendLine(Centre(template.Subtitle));
+        var subtitle = template.Subtitle;
+        if (!string.IsNullOrWhiteSpace(subtitle))
+            sb.AppendLine(Centre(subtitle!));
 
         sb.AppendLine();
     }
