@@ -8,12 +8,12 @@ using BarangayDocumentSystem.UIHelpers;
 
 namespace BarangayDocumentSystem.Views;
 
-/// <summary>
+
 /// Dashboard: statistic cards plus two breakdown lists.
 ///
 /// v1 rendered all of this as one monospaced text blob in a read-only TextBox.
 /// This version uses real cards — the same information, legible at a glance.
-/// </summary>
+
 public class DashboardView : ViewBase
 {
     private readonly FlowLayoutPanel _cards = new();
@@ -78,7 +78,7 @@ public class DashboardView : ViewBase
         _breakdowns.Controls.Add(right);
     }
 
-    /// <summary>One statistic card. Built once, reused ten times (DRY).</summary>
+    /// One statistic card. Built once, reused ten times (DRY).
     private static Panel StatCard(string caption, string value, Color accent)
     {
         var card = new Panel

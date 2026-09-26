@@ -10,9 +10,9 @@ using BarangayDocumentSystem.UIHelpers;
 
 namespace BarangayDocumentSystem.Views;
 
-/// <summary>
+
 /// Document requests: filter, list, and move a request through its workflow.
-/// </summary>
+
 public class RequestsView : ViewBase
 {
     private readonly DocumentRenderer _renderer;
@@ -166,10 +166,10 @@ public class RequestsView : ViewBase
         return Repository.Requests.FirstOrDefault(r => r.RequestId == id);
     }
 
-    /// <summary>
+   
     /// One handler for all three transitions. The domain decides whether a
     /// move is legal and throws if not; we report rather than crash.
-    /// </summary>
+  
     private void ChangeStatus(Action<DocumentRequest> action, string verb)
     {
         var request = Selected();
