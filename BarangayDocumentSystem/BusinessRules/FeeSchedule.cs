@@ -48,11 +48,11 @@ public class FeeSchedule
 {
     // --- Base rates (placeholders — see class remarks) ---
     public const decimal ClearanceFee        = 50m;
-    public const decimal ResidencyFee        = 50m;
+    public const decimal ResidencyFee        = 100m;
     public const decimal IndigencyFee        = 0m;     // free by policy
     public const decimal BusinessClearanceFee = 200m;
     public const decimal BarangayIdFee       = 100m;
-    public const decimal GoodMoralFee        = 50m;
+    public const decimal GoodMoralFee        = 100m;
     public const decimal JobseekerFee        = 0m;     // free by RA 11261
 
     /// <summary>Minimum residency for the RA 11261 certificate.</summary>
