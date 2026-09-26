@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS document_requests (
     remarks               VARCHAR(500)  NOT NULL DEFAULT '',
     PRIMARY KEY (request_id),
     INDEX idx_requests_status (status),
+    
     -- Deleting a resident deletes their requests (same rule the app showed before).
     CONSTRAINT fk_requests_resident FOREIGN KEY (resident_id)
         REFERENCES residents (resident_id) ON DELETE CASCADE
