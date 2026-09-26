@@ -57,6 +57,7 @@
     <Compile Include="BusinessRules\DocumentTemplates\ResidencyTemplates.cs" />
     <Compile Include="BusinessRules\FeeSchedule.cs" />
     <Compile Include="CustomControls\NavigationSidebar.cs" />
+    <Compile Include="CustomControls\SummaryCard.cs" />
     <Compile Include="Database\DatabaseInitializer.cs" />
     <Compile Include="Database\DatabaseSettings.cs" />
     <Compile Include="Database\InMemoryBarangayRepository.cs" />

@@ -240,15 +240,23 @@ public partial class MainShell : Form
             $"{BarangayProfile.Current.PunongBarangay}";
     }
 
+    /// <summary>
+    /// The right-hand status: where the data is, and the DPI.
+    ///
+    /// The storage description comes from the repository itself, so this
+    /// reads "MySQL - localhost/barangay_db" on a real install and
+    /// "In-memory demo - nothing is saved" in demo mode. Nobody should have
+    /// to guess which one they are typing into.
+    /// </summary>
     private void UpdateDpiReadout()
     {
         try
         {
-            lblStatusRight.Text = $"Demo • not saved • {DeviceDpi} DPI";
+            lblStatusRight.Text = $"{_repository.StorageDescription}  •  {DeviceDpi} DPI";
         }
         catch
         {
-            lblStatusRight.Text = string.Empty;
+            lblStatusRight.Text = _repository.StorageDescription;
         }
     }
 

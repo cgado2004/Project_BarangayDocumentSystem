@@ -236,6 +236,49 @@ public static class UiFactory
         Look = PillButton.Style.Outline,
         Accent = accent ?? Primary
     };
+
+    /// <summary>
+    /// One place where I make a data grid look like the rest of my design.
+    ///
+    /// I styled the grids per-view once before and my professor pointed out
+    /// the duplication. It then lived as a static on ResidentsView, which
+    /// meant the dashboard and the request queue reached into a sibling
+    /// screen for it - a dependency between views for no reason. Now it is
+    /// with the other "make a control look right" helpers, where every grid
+    /// in the app (five of them) styles itself through this one method.
+    /// </summary>
+    public static void StyleGrid(DataGridView g)
+    {
+        g.BackgroundColor = Surface;
+        g.BorderStyle = BorderStyle.None;
+        g.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
+        g.GridColor = AppTheme.Border;
+        g.EnableHeadersVisualStyles = false;
+        g.ColumnHeadersDefaultCellStyle.BackColor = Surface;
+        g.ColumnHeadersDefaultCellStyle.ForeColor = Muted;
+        g.ColumnHeadersDefaultCellStyle.Font = SmallBold;
+        g.ColumnHeadersDefaultCellStyle.Padding = new Padding(8, 6, 8, 6);
+        g.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
+        g.ColumnHeadersHeight = 38;
+        g.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+        g.RowHeadersVisible = false;
+        g.AllowUserToAddRows = false;
+        g.AllowUserToDeleteRows = false;
+        g.AllowUserToResizeRows = false;
+        g.ReadOnly = true;
+        g.MultiSelect = false;
+        g.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+        g.DefaultCellStyle.Font = Body;
+        g.DefaultCellStyle.ForeColor = Ink;
+        g.DefaultCellStyle.SelectionBackColor = LavenderSoft;
+        g.DefaultCellStyle.SelectionForeColor = Ink;
+        g.DefaultCellStyle.Padding = new Padding(8, 4, 8, 4);
+        g.RowTemplate.Height = 34;
+        // Fill mode is what keeps my columns sensible at any window width,
+        // instead of leaving a stripe of empty grey on a wide monitor.
+        g.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        g.ScrollBars = ScrollBars.Both;
+    }
 }
 
 /// <summary>

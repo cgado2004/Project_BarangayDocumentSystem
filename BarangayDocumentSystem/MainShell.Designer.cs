@@ -120,11 +120,11 @@ partial class MainShell
         this.lblStatus.BackColor = System.Drawing.Color.Transparent;
 
         //
-        // lblStatusRight - the DPI readout on the other end of the bar
+        // lblStatusRight - storage and DPI readout on the other end of the bar
         //
         this.lblStatusRight.Name = "lblStatusRight";
         this.lblStatusRight.Dock = System.Windows.Forms.DockStyle.Right;
-        this.lblStatusRight.Width = 220;
+        this.lblStatusRight.Width = 340;
         this.lblStatusRight.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
         this.lblStatusRight.Padding = new System.Windows.Forms.Padding(0, 0, 28, 0);
         this.lblStatusRight.Text = "";
