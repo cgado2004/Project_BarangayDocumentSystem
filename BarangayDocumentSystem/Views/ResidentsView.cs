@@ -1,3 +1,12 @@
+// =====================================================================
+//  PART:    Views - the resident registry: search, add, edit, delete, file a request
+//  ORIGIN:  Draft - Jonathan F. Del Rosario (the screen: search box, action buttons, grid)
+//           Fdraft - Frent Dhieniel Raborar (this file's place in the tree)
+//           the code and comments are my v3.1 rewrite (leader_draft - Clint Wood Gado)
+//  EDITS:   Clint Wood Gado - v3.2: writes go through ViewBase.Persist; StyleGrid moved
+//           to UiFactory; the base class now holds the repository
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;

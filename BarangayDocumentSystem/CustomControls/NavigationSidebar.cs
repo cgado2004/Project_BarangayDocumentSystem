@@ -1,3 +1,11 @@
+// =====================================================================
+//  PART:    CustomControls - the flat navigation sidebar
+//  ORIGIN:  Draft - Jonathan F. Del Rosario (the design: seal at the top, brand, stacked flat
+//           navigation buttons, city footer, one active highlight)
+//           Fdraft - Frent Dhieniel Raborar (this file's place in the tree)
+//  EDITS:   Clint Wood Gado - my palette (Deep / Primary / GoldSoft), my logo, ApplyTheme, comments
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -6,7 +14,21 @@ using static BarangayDocumentSystem.UIHelpers.AppTheme;
 
 namespace BarangayDocumentSystem.CustomControls;
 
-/// <summary>Draft-style flat navigation, using the leader palette and seal.</summary>
+/// <summary>
+/// The navigation rail on the left of the window.
+///
+/// The design is Jonathan's, from his Draft: the barangay seal at the top,
+/// the brand under it, flat full-width buttons stacked below, the city and
+/// province in the footer, and exactly one button highlighted as the
+/// current page. I kept that shape and painted it in my palette - Deep
+/// navy for the rail, Primary for the active page, GoldSoft for the brand -
+/// so it matches every other screen. I also made it a control of its own,
+/// so the shell only has to listen for <see cref="Navigate"/> and never
+/// touches a button.
+///
+/// The seal is a detached bitmap I own, and I dispose the old one whenever
+/// a new one is set, so the file on disk is never locked and nothing leaks.
+/// </summary>
 public sealed class NavigationSidebar : Panel
 {
     public event EventHandler<string>? Navigate;

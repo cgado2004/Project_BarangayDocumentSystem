@@ -1,3 +1,11 @@
+// =====================================================================
+//  PART:    UIHelpers - my palette, type stack and the Draw helpers
+//  ORIGIN:  leader_draft - Clint Wood Gado - the seal-blue / sun-gold / flag-red palette, the
+//           Inter-first font stack and the drawing helpers are mine (Fdraft has a file
+//           of the same name with Frent's earlier colours)
+//  EDITS:   Clint Wood Gado - header only
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;

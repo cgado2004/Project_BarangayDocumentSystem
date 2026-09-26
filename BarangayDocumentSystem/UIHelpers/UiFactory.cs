@@ -1,3 +1,9 @@
+// =====================================================================
+//  PART:    UIHelpers - the layout factory and the custom controls (Card, PillButton, Chip...)
+//  ORIGIN:  leader_draft - Clint Wood Gado (Fdraft has a much smaller file of the same name)
+//  EDITS:   Clint Wood Gado - v3.2: StyleGrid moved here from ResidentsView
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;

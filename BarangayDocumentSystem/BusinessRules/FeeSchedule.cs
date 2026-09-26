@@ -1,3 +1,12 @@
+// =====================================================================
+//  PART:    BusinessRules - every peso the barangay charges and the law behind it
+//  ORIGIN:  leader_draft - Clint Wood Gado - the Citizen's Charter rates and the RA 9994 / 10754 / 11291 /
+//           11261 / 7160 / 11032 rules are mine (docs/07). Draft and Fdraft carried a
+//           FeeSchedule of the same name with classroom placeholder amounts; this
+//           replaces it, and it is the schedule the whole system prices with
+//  EDITS:   Clint Wood Gado - header only
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;

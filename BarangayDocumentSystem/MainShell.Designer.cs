@@ -1,3 +1,10 @@
+// =====================================================================
+//  PART:    Shell - the window layout: sidebar, page header, content area, status strip
+//  ORIGIN:  Draft - Jonathan F. Del Rosario (MainForm: sidebar left, title and subtitle
+//           over the content, status strip along the bottom)
+//  EDITS:   Clint Wood Gado - rebuilt around my NavigationSidebar and AppTheme; wider status readout for the storage description (v3.2)
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;

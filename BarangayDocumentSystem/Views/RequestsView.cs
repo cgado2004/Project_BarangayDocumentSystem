@@ -1,3 +1,12 @@
+// =====================================================================
+//  PART:    Views - the request queue and the buttons that move a request along
+//  ORIGIN:  Draft - Jonathan F. Del Rosario (the screen: status filters over a grid, actions below)
+//           Fdraft - Frent Dhieniel Raborar (this file's place in the tree)
+//           the code and comments are my v3.1 rewrite (leader_draft - Clint Wood Gado)
+//  EDITS:   Clint Wood Gado - v3.2: writes go through ViewBase.Persist; RecordPayment now
+//           records the payment on the request (the bug PR #3 flagged); UiFactory.StyleGrid
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;

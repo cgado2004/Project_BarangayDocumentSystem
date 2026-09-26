@@ -1,3 +1,12 @@
+// =====================================================================
+//  PART:    Shell - navigation, theming, sizing and the status bar
+//  ORIGIN:  Draft - Jonathan F. Del Rosario (the shell design: one window, sidebar navigation,
+//           long-lived views swapped into a content panel, status strip)
+//           Fdraft - Frent Dhieniel Raborar (this file's place in the tree)
+//  EDITS:   Clint Wood Gado - v3.1: theme from AppTheme, logo, per-monitor DPI handling;
+//           v3.2: the status bar reads the repository's StorageDescription
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Linq;
