@@ -199,7 +199,7 @@ public sealed class ResidentsView : ViewBase
         using var form = new ResidentForm();
         if (form.ShowDialog(this) != DialogResult.OK || form.Result is null) return;
 
-        var details = form.Result;
+        ResidentDetails details = form.Result;
         Persist(() => Repository.AddResident(details), "The new resident");
         LoadGrid();
     }
@@ -212,7 +212,7 @@ public sealed class ResidentsView : ViewBase
         using var form = new ResidentForm(r);
         if (form.ShowDialog(this) != DialogResult.OK || form.Result is null) return;
 
-        var details = form.Result;
+        ResidentDetails details = form.Result;
         Persist(() => Repository.UpdateResident(r, details), "The change to " + r.GetFullName());
         LoadGrid();
     }
@@ -246,7 +246,7 @@ public sealed class ResidentsView : ViewBase
 
         var type = form.SelectedType;
         var purpose = form.Purpose;
-        var input = form.Input;
+        RequestInput input = form.Input;
 
         // The form has already refused a blocked assessment, so the only
         // way this throws is the database - and then I stay on this screen

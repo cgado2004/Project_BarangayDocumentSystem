@@ -1,6 +1,7 @@
 # Database guide — for my group-mates
 
-*Written by Clint Wood Gado.*
+*Written by Clint Wood Gado. The persistence it describes is Frent Dhieniel
+Raborar's (`Fdraft`), extended for the v3.1 request model.*
 
 I wrote this because the database is the part most likely to be
 misunderstood, and I would rather over-explain it once than have someone
@@ -8,17 +9,30 @@ guess. If you only read one thing, read §1.
 
 ---
 
-## 1. You do NOT need MySQL to run our app
+## 1. Setup is: start MySQL, press F5
 
-The application starts on built-in sample data. Seven residents and seven
-requests are already there when you press F5. **No database, no XAMPP, no
-setup.**
+The app now runs on MySQL by default, and it sets the database up itself:
 
-That is deliberate. Our professor, or any of you, should be able to clone the
-folder and have it working in under a minute.
+1. In the XAMPP Control Panel press **Start** next to **MySQL**. You do not
+   need Apache.
+2. Press **F5** in Visual Studio.
 
-The database is the *next* step, not a requirement. Only follow §3 if you are
-specifically working on the MySQL part.
+On the first run the program creates the database `barangay_db`, creates the
+two tables, and — because the database is empty — loads my seven sample
+residents and their requests so the screens are not blank. After that it
+only reads and writes.
+
+There is nothing to paste into phpMyAdmin. The `01-schema.sql` and
+`02-seed-data.sql` scripts I wrote for v3.1 are gone (§6 says why).
+
+If MySQL is **not** running, the program tells you exactly that and closes:
+
+> Cannot reach the MySQL server. Check that MySQL is running (XAMPP: start
+> MySQL in the control panel) …
+
+It does **not** quietly switch to sample data. That was Frent's decision
+and I kept it: a clerk must never spend a morning typing into a store that
+forgets everything at closing time without being told.
 
 ---
 
@@ -27,175 +41,140 @@ specifically working on the MySQL part.
 One line in `BarangayDocumentSystem/App.config` decides:
 
 ```xml
-<add key="Storage" value="Memory" />
+<add key="Storage" value="MySQL" />
 ```
 
 | Value | What happens |
 |---|---|
-| `Memory` | Sample data. Works everywhere. **This is the default.** |
-| `MySQL` | Uses the database described below. |
+| `MySQL` | The real database. **This is the default.** Created on first run. |
+| `Memory` | The built-in sample data. Nothing is saved. For a laptop with no XAMPP. |
 
-**Please leave it on `Memory` unless you are testing the database.** If you
-commit it as `MySQL`, everyone else gets a warning box on startup.
+The status bar at the bottom right always says which one is running:
+`MySQL — localhost/barangay_db` or `In-memory demo — nothing is saved`.
+
+The RuleChecks harness (`tests/RuleChecks`) always uses the in-memory store,
+so it runs on a build machine without MySQL.
 
 ---
 
-## 3. Setting up MySQL
-
-### 3.1 Start the server
-
-In XAMPP, open the Control Panel and press **Start** next to **MySQL**. That
-is all — you do not need Apache for this.
-
-### 3.2 Run the two scripts, in order
-
-Both scripts live in `BarangayDocumentSystem/Database/`. Open **phpMyAdmin**
-(`http://localhost/phpmyadmin`) or MySQL Workbench, then:
-
-1. Open the **SQL** tab.
-2. Paste the whole of **`01-schema.sql`** and run it.
-   This creates the database, the four tables, the constraints, the triggers
-   and the views. It drops and recreates everything, so it is safe to run
-   again any time.
-3. Paste the whole of **`02-seed-data.sql`** and run it.
-   This loads the same seven residents the app shows in Memory mode.
-
-Both scripts print a result at the end so you can confirm they worked.
-`02-seed-data.sql` should report **7 residents, 5 classifications,
-7 requests**.
-
-### 3.3 Read the version check
-
-The last thing `01-schema.sql` prints is this:
-
-```sql
-SELECT VERSION(), ... AS check_constraint_support;
-```
-
-**Read that answer.** It tells you whether your server actually enforces
-`CHECK` constraints. MySQL silently *ignored* them until version 8.0.16, and
-XAMPP often ships MariaDB. On an older server the schema looks validated but
-will accept nonsense. That is why the two rules that really matter are
-triggers instead — triggers work on every version.
-
-### 3.4 Point the app at it
-
-In `App.config`, set `Storage` to `MySQL` and check the connection string:
+## 3. The connection string
 
 ```xml
 <add name="BarangayDb"
-     connectionString="Server=localhost;Port=3306;Database=barangay_magugpo;Uid=root;Pwd=;..." />
+     connectionString="Server=localhost;Port=3306;Database=barangay_db;User ID=root;Password=;CharSet=utf8mb4;" />
 ```
 
-The default is the XAMPP default — user `root` with **no password**. If you
-set a MySQL password, put it after `Pwd=`.
+That is the XAMPP default — user `root`, **no password**. It is fine for the
+class demo and not fine anywhere real.
+
+**Never type a real password into this file.** The repository is public.
+Set the environment variable `BARANGAY_DB_CONNECTION` instead; when it
+exists it overrides the file. In PowerShell, before starting the app:
+
+```powershell
+$env:BARANGAY_DB_CONNECTION = "Server=localhost;Port=3306;Database=barangay_db;User ID=barangay;Password=...;CharSet=utf8mb4;"
+```
+
+The order of precedence is in `Database/DatabaseSettings.cs`: environment
+variable, then `App.config`, then the built-in default.
+
+After a build, the file the program actually reads is
+`bin\Debug\BarangayDocumentSystem.exe.config`. Edit `App.config` and
+rebuild, or edit that file directly to change a running install.
 
 ---
 
-## 4. Honest status — please do not misread this
+## 4. How start-up works (so you can debug it)
 
-**The C# class that talks to MySQL is not in this version yet.**
+`Program.CreateRepository` does four things, in this order:
 
-The scripts in `BarangayDocumentSystem/Database/` are complete and correct.
-What is missing is
-`MySqlBarangayRepository`, the C# side that reads and writes those tables.
+| Step | Class | What it does |
+|---|---|---|
+| 1 | `DatabaseSettings.Load()` | Works out the connection string and the seed switch |
+| 2 | `DatabaseInitializer.EnsureCreated()` | Connects to the **server**, `CREATE DATABASE IF NOT EXISTS`; connects to the **database**, runs the embedded `schema.sql` (`CREATE TABLE IF NOT EXISTS` ×2); then `EnsureColumns` adds any column an older table lacks |
+| 3 | `new MySqlBarangayRepository(...)` | Loads every resident and request into memory (`Reload`) |
+| 4 | `SampleData.Seed(...)` | Only if `SeedSampleData=true` **and** there are zero residents |
 
-If you set `Storage=MySQL` today, the app shows a message saying exactly that
-and starts on the sample data instead. It does not pretend, and it does not
-crash.
+Every MySQL error on the way becomes a `RepositoryException` with a sentence
+you can act on (`MySqlBarangayRepository.Describe` maps the error numbers).
 
-When the repository is added, the only code change is one line in
-`Program.cs`:
-
-```csharp
-return new MySqlBarangayRepository(connection, fees);
-```
-
-Nothing else in the program changes, because every screen only ever sees
-`IBarangayRepository`. That is the entire reason the interface exists.
-
-**I also have to be straight about this: I have never run these scripts.**
-There was no MySQL server on the machine I wrote them on. Every statement has
-been checked against the MySQL dialect by a parser, and the 24 document-type
-values were verified to match the C# enum exactly, in the same order — but
-"it parses" is not "it runs". **Please run them and tell me what breaks.**
+While the app is running, every write goes: screen → `ViewBase.Persist` →
+repository → MySQL. If MySQL refuses, `Persist` shows the reason and asks the
+repository to `Reload()`, so the grid returns to what is really on disk.
 
 ---
 
 ## 5. What the tables look like
 
-Four tables. The full diagram is in `docs/02-erd.svg`.
+Two tables. The diagram is in `docs/09-object-model.md` §5 (Mermaid, so it
+is always current).
 
 | Table | What it holds |
 |---|---|
-| `residents` | One row per person in the registry |
-| `classification_types` | The five tags (senior, PWD, indigent, student, solo parent) |
-| `resident_classifications` | Which residents have which tags — one row each |
-| `document_requests` | One row per document requested |
+| `residents` | One row per person. Classification is the same bit-flag integer as the C# enum (1 Senior, 2 PWD, 4 Indigent, 8 Student, 16 Solo Parent). `has_availed_jobseeker` is the RA 11261 once-only flag. |
+| `document_requests` | One row per request: type, purpose, dates, status, **fee and fee basis frozen at filing time**, payment, and the inputs the fee was assessed from (scope, assessed amount, hours, gross income, detail, jobseeker flags). |
 
-Plus three views that do the joins for you:
+Deleting a resident deletes their requests (`ON DELETE CASCADE`), the same
+rule the repository applies to its working set.
 
-| View | Use it for |
-|---|---|
-| `vw_residents_full` | Residents with age and classifications on one line |
-| `vw_requests_full` | Requests with the reference number and resident name |
-| `vw_dashboard_statistics` | Every dashboard figure, as a single row |
+Enum columns store the enum **name** (`'Female'`, `'ReadyForRelease'`), never
+its number. Reordering an enum in C# can therefore never silently change
+what a row means, and the table is readable in phpMyAdmin.
 
 ---
 
-## 6. Four decisions I made, and why
+## 6. Why my v3.1 scripts were retired, and what survived of them
 
-These are the ones most likely to be questioned, so here is my reasoning in
-advance.
+In v3.1 I wrote a four-table schema by hand (`residents`,
+`classification_types`, `resident_classifications`, `document_requests`),
+with native `ENUM` columns, three views, and two triggers — and a seed script
+to go with it. Frent's `Fdraft`, meanwhile, had a two-table schema that the
+program creates by itself. When I integrated the branches I had to pick one,
+because two schemas for one program is exactly the duplication DRY warns
+about, and I picked Frent's. My reasons, so nobody thinks it was arbitrary:
 
-**1. I used native `ENUM` instead of `VARCHAR` with a `CHECK`.**
-The usual advice is the opposite. I went this way because `CHECK` was silently
-ignored before MySQL 8.0.16, and XAMPP ships MariaDB — so a `VARCHAR + CHECK`
-schema would *look* rigorously validated while accepting `'Pendinggg'` or an
-emoji. A safety net drawn on the wall is worse than no net. `ENUM` is enforced
-on every version. The cost is that adding a document type needs an
-`ALTER TABLE`, which I accept — document types change by ordinance, rarely.
+| My v3.1 decision | What happened to it |
+|---|---|
+| **Native `ENUM` columns** so a bad value is rejected on every MySQL/MariaDB version | Dropped. The program is the only writer, and it only ever writes `enum.ToString()`. Adding a document type is now a C# change, not an `ALTER TABLE`. |
+| **Store enum names, never numbers** | **Kept.** It is Frent's convention too. |
+| **Classifications in a junction table** (1NF, indexable) | Dropped for now. The C# model is a `[Flags]` enum and every screen and rule reads it as one; a junction table would mean mapping code on every load and save for a query nobody runs yet. Recorded here as the upgrade to make when "list every senior citizen" needs an index. |
+| **`fee` is `DECIMAL(10,2)`, never `FLOAT`** | **Kept.** Binary floating point cannot hold 0.10; money must not drift. |
+| **Trigger: no `Released` while unpaid** | Moved into the one place it already lived: `DocumentRequest.Release()`. The database no longer duplicates a rule the model enforces. |
+| **Views for the dashboard figures** | Replaced by `RepositoryBase.GetStatistics()`, which both storages share. |
+| **Manual scripts you paste into phpMyAdmin** | Replaced by the embedded `schema.sql` that `DatabaseInitializer` runs. One copy, applied automatically, cannot get out of step with the code. |
 
-**2. I store enum NAMES, never numbers.**
-If I stored `0` and `1` and somebody reordered the C# enum, every existing row
-would silently change meaning and nothing would warn us. Storing
-`'BarangayClearance'` makes that impossible. **This is why the order of values
-in the SQL `ENUM` must stay identical to the C# enum — I check this.**
-
-**3. Classifications are a separate table, not one number.**
-In C# it is a `[Flags]` enum, so senior + PWD is the single number 3. Copying
-that into an `INT` would break First Normal Form and make "list every senior
-citizen" a bitmask scan that cannot use an index. One row per tag fixes both,
-and gives somewhere to record the PWD ID number.
-
-**4. `fee` is `DECIMAL(10,2)`, never `FLOAT`.**
-Binary floating point cannot hold 0.10 exactly, so money drifts as it adds up.
-On fees that is indefensible.
+What I added to Frent's schema: the seven `document_requests` columns my
+`RequestInput` needs (`scope`, `assessed_amount`, `hours`,
+`gross_annual_income`, `detail`, `apply_jobseeker_waiver`,
+`availed_under_jobseeker_act`) and a wider `fee_basis`. A database created by
+his earlier build is upgraded in place by `EnsureColumns` — nobody has to
+drop a database that already has real residents in it.
 
 ---
 
 ## 7. If something goes wrong
 
-| Message | What it means | Fix |
+| What you see | What it means | Fix |
 |---|---|---|
-| `Error 1045 Access denied` | Wrong username or password | Check `Uid=` and `Pwd=` in App.config |
-| `Error 1049 Unknown database` | The schema was never created | Run `BarangayDocumentSystem/Database/01-schema.sql` |
-| `Error 2002 / 2003 Can't connect` | The server is not running | Start MySQL in XAMPP |
-| `Error 1452 Cannot add foreign key` | You ran the seed before the schema | Run `01-schema.sql` first |
-| `Error 1364 Field doesn't have a default` | Rows inserted by hand, missing a required column | Use the seed script as your template |
-| Triggers rejected on import | Some tools mishandle `DELIMITER` | Run the script in phpMyAdmin's SQL tab or Workbench, not a bulk importer |
+| "Cannot reach the MySQL server" (2002 / 2003 / 2013 / 1042) | The server is not running, or the port is wrong | Start MySQL in XAMPP; check `Server=` and `Port=` |
+| "MySQL refused the user name or password" (1044 / 1045) | Wrong credentials | Check `User ID=` and `Password=`, or set `BARANGAY_DB_CONNECTION` |
+| "The database does not exist yet" (1049) | Rare: the database vanished between creation and loading | Start the program again; it recreates it |
+| "Column 'x' holds the value 'y' which this version does not recognise" | Somebody edited an enum column by hand | Fix the row in phpMyAdmin to a valid enum name |
+| "… was not saved. …" while working | A write failed after start-up | Read the reason; the grid has already been reloaded from the database |
+| The status bar says `In-memory demo` | `Storage` is `Memory` | Set it to `MySQL` and restart |
 
 ---
 
 ## 8. Do not do these
 
-- **Do not edit `fee` directly in phpMyAdmin.** The fee and its legal basis
-  are written together by `FeeSchedule`. Changing one without the other means
-  the certificate prints an amount that contradicts its own stated reason.
-- **Do not reorder the `document_type` ENUM.** See decision 2 above.
-- **Do not set a request to `Released` by hand.** The trigger will stop you if
-  the fee is unpaid, which is correct — that rule exists because releasing a
-  document without recording the payment is exactly the audit problem the
-  system is meant to prevent.
-- **Do not commit `App.config` with `Storage=MySQL`.** It breaks the app for
-  everyone who has not set up a database.
+- **Do not edit `fee` or `fee_basis` directly in phpMyAdmin.** They are
+  written together by `FeeSchedule` at filing time. Changing one without the
+  other means the certificate prints an amount that contradicts its own
+  stated reason.
+- **Do not set a request to `Released` by hand.** `DocumentRequest.Release()`
+  refuses an unpaid fee for a reason: releasing a document without recording
+  the payment is exactly the audit problem the system exists to prevent.
+- **Do not put a password in `App.config`.** Use the environment variable.
+- **Do not add a column by hand.** Add it to `schema.sql` *and* to the
+  `RequestColumnUpgrades` list in `DatabaseInitializer`, so a fresh database
+  and an existing one end up identical.

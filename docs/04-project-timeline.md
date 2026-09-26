@@ -11,6 +11,12 @@ Gado, Clint Wood · Raborar, Frent Dhieniel
 > member should write their own, because a timeline someone else invented for
 > you is worth nothing if the professor asks you to explain it.
 
+> **Update, Sept 26 (v3.2).** The plan below is left as I wrote it on
+> Sept 22. What actually happened on the database item: instead of wiring
+> my own `01-schema.sql` / `02-seed-data.sql`, I integrated Frent's working
+> MySQL persistence from `Fdraft` and retired my scripts — see
+> `docs/08-integration-notes.md` and `docs/05-database-guide.md` §6.
+
 ---
 
 ## Week plan
