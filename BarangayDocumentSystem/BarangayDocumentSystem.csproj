@@ -77,6 +77,8 @@
     <EmbeddedResource Include="MainShell.resx"><DependentUpon>MainShell.cs</DependentUpon></EmbeddedResource>
     <None Include="App.config" />
     <None Include="app.manifest" />
+    <None Include="Database\01-schema.sql" />
+    <None Include="Database\02-seed-data.sql" />
     <Content Include="Assets\barangay-logo.png"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

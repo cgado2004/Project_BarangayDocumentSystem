@@ -102,8 +102,8 @@ internal static class Program
 
         // NOTE FOR MY GROUP-MATES
         // The MySQL repository class is not in this version yet. The database
-        // scripts in db/ are complete and ready to run, so when the repository
-        // is added the only change needed here is the line below:
+        // scripts in Database/ are complete and ready to run, so when the
+        // repository is added the only change needed here is the line below:
         //
         //     return new MySqlBarangayRepository(connection, fees);
         //
@@ -112,7 +112,7 @@ internal static class Program
         Dialog.Info(null,
             "MySQL storage is selected in App.config, but the MySQL " +
             "repository is not included in this build yet.\n\n" +
-            "The scripts in the db folder are ready to run - see " +
+            "The scripts in the Database folder are ready to run - see " +
             "docs/05-database-guide.md.\n\n" +
             "I am starting with the built-in sample data for now.");
 
