@@ -21,11 +21,9 @@ September 22–27, 2026
 ---
 
 ## What is Genuinely Finished as of Sept 27
-
-- **Two-Layer Restructure:** Separated into `Core` (no UI dependency) and `App` (WinForms).
 - **Citizen's Charter Pricing:** Updated real fee structures, replacing ₱50 placeholders.
 - **Barangay Clearance Tiers:** Two-tier clearance system implemented (₱100 local, ₱200 abroad).
-- **Expanded Document Catalog:** 20 document types from the frontline services board (24 in v3.1, including Citizen's Charter financial services).
+- **Expanded Document Catalog:** 20 document types from the frontline services board (24, including Citizen's Charter financial services).
 - **Localized Data:** Added real purok names and the designated Punong Barangay across all certificate templates.
 - **Diia-Style UI:** White canvas, lavender gradients, rounded card layouts, and pill buttons.
 - **Dashboard & Navigation:** Clickable dashboard, live search functionality, per-resident request history, and status-aware action buttons.
