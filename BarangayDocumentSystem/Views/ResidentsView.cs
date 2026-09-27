@@ -1,234 +1,257 @@
-#nullable enable
+// =====================================================================
+//  PART:    Views - the resident registry: search, add, edit, delete, file a request
+//  ORIGIN:  Draft - Jonathan F. Del Rosario (the screen: search box, action buttons, grid)
+//           Fdraft - Frent Dhieniel Raborar (this file's place in the tree)
+//           the code and comments are my v3.1 rewrite (leader_draft - Clint Wood Gado)
+//  EDITS:   Clint Wood Gado - v3.2: writes go through ViewBase.Persist; StyleGrid moved
+//           to UiFactory; the base class now holds the repository
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
-using System.Drawing;
+using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Forms;
-using BarangayDocumentSystem.BusinessRules;
+using System.IO;
 using BarangayDocumentSystem.Forms;
+using BarangayDocumentSystem.Views;
+using BarangayDocumentSystem.CustomControls;
+using System.Drawing;
+using System.Windows.Forms;
+using BarangayDocumentSystem.UIHelpers;
 using BarangayDocumentSystem.Interfaces;
 using BarangayDocumentSystem.Models;
-using BarangayDocumentSystem.UIHelpers;
+using BarangayDocumentSystem.BusinessRules;
+using static BarangayDocumentSystem.UIHelpers.AppTheme;
 
 namespace BarangayDocumentSystem.Views;
 
-public class ResidentsView : ViewBase
+/// <summary>
+/// The resident registry: search, add, edit, delete, and file a request.
+///
+/// When a row is selected I immediately show that resident's request history
+/// underneath the grid. I did that so a clerk can answer "has he already got
+/// one of these?" without navigating away and losing their place.
+/// </summary>
+public sealed class ResidentsView : ViewBase
 {
-    private readonly FeeSchedule _feeSchedule;
+    private readonly FeeSchedule _fees;
+
+    public event EventHandler<(string View, string? Filter)>? RequestNavigate;
+
+    private readonly RoundedTextBox _search = new();
     private readonly DataGridView _grid = new();
-    private readonly TextBox _search = new();
-    private readonly Label _emptyLabel = new();
+    private readonly DataGridView _history = new();
+    private readonly Label _historyTitle = new();
 
-    public event EventHandler? RequestFiled;
+    private readonly PillButton _btnAdd    = new() { Text = "Add resident" };
+    private readonly PillButton _btnEdit   = new() { Text = "Edit",   Look = PillButton.Style.Outline };
+    private readonly PillButton _btnDelete = new() { Text = "Delete", Look = PillButton.Style.Outline, Accent = Danger };
+    private readonly PillButton _btnNewReq = new() { Text = "New request" };
 
-    public override string Title => "Residents";
-    public override string Subtitle => "Registry of Barangay Magugpo Poblacion";
-
-    public ResidentsView(IBarangayRepository repository, FeeSchedule feeSchedule)
-        : base(repository)
+    public ResidentsView(IBarangayRepository repository, FeeSchedule fees) : base(repository)
     {
-        _feeSchedule = feeSchedule ?? throw new ArgumentNullException(nameof(feeSchedule));
-        BuildLayout();
-    }
+        _fees = fees ?? throw new ArgumentNullException(nameof(fees));
 
-    private void BuildLayout()
-    {
-        var root = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            ColumnCount = 1,
-            RowCount = 3,
-            BackColor = AppTheme.Background,
-            Margin = new Padding(0),
-            Padding = new Padding(0)
-        };
-        root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 64F));
-        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 56F));
+        var body = new SmoothPanel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
 
-        root.Controls.Add(BuildToolbar(), 0, 0);
-        root.Controls.Add(BuildGrid(), 0, 1);
-        root.Controls.Add(BuildActions(), 0, 2);
+        // ---- history (docked bottom, so it keeps its height when resizing) ----
+        var historyCard = new Card { Dock = DockStyle.Bottom, Height = 190, Margin = new Padding(0, Gap, 0, 0) };
+        _historyTitle.Text = "Select a resident to see their requests";
+        _historyTitle.Font = Subhead;
+        _historyTitle.ForeColor = Ink;
+        _historyTitle.Dock = DockStyle.Top;
+        _historyTitle.Height = 28;
+        _historyTitle.BackColor = Color.Transparent;
+        UiFactory.StyleGrid(_history);
+        _history.Dock = DockStyle.Fill;
+        historyCard.Controls.Add(_history);
+        historyCard.Controls.Add(_historyTitle);
 
-        Controls.Add(root);
-    }
-
-    private Control BuildToolbar()
-    {
-        var bar = UiFactory.Toolbar();
-        bar.Margin = new Padding(0, 0, 0, 16);
-
-        var wrap = new Panel
-        {
-            Dock = DockStyle.Left,
-            Width = 440,
-            BackColor = AppTheme.Surface,
-            Padding = new Padding(0, 6, 0, 6)
-        };
-
-        _search.Dock = DockStyle.Fill;
-        _search.Font = AppTheme.BodyFont;
-        _search.BorderStyle = BorderStyle.FixedSingle;
-        _search.BackColor = AppTheme.Background;
-        CueBanner.Set(_search, "Search by name, purok, or contact number…");
-        _search.TextChanged += (_, _) => RefreshData();
-
-        wrap.Controls.Add(_search);
-        bar.Controls.Add(wrap);
-        return bar;
-    }
-
-    private Control BuildGrid()
-    {
+        // ---- the main grid ----
+        var gridCard = new Card { Dock = DockStyle.Fill };
         UiFactory.StyleGrid(_grid);
         _grid.Dock = DockStyle.Fill;
-        _grid.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) EditResident(); };
+        _grid.SelectionChanged += (_, _) => { UpdateButtons(); ShowHistory(); };
+        _grid.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) EditSelected(); };
+        gridCard.Controls.Add(_grid);
 
-        var host = UiFactory.CardHost(_grid);
-        host.Margin = new Padding(0, 0, 0, 16);
+        // ---- toolbar ----
+        var bar = new Panel { Dock = DockStyle.Top, Height = 58, BackColor = Color.Transparent };
 
-        _emptyLabel.Dock = DockStyle.Fill;
-        _emptyLabel.TextAlign = ContentAlignment.MiddleCenter;
-        _emptyLabel.Font = AppTheme.BodyFont;
-        _emptyLabel.ForeColor = AppTheme.TextMuted;
-        _emptyLabel.BackColor = AppTheme.Surface;
-        _emptyLabel.Text = "No residents found";
-        _emptyLabel.Visible = false;
+        _search.Width = 320;
+        _search.PlaceholderText = "Search name, purok, contact, occupation…";
+        _search.Location = new Point(0, 8);
+        _search.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+        // I filter as the user types, because a search box that needs a
+        // button press is not really a search box.
+        _search.Inner.TextChanged += (_, _) => LoadGrid();
 
-        host.Controls.Add(_emptyLabel);
-        _emptyLabel.BringToFront();
-
-        return host;
-    }
-
-    private Control BuildActions()
-    {
         var actions = new FlowLayoutPanel
         {
-            Dock = DockStyle.Fill,
+            Dock = DockStyle.Right,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             FlowDirection = FlowDirection.LeftToRight,
+            BackColor = Color.Transparent,
             WrapContents = false,
-            BackColor = AppTheme.Background,
-            Margin = new Padding(0),
-            Padding = new Padding(0, 8, 0, 0)
+            Padding = new Padding(0, 6, 0, 0)
         };
+        foreach (var b in new[] { _btnAdd, _btnNewReq, _btnEdit, _btnDelete })
+        {
+            b.Width = b == _btnAdd || b == _btnNewReq ? 132 : 92;
+            b.Margin = new Padding(8, 0, 0, 0);
+            actions.Controls.Add(b);
+        }
 
-        var register = UiFactory.SecondaryButton("Register Resident", 150);
-        register.Click += (_, _) => RegisterResident();
+        _btnAdd.Click    += (_, _) => AddResident();
+        _btnEdit.Click   += (_, _) => EditSelected();
+        _btnDelete.Click += (_, _) => DeleteSelected();
+        _btnNewReq.Click += (_, _) => NewRequestForSelected();
 
-        var edit = UiFactory.SecondaryButton("Edit", 90);
-        edit.Click += (_, _) => EditResident();
+        bar.Controls.Add(_search);
+        bar.Controls.Add(actions);
 
-        var delete = UiFactory.DangerButton("Delete", 90);
-        delete.Click += (_, _) => DeleteResident();
+        body.Controls.Add(gridCard);
+        body.Controls.Add(historyCard);
+        body.Controls.Add(bar);
 
-        var request = UiFactory.PrimaryButton("New Document Request", 200);
-        request.Click += (_, _) => FileRequest();
-
-        actions.Controls.Add(request);
-        actions.Controls.Add(register);
-        actions.Controls.Add(edit);
-        actions.Controls.Add(delete);
-        return actions;
+        Controls.Add(body);
     }
 
-    public override void RefreshData()
+    public override void OnShown() => LoadGrid();
+
+    /// <summary>I apply a purok filter that arrived from the dashboard.</summary>
+    public void ApplyFilter(string? filter)
     {
-        _grid.DataSource = Repository.SearchResidents(_search.Text.Trim())
-            .Select(r => new
-            {
-                ID = r.ResidentId,
-                Name = r.GetSortableName(),
-                Age = r.GetAge(),
-                Gender = r.Gender.ToString(),
-                Purok = r.Purok,
-                Contact = r.ContactNumber,
-                Residency = $"{r.GetMonthsOfResidency()} mo",
-                Voter = r.IsRegisteredVoter ? "Yes" : "No",
-                Classification = r.GetClassificationText(),
-                Requests = r.Requests.Count
-            })
-            .ToList();
+        _search.Text = filter ?? string.Empty;
+        LoadGrid();
+    }
 
-        if (_grid.Columns["ID"] is { } idColumn)
-            idColumn.Visible = false;
+    private void LoadGrid()
+    {
+        var rows = Repository.SearchResidents(_search.Text).ToList();
 
-        _emptyLabel.Text = string.IsNullOrWhiteSpace(_search.Text)
-            ? "No residents registered yet"
-            : $"No residents match \u201c{_search.Text.Trim()}\u201d";
-        _emptyLabel.Visible = _grid.Rows.Count == 0;
+        _grid.DataSource = rows.Select(r => new
+        {
+            r.ResidentId,
+            Name = r.GetSortableName(),
+            Age = r.GetAge(),
+            r.Purok,
+            Contact = r.ContactNumber,
+            Classification = r.GetClassificationText(),
+            Voter = r.IsRegisteredVoter ? "Yes" : "No"
+        }).ToList();
+
+        if (_grid.Columns.Contains("ResidentId"))
+        {
+            _grid.Columns["ResidentId"]!.HeaderText = "ID";
+            _grid.Columns["ResidentId"]!.FillWeight = 40;
+            _grid.Columns["Age"]!.FillWeight = 40;
+            _grid.Columns["Voter"]!.FillWeight = 45;
+            _grid.Columns["Name"]!.FillWeight = 150;
+            _grid.Columns["Classification"]!.FillWeight = 130;
+        }
+
+        UpdateButtons();
+        ShowHistory();
     }
 
     private Resident? Selected()
     {
-        if (_grid.CurrentRow?.Cells["ID"].Value is not int id) return null;
-        return Repository.Residents.FirstOrDefault(r => r.ResidentId == id);
+        if (_grid.CurrentRow is null) return null;
+        var idCell = _grid.CurrentRow.Cells["ResidentId"].Value;
+        if (idCell is null) return null;
+        int id = Convert.ToInt32(idCell);
+        return Repository.FindResident(id);
     }
 
-    private void RegisterResident()
+    private void UpdateButtons()
     {
-        using var dialog = new ResidentForm();
-        if (dialog.ShowDialog(this) != DialogResult.OK) return;
-
-        var resident = AttemptGet(() => Repository.AddResident(dialog.Details));
-        if (resident is null) return;
-
-        RefreshData();
-        SetStatus($"Registered {resident.GetFullName()} of {resident.Purok}.");
+        bool any = Selected() is not null;
+        _btnEdit.Enabled = any;
+        _btnDelete.Enabled = any;
+        _btnNewReq.Enabled = any;
     }
 
-    private void EditResident()
+    private void ShowHistory()
     {
-        var resident = Selected();
-        if (resident is null) { Dialog.SelectFirst("resident"); return; }
+        var r = Selected();
+        if (r is null)
+        {
+            _history.DataSource = null;
+            _historyTitle.Text = "Select a resident to see their requests";
+            return;
+        }
 
-        using var dialog = new ResidentForm(resident);
-        if (dialog.ShowDialog(this) != DialogResult.OK) return;
-
-        if (!Attempt(() => Repository.UpdateResident(resident, dialog.Details))) return;
-
-        RefreshData();
-        SetStatus($"Updated the record for {resident.GetFullName()}.");
+        _historyTitle.Text = $"Requests filed by {r.GetFullName()}";
+        _history.DataSource = r.Requests.Select(q => new
+        {
+            Reference = q.GetReferenceNumber(),
+            Document = FeeSchedule.NameOf(q.DocumentType),
+            q.Purpose,
+            Status = q.Status.ToString(),
+            Fee = DisplayFormat.PesoOrFree(q.Fee),
+            Paid = q.IsPaid ? "Yes" : (q.Fee == 0 ? "—" : "No")
+        }).ToList();
     }
 
-    private void DeleteResident()
+    private void AddResident()
     {
-        var resident = Selected();
-        if (resident is null) { Dialog.SelectFirst("resident"); return; }
+        using var form = new ResidentForm();
+        if (form.ShowDialog(this) != DialogResult.OK || form.Result is null) return;
 
-        if (!Dialog.ConfirmDestructive(
-                $"Delete the record for {resident.GetFullName()}?\n\n" +
-                $"{resident.Requests.Count} document request(s) will also be removed.\n\n" +
-                "This cannot be undone.",
+        ResidentDetails details = form.Result;
+        Persist(() => Repository.AddResident(details), "The new resident");
+        LoadGrid();
+    }
+
+    private void EditSelected()
+    {
+        var r = Selected();
+        if (r is null) return;
+
+        using var form = new ResidentForm(r);
+        if (form.ShowDialog(this) != DialogResult.OK || form.Result is null) return;
+
+        ResidentDetails details = form.Result;
+        Persist(() => Repository.UpdateResident(r, details), "The change to " + r.GetFullName());
+        LoadGrid();
+    }
+
+    private void DeleteSelected()
+    {
+        var r = Selected();
+        if (r is null) return;
+
+        int count = r.Requests.Count;
+        string warning = count > 0
+            ? $"\n\nThis will also delete {count} document request(s) on record."
+            : string.Empty;
+
+        if (!Dialog.ConfirmDanger(this,
+                $"Delete {r.GetFullName()}?{warning}",
                 "Confirm deletion"))
             return;
 
-        string name = resident.GetFullName();
-        if (!Attempt(() => Repository.RemoveResident(resident))) return;
-
-        RefreshData();
-        SetStatus($"Deleted the record for {name}.");
+        Persist(() => Repository.RemoveResident(r), "The deletion");
+        LoadGrid();
     }
 
-    private void FileRequest()
+    private void NewRequestForSelected()
     {
-        var resident = Selected();
-        if (resident is null) { Dialog.SelectFirst("resident"); return; }
+        var r = Selected();
+        if (r is null) return;
 
-        using var dialog = new RequestForm(resident, _feeSchedule);
-        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+        using var form = new RequestForm(r, _fees);
+        if (form.ShowDialog(this) != DialogResult.OK || form.Input is null) return;
 
-        var request = AttemptGet(() =>
-            Repository.CreateRequest(resident, dialog.DocumentType, dialog.Purpose));
-        if (request is null) return;
+        var type = form.SelectedType;
+        var purpose = form.Purpose;
+        RequestInput input = form.Input;
 
-        RefreshData();
-        RequestFiled?.Invoke(this, EventArgs.Empty);
-
-        string fee = request.Fee > 0
-            ? $"Fee: ₱{request.Fee:N2}"
-            : $"FREE — {request.FeeBasis}";
-
-        SetStatus($"Filed {request.GetReferenceNumber()} — {request.GetDocumentName()}. {fee}");
+        // The form has already refused a blocked assessment, so the only
+        // way this throws is the database - and then I stay on this screen
+        // instead of jumping to a queue that does not have the request.
+        if (Persist(() => Repository.CreateRequest(r, type, purpose, input), "The request"))
+            RequestNavigate?.Invoke(this, ("requests", null));
     }
 }

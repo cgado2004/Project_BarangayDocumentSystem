@@ -9,125 +9,97 @@
     <RootNamespace>BarangayDocumentSystem</RootNamespace>
     <AssemblyName>BarangayDocumentSystem</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
+    <Deterministic>true</Deterministic>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <!-- PackageReference (not packages.config): every MySql.Data dependency
-         resolves itself on restore, so nothing here has to be hand-listed. -->
+    <!-- Frent's package setup, kept as is: PackageReference (not
+         packages.config), so every MySql.Data dependency resolves itself on
+         restore and nothing has to be hand-listed here. The binding
+         redirects are generated for the same reason. -->
     <RestorePackages>true</RestorePackages>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols><DebugType>full</DebugType>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <Optimize>true</Optimize><DebugType>pdbonly</DebugType>
     <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <!-- MySQL ADO.NET driver. Visual Studio restores this (and its
-         transitive dependencies) the first time the project builds. -->
+    <!-- The MySQL ADO.NET driver. Visual Studio / MSBuild restores it (and
+         its transitive dependencies) the first time the project builds. -->
     <PackageReference Include="MySql.Data" Version="8.4.0" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppSettings.cs" />
+    <Compile Include="BusinessRules\DisplayFormat.cs" />
     <Compile Include="BusinessRules\DocumentRenderer.cs" />
-    <Compile Include="BusinessRules\DocumentTemplates\BarangayIdTemplate.cs" />
-    <Compile Include="BusinessRules\DocumentTemplates\BusinessClearanceTemplate.cs" />
-    <Compile Include="BusinessRules\DocumentTemplates\ClearanceTemplate.cs" />
-    <Compile Include="BusinessRules\DocumentTemplates\GoodMoralTemplate.cs" />
-    <Compile Include="BusinessRules\DocumentTemplates\IndigencyTemplate.cs" />
-    <Compile Include="BusinessRules\DocumentTemplates\JobseekerTemplate.cs" />
-    <Compile Include="BusinessRules\DocumentTemplates\ResidencyTemplate.cs" />
+    <Compile Include="BusinessRules\DocumentTemplates\BarangayClearanceTemplate.cs" />
+    <Compile Include="BusinessRules\DocumentTemplates\CharacterAndAssistanceTemplates.cs" />
+    <Compile Include="BusinessRules\DocumentTemplates\DocumentTemplateBase.cs" />
+    <Compile Include="BusinessRules\DocumentTemplates\EmploymentAndBlotterTemplates.cs" />
+    <Compile Include="BusinessRules\DocumentTemplates\IndigencyAndJobseekerTemplates.cs" />
+    <Compile Include="BusinessRules\DocumentTemplates\MoneyDocumentTemplates.cs" />
+    <Compile Include="BusinessRules\DocumentTemplates\ResidencyTemplates.cs" />
     <Compile Include="BusinessRules\FeeSchedule.cs" />
-    <Compile Include="CustomControls\NavigationSidebar.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Include="CustomControls\NavigationSidebar.cs" />
+    <Compile Include="CustomControls\SummaryCard.cs" />
     <Compile Include="Database\DatabaseInitializer.cs" />
     <Compile Include="Database\DatabaseSettings.cs" />
+    <Compile Include="Database\InMemoryBarangayRepository.cs" />
     <Compile Include="Database\MySqlBarangayRepository.cs" />
-    <Compile Include="Database\SampleDataSeeder.cs" />
-    <Compile Include="Forms\DocumentPreviewForm.Designer.cs" />
-    <Compile Include="Forms\DocumentPreviewForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Forms\PaymentForm.Designer.cs" />
-    <Compile Include="Forms\PaymentForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="Database\RepositoryBase.cs" />
+    <Compile Include="Database\SampleData.cs" />
+    <Compile Include="Forms\DocumentPreviewForm.Designer.cs"><DependentUpon>DocumentPreviewForm.cs</DependentUpon></Compile>
+    <Compile Include="Forms\DocumentPreviewForm.cs"><SubType>Form</SubType></Compile>
+    <Compile Include="Forms\PaymentForm.Designer.cs"><DependentUpon>PaymentForm.cs</DependentUpon></Compile>
+    <Compile Include="Forms\PaymentForm.cs"><SubType>Form</SubType></Compile>
     <Compile Include="Forms\Prompt.cs" />
-    <Compile Include="Forms\RequestForm.Designer.cs" />
-    <Compile Include="Forms\RequestForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Forms\ResidentForm.Designer.cs" />
-    <Compile Include="Forms\ResidentForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="Forms\RequestForm.Designer.cs"><DependentUpon>RequestForm.cs</DependentUpon></Compile>
+    <Compile Include="Forms\RequestForm.cs"><SubType>Form</SubType></Compile>
+    <Compile Include="Forms\ResidentForm.Designer.cs"><DependentUpon>ResidentForm.cs</DependentUpon></Compile>
+    <Compile Include="Forms\ResidentForm.cs"><SubType>Form</SubType></Compile>
     <Compile Include="Interfaces\IBarangayRepository.cs" />
     <Compile Include="Interfaces\IDocumentTemplate.cs" />
     <Compile Include="Interfaces\RepositoryException.cs" />
-    <Compile Include="MainShell.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="MainShell.Designer.cs"><DependentUpon>MainShell.cs</DependentUpon></Compile>
+    <Compile Include="MainShell.cs"><SubType>Form</SubType></Compile>
+    <Compile Include="Models\BarangayProfile.cs" />
     <Compile Include="Models\DocumentRequest.cs" />
     <Compile Include="Models\Enums.cs" />
     <Compile Include="Models\Resident.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="UIHelpers\AppTheme.cs" />
     <Compile Include="UIHelpers\CompilerShims.cs" />
-    <Compile Include="UIHelpers\CueBanner.cs" />
+    <Compile Include="UIHelpers\CueTextBox.cs" />
     <Compile Include="UIHelpers\Dialog.cs" />
     <Compile Include="UIHelpers\InputValidator.cs" />
     <Compile Include="UIHelpers\UiFactory.cs" />
-    <Compile Include="Views\DashboardView.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Views\RequestsView.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Views\ResidentsView.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Views\ViewBase.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
+    <Compile Include="Views\DashboardView.cs" />
+    <Compile Include="Views\RequestsView.cs" />
+    <Compile Include="Views\ResidentsView.cs" />
+    <Compile Include="Views\ViewBase.cs" />
+    <EmbeddedResource Include="MainShell.resx"><DependentUpon>MainShell.cs</DependentUpon></EmbeddedResource>
+    <!-- The one schema, embedded in the .exe so DatabaseInitializer can run
+         it on first start. Not copied as a loose file on purpose: one copy. -->
     <EmbeddedResource Include="Database\schema.sql" />
-    <EmbeddedResource Include="Forms\ResidentForm.resx">
-      <DependentUpon>ResidentForm.cs</DependentUpon>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.manifest" />
     <None Include="App.config" />
+    <None Include="app.manifest" />
+    <Content Include="Assets\barangay-logo.png"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

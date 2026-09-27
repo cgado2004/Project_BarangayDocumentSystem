@@ -1,3 +1,10 @@
+// =====================================================================
+//  PART:    Interfaces - the storage contract every screen depends on
+//  ORIGIN:  leader_draft - Clint Wood Gado (v3.1 contract)
+//           Fdraft - Frent Dhieniel Raborar (Reload, the RepositoryException rule)
+//  EDITS:   Clint Wood Gado - merged the two contracts; added StorageDescription
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using BarangayDocumentSystem.Models;
@@ -5,55 +12,82 @@ using BarangayDocumentSystem.Models;
 namespace BarangayDocumentSystem.Interfaces;
 
 /// <summary>
-/// Storage contract for residents and their document requests.
+/// Everything my application can ask of storage.
 ///
-/// The views and forms depend on THIS interface, never on a concrete class.
-/// The only implementation today is <c>MySqlBarangayRepository</c> (Database
-/// folder); Program.cs is the one place that names it.
+/// My screens only ever talk to this interface, never to a concrete class.
+/// That is what lets Program.cs choose between Frent's MySQL repository and
+/// my in-memory one by changing a single line, without touching a form.
 ///
-/// Any method may throw <see cref="RepositoryException"/> when the database
-/// cannot be reached or rejects the request.
+/// I merged two versions of this contract. Mine had the focused resident
+/// queries (FindResident, ResidentsOfPurok) and the RequestInput that my
+/// v3.1 fee schedule needs. Frent's had Reload, and the rule that any
+/// method may throw <see cref="RepositoryException"/> when the database
+/// cannot be reached or rejects a write. Both survive here.
 /// </summary>
 public interface IBarangayRepository
 {
     IReadOnlyList<Resident> Residents { get; }
     IReadOnlyList<DocumentRequest> Requests { get; }
 
+    /// <summary>
+    /// Where the data actually is, in words fit for the status bar:
+    /// "MySQL - localhost/barangay_db" or "In-memory demo - nothing is
+    /// saved". I put this on the interface so the shell can say it
+    /// without asking which concrete class it was given.
+    /// </summary>
+    string StorageDescription { get; }
+
+    /// <summary>One resident by id, or null. The history panel and the
+    /// request form use this after a grid row is picked.</summary>
+    Resident? FindResident(int residentId);
+
     Resident AddResident(ResidentDetails details);
     void UpdateResident(Resident resident, ResidentDetails details);
     void RemoveResident(Resident resident);
+
+    /// <summary>Free-text search across name, purok, contact and
+    /// occupation. A blank term returns everyone.</summary>
     IEnumerable<Resident> SearchResidents(string term);
 
-    DocumentRequest CreateRequest(Resident resident, DocumentType type, string purpose);
+    /// <summary>Every resident of one purok, for the dashboard table.</summary>
+    IEnumerable<Resident> ResidentsOfPurok(string purok);
 
     /// <summary>
-    /// Writes a request's current state (status, payment, remarks) to storage.
-    /// Call it after any workflow change such as StartProcessing, Release,
-    /// RecordPayment or Reject — those change the object in memory only.
+    /// File a request. The store runs the fee rules itself and writes the
+    /// assessment onto the request, so no screen can forget to.
+    /// </summary>
+    DocumentRequest CreateRequest(
+        Resident resident, DocumentType type, string purpose, RequestInput? input = null);
+
+    IEnumerable<DocumentRequest> GetRequestsByStatus(RequestStatus? status);
+
+    /// <summary>
+    /// I call this after a request's status or payment changed, so the
+    /// store can write it down. The workflow methods on DocumentRequest
+    /// change the object in memory only; this is what makes it permanent.
+    /// The in-memory version does nothing here; the MySQL version runs an
+    /// UPDATE inside a transaction.
     /// </summary>
     void SaveRequest(DocumentRequest request);
-    IEnumerable<DocumentRequest> GetRequestsByStatus(RequestStatus? status);
 
     BarangayStatistics GetStatistics();
 
     /// <summary>
-    /// Discards everything held in memory and reloads it from storage. Used to
-    /// recover after a failed save so the screen never shows data the
-    /// database does not have.
+    /// Discard everything held in memory and read it again from storage.
+    ///
+    /// Frent's rule, and I kept it: after a failed save the screen must
+    /// never show something the database does not have, so the view
+    /// reloads instead of guessing which half of the change went through.
     /// </summary>
     void Reload();
 }
 
 /// <summary>
-/// Carries the editable fields of a resident between the UI and the store.
+/// The editable fields of a resident, carried together as one object.
 ///
-/// ── DRY ─────────────────────────────────────────────────────────────────
-/// Before, AddResident took FOURTEEN positional parameters, and MainForm then
-/// repeated all fourteen assignments again by hand for the edit case. Two
-/// near-identical blocks that had to be kept in sync by memory.
-///
-/// One record type replaces both. Add a field here and Add + Update both
-/// pick it up automatically.
+/// Without this my AddResident would need fourteen separate parameters, and
+/// every caller would have to get their order exactly right. Passing one
+/// object means the compiler catches my mistakes instead of the user.
 /// </summary>
 public record ResidentDetails(
     string FirstName,
@@ -71,13 +105,8 @@ public record ResidentDetails(
     bool IsRegisteredVoter,
     ResidentClassification Classification);
 
-/// <summary>
-/// Dashboard figures, computed in one place.
-///
-/// ── DRY ─────────────────────────────────────────────────────────────────
-/// Before, the repository exposed eleven separate computed properties and the
-/// form read each one individually. One object now carries them all.
-/// </summary>
+/// <summary>Everything my dashboard shows, worked out in one place so the
+/// figures can never disagree with each other.</summary>
 public record BarangayStatistics(
     int TotalResidents,
     int RegisteredVoters,

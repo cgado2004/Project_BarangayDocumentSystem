@@ -1,218 +1,96 @@
-#nullable enable
+// =====================================================================
+//  PART:    CustomControls - the flat navigation sidebar
+//  ORIGIN:  Draft - Jonathan F. Del Rosario (the design: seal at the top, brand, stacked flat
+//           navigation buttons, city footer, one active highlight)
+//           Fdraft - Frent Dhieniel Raborar (this file's place in the tree)
+//  EDITS:   Clint Wood Gado - my palette (Deep / Primary / GoldSoft), my logo, ApplyTheme, comments
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Text;
 using System.Windows.Forms;
-using BarangayDocumentSystem.UIHelpers;
+using static BarangayDocumentSystem.UIHelpers.AppTheme;
 
 namespace BarangayDocumentSystem.CustomControls;
 
-public class NavigationSidebar : Panel
+/// <summary>
+/// The navigation rail on the left of the window.
+///
+/// The design is Jonathan's, from his Draft: the barangay seal at the top,
+/// the brand under it, flat full-width buttons stacked below, the city and
+/// province in the footer, and exactly one button highlighted as the
+/// current page. I kept that shape and painted it in my palette - Deep
+/// navy for the rail, Primary for the active page, GoldSoft for the brand -
+/// so it matches every other screen. I also made it a control of its own,
+/// so the shell only has to listen for <see cref="Navigate"/> and never
+/// touches a button.
+///
+/// The seal is a detached bitmap I own, and I dispose the old one whenever
+/// a new one is set, so the file on disk is never locked and nothing leaks.
+/// </summary>
+public sealed class NavigationSidebar : Panel
 {
-    private readonly FlowLayoutPanel _host = new();
-    private readonly Dictionary<string, NavItem> _items = new();
-    private NavItem? _selected;
-
-    public event EventHandler<string>? NavigationChanged;
+    public event EventHandler<string>? Navigate;
+    private readonly PictureBox _logo = new() { SizeMode = PictureBoxSizeMode.Zoom, Dock = DockStyle.Top, Height = 86, TabStop = false };
+    private readonly Label _brand = new() { Text = "BARANGAY\r\nMagugpo Poblacion", Dock = DockStyle.Top, Height = 64, TextAlign = ContentAlignment.MiddleCenter };
+    private readonly Dictionary<string, Button> _buttons = new();
+    private string _active = "dashboard";
 
     public NavigationSidebar()
     {
-        Dock = DockStyle.Fill;
-        BackColor = AppTheme.SidebarBg;
-        Margin = new Padding(0);
-        Padding = new Padding(0);
-
-        var brand = BuildBrand();
-
-        _host.Dock = DockStyle.Fill;
-        _host.FlowDirection = FlowDirection.TopDown;
-        _host.WrapContents = false;
-        _host.AutoScroll = true;
-        _host.BackColor = AppTheme.SidebarBg;
-        _host.Padding = new Padding(14, 6, 14, 14);
-        _host.Margin = new Padding(0);
-
-        var layout = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            ColumnCount = 1,
-            RowCount = 2,
-            BackColor = AppTheme.SidebarBg,
-            Margin = new Padding(0),
-            Padding = new Padding(0)
-        };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 96F));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        layout.Controls.Add(brand, 0, 0);
-        layout.Controls.Add(_host, 0, 1);
-
-        Controls.Add(layout);
+        Width = SidebarW;
+        Dock = DockStyle.Left;
+        Padding = new Padding(12, 20, 12, 12);
+        AddNavigation("requests", "Document requests");
+        AddNavigation("residents", "Residents");
+        AddNavigation("dashboard", "Dashboard");
+        Controls.Add(_brand);
+        Controls.Add(_logo);
+        Controls.Add(new Label { Text = "City of Tagum\r\nDavao del Norte", Dock = DockStyle.Bottom, Height = 56, ForeColor = Color.White, TextAlign = ContentAlignment.MiddleLeft });
+        ApplyTheme();
     }
 
-    private static Control BuildBrand()
+    private void AddNavigation(string key, string caption)
     {
-        var brand = new Panel
+        var button = new Button
         {
-            Dock = DockStyle.Fill,
-            BackColor = AppTheme.SidebarBg,
-            Margin = new Padding(0),
-            Padding = new Padding(24, 26, 20, 10)
+            Name = "nav" + key, Text = caption, Dock = DockStyle.Top, Height = 52,
+            FlatStyle = FlatStyle.Flat, TextAlign = ContentAlignment.MiddleLeft,
+            Padding = new Padding(10, 0, 0, 0), Cursor = Cursors.Hand,
+            AccessibleName = caption, UseVisualStyleBackColor = false
         };
-
-        var stack = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            ColumnCount = 1,
-            RowCount = 2,
-            BackColor = AppTheme.SidebarBg,
-            Margin = new Padding(0)
-        };
-        stack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 18F));
-        stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
-
-        var small = new Label
-        {
-            Text = "MAGUGPO POBLACION",
-            Dock = DockStyle.Fill,
-            Font = AppTheme.SmallBoldFont,
-            ForeColor = AppTheme.SidebarActive,
-            TextAlign = ContentAlignment.MiddleLeft,
-            Margin = new Padding(0)
-        };
-
-        var big = new Label
-        {
-            Text = "Barangay System",
-            Dock = DockStyle.Fill,
-            Font = AppTheme.HeadingFont,
-            ForeColor = Color.White,
-            TextAlign = ContentAlignment.MiddleLeft,
-            Margin = new Padding(0)
-        };
-
-        stack.Controls.Add(small, 0, 0);
-        stack.Controls.Add(big, 0, 1);
-        brand.Controls.Add(stack);
-        return brand;
+        button.FlatAppearance.BorderSize = 0;
+        button.Click += (_, _) => Navigate?.Invoke(this, key);
+        _buttons.Add(key, button);
+        Controls.Add(button);
     }
 
-    public void AddItem(string key, string text, string glyph)
+    public Image? Logo
     {
-        var item = new NavItem(key, glyph, text)
-        {
-            Width = _host.ClientSize.Width - 28,
-            Height = 46
-        };
-        item.Click += (_, _) => Navigate(key);
-        _items[key] = item;
-        _host.Controls.Add(item);
+        get => _logo.Image;
+        set { var old = _logo.Image; _logo.Image = value; if (!ReferenceEquals(old, value)) old?.Dispose(); }
     }
 
-    public void Navigate(string key)
+    public void SetActive(string key) { _active = key; ApplyTheme(); }
+
+    public void ApplyTheme()
     {
-        if (!_items.TryGetValue(key, out var item)) return;
-
-        if (!ReferenceEquals(item, _selected))
+        BackColor = Deep;
+        _brand.ForeColor = GoldSoft;
+        _brand.Font = Subhead;
+        foreach (var entry in _buttons)
         {
-            if (_selected is not null)
-            {
-                _selected.IsSelected = false;
-                _selected.Invalidate();
-            }
-            _selected = item;
-            item.IsSelected = true;
-            item.Invalidate();
+            entry.Value.Font = Body;
+            entry.Value.ForeColor = Color.White;
+            entry.Value.BackColor = entry.Key == _active ? Primary : Deep;
+            entry.Value.FlatAppearance.MouseOverBackColor = PrimaryDim;
         }
-
-        NavigationChanged?.Invoke(this, key);
     }
 
-    private sealed class NavItem : Control
+    protected override void Dispose(bool disposing)
     {
-        public string Key { get; }
-        public string Glyph { get; }
-        public string Label { get; }
-
-        private bool _hover;
-        private bool _selected;
-
-        public bool IsSelected
-        {
-            get => _selected;
-            set { _selected = value; Invalidate(); }
-        }
-
-        public NavItem(string key, string glyph, string label)
-        {
-            Key = key;
-            Glyph = glyph;
-            Label = label;
-            Cursor = Cursors.Hand;
-            Margin = new Padding(0, 0, 0, 4);
-            SetStyle(
-                ControlStyles.AllPaintingInWmPaint |
-                ControlStyles.UserPaint |
-                ControlStyles.OptimizedDoubleBuffer |
-                ControlStyles.ResizeRedraw |
-                ControlStyles.StandardClick |
-                ControlStyles.StandardDoubleClick, true);
-        }
-
-        protected override void OnMouseEnter(EventArgs e)
-        {
-            _hover = true;
-            Invalidate();
-            base.OnMouseEnter(e);
-        }
-
-        protected override void OnMouseLeave(EventArgs e)
-        {
-            _hover = false;
-            Invalidate();
-            base.OnMouseLeave(e);
-        }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            var g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
-
-            Color back = _selected || _hover ? AppTheme.SidebarHover : AppTheme.SidebarBg;
-
-            using (var brush = new SolidBrush(back))
-                g.FillRectangle(brush, ClientRectangle);
-
-            if (_selected)
-            {
-                using var accent = new SolidBrush(AppTheme.SidebarActive);
-                g.FillRectangle(accent, 0, 9, 3, Height - 18);
-            }
-
-            Color fg = _selected ? AppTheme.SidebarTextActive : AppTheme.SidebarText;
-
-            using (var glyphFont = new Font("Segoe UI Symbol", 11F))
-            using (var glyphBrush = new SolidBrush(_selected ? AppTheme.SidebarActive : fg))
-            {
-                g.DrawString(Glyph, glyphFont, glyphBrush,
-                    new PointF(18, (Height - 20) / 2f));
-            }
-
-            var font = _selected ? AppTheme.BodyBoldFont : AppTheme.BodyFont;
-            using var textBrush = new SolidBrush(fg);
-            var format = new StringFormat
-            {
-                LineAlignment = StringAlignment.Center,
-                Alignment = StringAlignment.Near,
-                Trimming = StringTrimming.EllipsisCharacter,
-                FormatFlags = StringFormatFlags.NoWrap
-            };
-            g.DrawString(Label, font, textBrush,
-                new RectangleF(50, 0, Width - 58, Height), format);
-        }
+        if (disposing) Logo = null;
+        base.Dispose(disposing);
     }
 }

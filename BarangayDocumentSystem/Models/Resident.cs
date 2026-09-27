@@ -1,13 +1,26 @@
+// =====================================================================
+//  PART:    Models - one resident of the barangay
+//  ORIGIN:  the group's shared model - Fdraft - Frent Dhieniel Raborar carries this file
+//           almost line for line; Draft - Jonathan F. Del Rosario modelled it first
+//  EDITS:   Clint Wood Gado - the MiddleInitial fix (punctuation never reaches a document) and the comments
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.IO;
 namespace BarangayDocumentSystem.Models;
 
 /// <summary>
 /// A resident of Barangay Magugpo Poblacion, Tagum City.
 ///
 /// Resident 1 ──── 0..* DocumentRequest  (association)
-/// A resident exists independently of any request, and requests are historical
-/// records that outlive changes to the resident's details.
+///
+/// I modelled this as an association rather than a composition because a
+/// resident exists perfectly well without any request, and because a
+/// request is a historical record. If someone corrects a resident's
+/// address next year, that must not quietly rewrite a certificate issued
+/// last year.
 /// </summary>
 public class Resident
 {
@@ -24,7 +37,8 @@ public class Resident
     public Gender Gender { get; set; }
     public CivilStatus CivilStatus { get; set; } = CivilStatus.Single;
 
-    /// <summary>Purok / sitio / street within Magugpo Poblacion.</summary>
+    /// <summary>The purok this resident lives in. I offer only the real
+    /// puroks of Magugpo Poblacion, so the value cannot be mistyped.</summary>
     public string Purok { get; set; } = string.Empty;
     public string AddressLine { get; set; } = string.Empty;
 
@@ -32,20 +46,23 @@ public class Resident
     public string Occupation { get; set; } = string.Empty;
 
     /// <summary>
-    /// When the person began residing in the barangay. Drives the six-month
-    /// residency test that RA 11261 requires for a first-time jobseeker
-    /// certificate.
+    /// When the person began residing in the barangay. I use this to run
+    /// the six-month residency test RA 11261 requires before I can issue
+    /// a first-time jobseeker certificate.
     /// </summary>
     public DateTime DateOfResidency { get; set; }
 
     public bool IsRegisteredVoter { get; set; }
 
-    /// <summary>Bitwise combination — a resident can be senior AND indigent.</summary>
+    /// <summary>A bitwise combination, because one resident can be a senior AND
+    /// an indigent at the same time and I have to honour both.</summary>
     public ResidentClassification Classification { get; set; } = ResidentClassification.None;
 
     /// <summary>
-    /// RA 11261 may be availed only ONCE. Set when a first-time jobseeker
-    /// certificate is released, and checked before issuing another.
+    /// RA 11261 may be availed only ONCE in a person's life - and it covers
+    /// not just the jobseeker certificate but the barangay clearance a
+    /// first-time jobseeker asks for. I set this when such a document is
+    /// released, and I check it before I ever issue another.
     /// </summary>
     public bool HasAvailedFirstTimeJobseeker { get; set; }
 
@@ -59,23 +76,35 @@ public class Resident
         DateOfResidency = DateTime.Today;
     }
 
-    public string GetFullName()
+    /// <summary>
+    /// The middle initial, as " P.", or nothing at all when there is no
+    /// usable middle name.
+    ///
+    /// I look for the first actual LETTER, so punctuation at the start
+    /// cannot leak onto an official document - a middle name of "." once
+    /// printed as "Juan .. Dela Cruz" before I fixed this.
+    /// </summary>
+    private string MiddleInitial()
     {
-        string middle = string.IsNullOrWhiteSpace(MiddleName)
-            ? string.Empty
-            : $" {MiddleName[0]}.";
+        if (string.IsNullOrWhiteSpace(MiddleName)) return string.Empty;
 
-        string suffix = string.IsNullOrWhiteSpace(Suffix) ? string.Empty : $" {Suffix}";
-        return $"{FirstName}{middle} {LastName}{suffix}".Trim();
+        foreach (char c in MiddleName)
+            if (char.IsLetter(c)) return $" {char.ToUpperInvariant(c)}.";
+
+        return string.Empty;
     }
 
-    /// <summary>"Dela Cruz, Juan P." — for alphabetical listings.</summary>
+    public string GetFullName()
+    {
+        string suffix = string.IsNullOrWhiteSpace(Suffix) ? string.Empty : $" {Suffix}";
+        return $"{FirstName}{MiddleInitial()} {LastName}{suffix}".Trim();
+    }
+
+    /// <summary>"Dela Cruz, Juan P." - the form I use when I need the list in
+    /// alphabetical order.</summary>
     public string GetSortableName()
     {
-        string middle = string.IsNullOrWhiteSpace(MiddleName)
-            ? string.Empty
-            : $" {MiddleName[0]}.";
-        return $"{LastName}, {FirstName}{middle}".Trim();
+        return $"{LastName}, {FirstName}{MiddleInitial()}".Trim();
     }
 
     public int GetAge()
@@ -87,7 +116,8 @@ public class Resident
         return age;
     }
 
-    /// <summary>Whole months of continuous residency, used by the RA 11261 test.</summary>
+    /// <summary>Whole months of continuous residency. I use this for the
+    /// RA 11261 six-month test.</summary>
     public int GetMonthsOfResidency()
     {
         var today = DateTime.Today;
@@ -101,7 +131,8 @@ public class Resident
     public bool HasClassification(ResidentClassification c) =>
         Classification.HasFlag(c) && c != ResidentClassification.None;
 
-    /// <summary>"Senior Citizen, PWD" — for display.</summary>
+    /// <summary>"Senior Citizen, PWD" - the readable version I show on screen
+    /// instead of a raw enum value.</summary>
     public string GetClassificationText()
     {
         if (Classification == ResidentClassification.None) return "None";

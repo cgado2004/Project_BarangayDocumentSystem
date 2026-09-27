@@ -1,54 +1,106 @@
-using System.Windows.Forms;
+// =====================================================================
+//  PART:    UIHelpers - every message box in the app, in one voice
+//  ORIGIN:  the group's shared design - first modelled in Draft - Jonathan F. Del Rosario,
+//           given this place in the tree by Fdraft - Frent Dhieniel Raborar;
+//           the code and comments in this file are my v3.1 rewrite (leader_draft - Clint Wood Gado)
+//  EDITS:   Clint Wood Gado - v3.1 content (DialogBase, metrics), header
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.IO;
+using BarangayDocumentSystem.Forms;
+using BarangayDocumentSystem.Views;
+using BarangayDocumentSystem.CustomControls;
+using System.Drawing;
+using System.Windows.Forms;
+using static BarangayDocumentSystem.UIHelpers.AppTheme;
+
 namespace BarangayDocumentSystem.UIHelpers;
 
 /// <summary>
-/// Every message box in the application.
+/// Standardised message boxes, one place for every "the app speaks to the
+/// user" moment.
 ///
-/// ── DRY: the clearest duplication in the original code ──────────────────
-/// The v1 UI contained EIGHTEEN MessageBox.Show calls. Seven of them were
-/// near-identical copies of:
-///
-///     MessageBox.Show("Please select a resident first.", "No selection",
-///                     MessageBoxButtons.OK, MessageBoxIcon.Information);
-///
-/// each repeating the caption, the button set and the icon. They had already
-/// drifted — some said "Please select a resident first.", others "Please
-/// select a request first.", with inconsistent captions.
-///
-/// Six methods now cover every case. Call sites shrink from four arguments to
-/// one, captions and icons can never disagree, and changing the house style of
-/// all dialogs is a single edit here.
+/// v3 had a dozen MessageBox.Show calls with their own titles, icons and
+/// phrasing, and they had drifted: some said "Missing information", some
+/// said nothing useful at all. v3.1 routes them all through here, so every
+/// message the app can produce has the same voice, the same icons, and a
+/// title that says which screen is talking.
 /// </summary>
 public static class Dialog
 {
-    /// <summary>Something the user must fix before continuing.</summary>
-    public static void Warn(string message, string caption = "Invalid input") =>
-        MessageBox.Show(message, caption, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+    /// <summary>Plain information.</summary>
+    public static void Info(IWin32Window? owner, string message, string title = "Information") =>
+        MessageBox.Show(owner, message, title,
+            MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-    /// <summary>Neutral information.</summary>
-    public static void Info(string message, string caption = "Information") =>
-        MessageBox.Show(message, caption, MessageBoxButtons.OK, MessageBoxIcon.Information);
+    /// <summary>Something the user must fix before going on.</summary>
+    public static void Warn(IWin32Window? owner, string message, string title = "Check your entries") =>
+        MessageBox.Show(owner, message, title,
+            MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
-    /// <summary>Something went wrong.</summary>
-    public static void Error(string message, string caption = "Error") =>
-        MessageBox.Show(message, caption, MessageBoxButtons.OK, MessageBoxIcon.Error);
+    /// <summary>Something went wrong that the user cannot fix here.</summary>
+    public static void Error(IWin32Window? owner, string message, string title = "Error") =>
+        MessageBox.Show(owner, message, title,
+            MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+    /// <summary>A yes/no question. True when the user said yes.</summary>
+    public static bool Confirm(IWin32Window? owner, string message, string title = "Confirm") =>
+        MessageBox.Show(owner, message, title,
+            MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
+
+    /// <summary>A yes/no question where yes is destructive, so the icon
+    /// carries the warning.</summary>
+    public static bool ConfirmDanger(IWin32Window? owner, string message, string title = "Confirm") =>
+        MessageBox.Show(owner, message, title,
+            MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
+
+    /// <summary>The one-line complaint a failed validation shows. It names
+    /// the field, so the user is not left hunting for what was wrong.</summary>
+    public static void FieldProblem(IWin32Window? owner, string field, string problem) =>
+        Warn(owner, $"{field}: {problem}", "Missing or invalid information");
+}
+
+/// <summary>
+/// The shared setup for every dialog form in the app.
+///
+/// I make them sizable, give them a MinimumSize and turn on AutoScroll, so a
+/// dialog can never end up with its OK button off the bottom of a small
+/// screen. That is the usual way WinForms dialogs break on somebody else's
+/// machine, and it is invisible to me on mine.
+///
+/// v3.1 note: the concrete forms are partial classes with a parameterless
+/// constructor and an InitializeComponent, which is the shape the Visual
+/// Studio designer needs to open them on its design surface.
+/// </summary>
+public class DialogBase : Form
+{
+    protected DialogBase()
+    {
+        StartPosition = FormStartPosition.CenterParent;
+        FormBorderStyle = FormBorderStyle.Sizable;
+        MinimizeBox = false;
+        MaximizeBox = false;
+        ShowInTaskbar = false;
+        BackColor = Canvas;
+        Font = Body;
+        AutoScaleMode = AutoScaleMode.Dpi;
+        AutoScroll = true;
+        Padding = new Padding(22);
+        KeyPreview = true;
+    }
 
     /// <summary>
-    /// Replaces the seven hand-written "Please select X first" boxes.
+    /// The metrics the designer half would otherwise set through the base
+    /// constructor: the title and the starting size, plus a floor under the
+    /// size so the dialog can shrink but never clip its buttons.
     /// </summary>
-    public static void SelectFirst(string what) =>
-        MessageBox.Show($"Please select a {what} first.", "No selection",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-    /// <summary>Yes/No question. True when the user chooses Yes.</summary>
-    public static bool Confirm(string message, string caption = "Please confirm") =>
-        MessageBox.Show(message, caption, MessageBoxButtons.YesNo,
-                        MessageBoxIcon.Question) == DialogResult.Yes;
-
-    /// <summary>Yes/No for a destructive action — warning icon, No preselected.</summary>
-    public static bool ConfirmDestructive(string message, string caption = "Confirm") =>
-        MessageBox.Show(message, caption, MessageBoxButtons.YesNo,
-                        MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2)
-            == DialogResult.Yes;
+    protected void SetDialogMetrics(string title, int width, int height)
+    {
+        Text = title;
+        ClientSize = new Size(width, height);
+        MinimumSize = new Size(Math.Max(360, width - 60), Math.Max(240, height - 60));
+    }
 }

@@ -1,253 +1,161 @@
-#nullable enable
+// =====================================================================
+//  PART:    Views - the dashboard
+//  ORIGIN:  Draft - Jonathan F. Del Rosario (the layout: six summary cards
+//           three across, then three breakdown tables - requests by status,
+//           by document, residents by purok - each row a shortcut)
+//  EDITS:   Clint Wood Gado - ported onto my ViewBase and palette; figures
+//           come from the repository's GetStatistics instead of being
+//           recomputed on the screen; the cards are SummaryCard controls
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Text;
 using System.Linq;
 using System.Windows.Forms;
+using BarangayDocumentSystem.BusinessRules;
+using BarangayDocumentSystem.CustomControls;
 using BarangayDocumentSystem.Interfaces;
+using BarangayDocumentSystem.Models;
 using BarangayDocumentSystem.UIHelpers;
+using static BarangayDocumentSystem.UIHelpers.AppTheme;
 
 namespace BarangayDocumentSystem.Views;
 
-public class DashboardView : ViewBase
+/// <summary>
+/// Jonathan's dashboard: six figures at a glance, then three tables that
+/// break them down. Every card and every table row is a shortcut - click
+/// "Pending" and the request queue opens already filtered to Pending;
+/// double-click a purok and the registry opens on that purok.
+///
+/// What the screen does NOT do is arithmetic. Every number comes from one
+/// call to <see cref="IBarangayRepository.GetStatistics"/>, so the figure
+/// on a card, the total in the status bar and the row in a table can never
+/// disagree with each other - they are the same number.
+/// </summary>
+public sealed class DashboardView : ViewBase
 {
-    private readonly TableLayoutPanel _cards = new();
-    private readonly TableLayoutPanel _tables = new();
+    private readonly Dictionary<string, SummaryCard> _cards = new();
+    private readonly DataGridView _statuses = new();
+    private readonly DataGridView _types = new();
+    private readonly DataGridView _puroks = new();
 
-    public override string Title => "Dashboard";
-    public override string Subtitle => "Operational overview of residents and document requests";
+    /// <summary>Raised when a card or a table row is chosen; the shell
+    /// navigates. (View, Filter) - "requests" + "Pending", or "residents" +
+    /// a purok name.</summary>
+    public event EventHandler<(string View, string? Filter)>? RequestNavigate;
 
     public DashboardView(IBarangayRepository repository) : base(repository)
     {
-        AutoScroll = true;
-
-        var root = new TableLayoutPanel
+        // ---- the six cards, three across, two rows ----
+        var cards = new TableLayoutPanel
         {
-            Dock = DockStyle.Top,
-            Height = 540,
-            ColumnCount = 1,
-            RowCount = 3,
-            BackColor = AppTheme.Background,
-            Margin = new Padding(0),
-            Padding = new Padding(0)
+            Dock = DockStyle.Top, Height = 228, ColumnCount = 3, RowCount = 2,
+            BackColor = Color.Transparent
         };
-        root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 156F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
-        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        for (int i = 0; i < 3; i++) cards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 3));
+        for (int i = 0; i < 2; i++) cards.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
 
-        _cards.Dock = DockStyle.Fill;
-        _cards.ColumnCount = 4;
-        _cards.RowCount = 1;
-        _cards.BackColor = AppTheme.Background;
-        _cards.Margin = new Padding(0);
-        for (int i = 0; i < 4; i++)
-            _cards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
-        _cards.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        AddCard(cards, "Residents",         Primary, "residents", null);
+        AddCard(cards, "Requests",          Primary, "requests",  null);
+        AddCard(cards, "Pending",           Warning, "requests",  nameof(RequestStatus.Pending));
+        AddCard(cards, "Ready for release", Primary, "requests",  nameof(RequestStatus.ReadyForRelease));
+        AddCard(cards, "Issued free",       Success, "requests",  nameof(RequestStatus.Released));
+        AddCard(cards, "Collected",         Success, "requests",  nameof(RequestStatus.Released));
 
-        _tables.Dock = DockStyle.Fill;
-        _tables.ColumnCount = 2;
-        _tables.RowCount = 1;
-        _tables.BackColor = AppTheme.Background;
-        _tables.Margin = new Padding(0);
-        _tables.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-        _tables.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-        _tables.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-
-        root.Controls.Add(_cards, 0, 0);
-        root.Controls.Add(_tables, 0, 2);
-
-        Controls.Add(root);
-    }
-
-    public override void RefreshData()
-    {
-        var stats = Repository.GetStatistics();
-
-        ClearHost(_cards);
-        _cards.Controls.Add(MetricCard("Pending Requests", stats.Pending.ToString(),
-            "Awaiting action", AppTheme.AmberTint, AppTheme.AmberInk, AppTheme.AmberDeep,
-            "requests", "Pending"), 0, 0);
-        _cards.Controls.Add(MetricCard("Ready for Release", stats.ReadyForRelease.ToString(),
-            "Awaiting pickup", AppTheme.SkyTint, AppTheme.SkyInk, AppTheme.SkyDeep,
-            "requests", "ReadyForRelease"), 1, 0);
-        _cards.Controls.Add(MetricCard("Total Residents", stats.TotalResidents.ToString(),
-            $"{stats.RegisteredVoters} registered voters",
-            AppTheme.NavyTint, AppTheme.NavyInk, AppTheme.NavyDeep,
-            "residents", null), 2, 0);
-        _cards.Controls.Add(MetricCard("Revenue Collected", $"₱{stats.TotalCollected:N0}",
-            $"{stats.IssuedFreeOfCharge} issued free",
-            AppTheme.GreenTint, AppTheme.GreenInk, AppTheme.GreenDeep,
-            "requests", "Released"), 3, 0);
-
-        ClearHost(_tables);
-        _tables.Controls.Add(BreakdownCard("Requests by Document Type",
-            stats.RequestsByDocumentType, new Padding(0, 0, 8, 0)), 0, 0);
-        _tables.Controls.Add(BreakdownCard("Residents by Purok",
-            stats.ResidentsByPurok, new Padding(8, 0, 0, 0)), 1, 0);
-    }
-
-    private Control MetricCard(string caption, string value, string note,
-        Color tint, Color ink, Color deep, string targetKey, string? argument)
-    {
-        var card = new MetricCardControl
+        // ---- the three breakdown tables ----
+        var tables = new TableLayoutPanel
         {
-            Caption = caption,
-            Value = value,
-            Note = note,
-            Tint = tint,
-            Ink = ink,
-            Deep = deep,
+            Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1,
+            BackColor = Color.Transparent
+        };
+        for (int i = 0; i < 3; i++) tables.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 3));
+
+        AddTable(tables, _statuses, "Requests by status");
+        AddTable(tables, _types,    "Requests by document");
+        AddTable(tables, _puroks,   "Residents by purok");
+
+        _statuses.CellDoubleClick += (_, e) =>
+        {
+            if (e.RowIndex >= 0) Go("requests", Convert.ToString(_statuses.Rows[e.RowIndex].Cells[0].Value));
+        };
+        _puroks.CellDoubleClick += (_, e) =>
+        {
+            if (e.RowIndex >= 0) Go("residents", Convert.ToString(_puroks.Rows[e.RowIndex].Cells[0].Value));
+        };
+
+        Controls.Add(tables);
+        Controls.Add(cards);
+    }
+
+    private void Go(string view, string? filter) => RequestNavigate?.Invoke(this, (view, filter));
+
+    private void AddCard(TableLayoutPanel panel, string heading, Color accent, string view, string? filter)
+    {
+        var card = new SummaryCard
+        {
+            Heading = heading,
+            Accent = accent,
             Dock = DockStyle.Fill,
-            Margin = new Padding(0, 0, 14, 0)
+            Margin = new Padding(0, 0, Gap, Gap)
         };
-        card.Click += (_, _) => NavigateTo(targetKey, argument);
-        return card;
+        card.Click += (_, _) => Go(view, filter);
+        _cards.Add(heading, card);
+        panel.Controls.Add(card);
     }
 
-    private static Control BreakdownCard(
-        string heading, IReadOnlyDictionary<string, int> data, Padding margin)
+    private static void AddTable(TableLayoutPanel panel, DataGridView grid, string title)
     {
-        var card = new BorderedPanel
-        {
-            Dock = DockStyle.Fill,
-            BackColor = AppTheme.Surface,
-            BorderColor = AppTheme.Border,
-            Padding = new Padding(1),
-            Margin = margin
-        };
+        var host = new Card { Dock = DockStyle.Fill, Margin = new Padding(0, 0, Gap, 0), Padding = new Padding(12) };
 
-        var title = new Label
-        {
-            Dock = DockStyle.Top,
-            Height = 52,
-            Font = AppTheme.SubheadFont,
-            ForeColor = AppTheme.TextPrimary,
-            TextAlign = ContentAlignment.MiddleLeft,
-            Padding = new Padding(20, 0, 0, 0),
-            Margin = new Padding(0),
-            Text = heading
-        };
-
-        var grid = new DataGridView();
         UiFactory.StyleGrid(grid);
         grid.Dock = DockStyle.Fill;
-        grid.ColumnHeadersVisible = false;
-        grid.CellBorderStyle = DataGridViewCellBorderStyle.None;
-        grid.Columns.Add("Category", "Category");
-        grid.Columns.Add("Count", "Count");
-        grid.Columns[1].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-        grid.Columns[1].AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-        grid.Columns[1].Width = 80;
+        grid.AccessibleName = title;
 
-        if (data.Count == 0)
-            grid.Rows.Add("(no data recorded)", "");
-        else
-            foreach (var pair in data.OrderByDescending(p => p.Value).ThenBy(p => p.Key))
-                grid.Rows.Add(pair.Key, pair.Value.ToString());
-
-        card.Controls.Add(grid);
-        card.Controls.Add(title);
-        return card;
+        host.Controls.Add(grid);
+        host.Controls.Add(new Label
+        {
+            Text = title, Dock = DockStyle.Top, Height = 36, Padding = new Padding(8, 8, 8, 0),
+            Font = Subhead, ForeColor = Ink, BackColor = Color.Transparent
+        });
+        panel.Controls.Add(host);
     }
 
-    private static void ClearHost(Control parent)
+    public override void OnShown()
     {
-        foreach (Control child in parent.Controls.Cast<Control>().ToList())
+        var s = Repository.GetStatistics();
+
+        foreach (var card in _cards.Values) card.RefreshFonts();
+
+        SetCard("Residents",         s.TotalResidents.ToString());
+        SetCard("Requests",          s.TotalRequests.ToString());
+        SetCard("Pending",           s.Pending.ToString());
+        SetCard("Ready for release", s.ReadyForRelease.ToString());
+        SetCard("Issued free",       s.IssuedFreeOfCharge.ToString());
+        SetCard("Collected",         DisplayFormat.Peso(s.TotalCollected));
+
+        _statuses.DataSource = new[]
         {
-            parent.Controls.Remove(child);
-            child.Dispose();
-        }
+            new { Status = nameof(RequestStatus.Pending),         Count = s.Pending },
+            new { Status = nameof(RequestStatus.Processing),      Count = s.Processing },
+            new { Status = nameof(RequestStatus.ReadyForRelease), Count = s.ReadyForRelease },
+            new { Status = nameof(RequestStatus.Released),        Count = s.Released },
+            new { Status = nameof(RequestStatus.Rejected),
+                  Count = s.TotalRequests - s.Pending - s.Processing - s.ReadyForRelease - s.Released }
+        };
+        _types.DataSource  = s.RequestsByDocumentType.Select(x => new { Document = x.Key, Count = x.Value }).ToList();
+        _puroks.DataSource = s.ResidentsByPurok.Select(x => new { Purok = x.Key, Count = x.Value }).ToList();
+
+        NarrowCountColumn(_statuses);
+        NarrowCountColumn(_types);
+        NarrowCountColumn(_puroks);
     }
 
-    private sealed class MetricCardControl : Control
+    private void SetCard(string heading, string value) => _cards[heading].Value = value;
+
+    /// <summary>The count is one or two digits; the name deserves the room.</summary>
+    private static void NarrowCountColumn(DataGridView grid)
     {
-        public string Caption { get; set; } = "";
-        public string Value { get; set; } = "";
-        public string Note { get; set; } = "";
-        public Color Tint { get; set; } = AppTheme.Surface;
-        public Color Ink { get; set; } = AppTheme.TextPrimary;
-        public Color Deep { get; set; } = AppTheme.Primary;
-
-        private bool _hover;
-
-        public MetricCardControl()
-        {
-            SetStyle(
-                ControlStyles.AllPaintingInWmPaint |
-                ControlStyles.UserPaint |
-                ControlStyles.OptimizedDoubleBuffer |
-                ControlStyles.ResizeRedraw, true);
-            Cursor = Cursors.Hand;
-        }
-
-        protected override void OnMouseEnter(EventArgs e)
-        {
-            _hover = true;
-            Invalidate();
-            base.OnMouseEnter(e);
-        }
-
-        protected override void OnMouseLeave(EventArgs e)
-        {
-            _hover = false;
-            Invalidate();
-            base.OnMouseLeave(e);
-        }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            var g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
-
-            var rect = new Rectangle(0, 0, Width - 1, Height - 1);
-
-            using (var path = UiFactory.RoundedPath(rect, 12))
-            using (var brush = new SolidBrush(Tint))
-                g.FillPath(brush, path);
-
-            if (_hover)
-            {
-                using var path = UiFactory.RoundedPath(rect, 12);
-                using var pen = new Pen(Color.FromArgb(90, Deep), 1.5f);
-                g.DrawPath(pen, path);
-            }
-
-            using (var capBrush = new SolidBrush(Ink))
-                g.DrawString(Caption.ToUpperInvariant(), AppTheme.SmallBoldFont, capBrush,
-                    new PointF(20, 20));
-
-            using (var valBrush = new SolidBrush(Deep))
-                g.DrawString(Value, AppTheme.MetricFont, valBrush, new PointF(16, 42));
-
-            using (var noteBrush = new SolidBrush(Color.FromArgb(150, Ink)))
-                g.DrawString(Note, AppTheme.BodyFont, noteBrush, new PointF(20, Height - 36));
-        }
-    }
-
-    private sealed class BorderedPanel : Panel
-    {
-        public Color BorderColor { get; set; } = AppTheme.Border;
-
-        public BorderedPanel()
-        {
-            SetStyle(
-                ControlStyles.AllPaintingInWmPaint |
-                ControlStyles.UserPaint |
-                ControlStyles.OptimizedDoubleBuffer |
-                ControlStyles.ResizeRedraw, true);
-        }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            var g = e.Graphics;
-            using (var bg = new SolidBrush(BackColor))
-                g.FillRectangle(bg, ClientRectangle);
-            using var pen = new Pen(BorderColor);
-            g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
-        }
+        if (grid.Columns.Contains("Count")) grid.Columns["Count"]!.FillWeight = 35;
     }
 }

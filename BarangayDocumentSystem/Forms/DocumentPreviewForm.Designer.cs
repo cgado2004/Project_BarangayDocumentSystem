@@ -1,111 +1,64 @@
-using System.Windows.Forms;
-using System.Drawing;
+// =====================================================================
+//  PART:    Forms - print preview layout
+//  ORIGIN:  the group's shared design - first modelled in Draft - Jonathan F. Del Rosario,
+//           given this place in the tree by Fdraft - Frent Dhieniel Raborar;
+//           the code and comments in this file are my v3.1 rewrite (leader_draft - Clint Wood Gado)
+//  EDITS:   Clint Wood Gado - v3.1 layout, header
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.IO;
+using System.Drawing;
+using System.Windows.Forms;
+using BarangayDocumentSystem.Forms;
+using BarangayDocumentSystem.Views;
+using BarangayDocumentSystem.CustomControls;
 namespace BarangayDocumentSystem.Forms;
 
+/// <summary>
+/// The designer half of the print preview. The chrome lives here; the
+/// preview control and the zoom bar are built in BuildUi() in the other
+/// half.
+/// </summary>
 partial class DocumentPreviewForm
 {
     private System.ComponentModel.IContainer components = null;
 
+    private BarangayDocumentSystem.UIHelpers.SmoothPanel previewHost;
+
     protected override void Dispose(bool disposing)
     {
         if (disposing && (components != null))
+        {
             components.Dispose();
+        }
         base.Dispose(disposing);
     }
 
-    #region Windows Form Designer generated code
-
     private void InitializeComponent()
     {
-        this.txtDocument = new System.Windows.Forms.TextBox();
-        this.pnlButtons = new System.Windows.Forms.Panel();
-        this.btnCopy = new System.Windows.Forms.Button();
-        this.btnSave = new System.Windows.Forms.Button();
-        this.btnPrint = new System.Windows.Forms.Button();
-        this.btnClose = new System.Windows.Forms.Button();
-        this.pnlButtons.SuspendLayout();
+        this.components = new System.ComponentModel.Container();
+        this.previewHost = new BarangayDocumentSystem.UIHelpers.SmoothPanel();
+
+        //
+        // previewHost - fills the form above the zoom bar
+        //
+        this.previewHost.Name = "previewHost";
+        this.previewHost.Dock = System.Windows.Forms.DockStyle.Fill;
+        this.previewHost.BackColor = System.Drawing.Color.Transparent;
+
+        //
+        // DocumentPreviewForm
+        //
+        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+        this.Text = "Preview";
+        this.ClientSize = new System.Drawing.Size(760, 720);
+        this.MinimumSize = new System.Drawing.Size(560, 480);
+
         this.SuspendLayout();
-
-        // Consolas is monospaced so the certificate layout holds together.
-        this.txtDocument.BackColor = System.Drawing.Color.White;
-        this.txtDocument.Dock = System.Windows.Forms.DockStyle.Fill;
-        this.txtDocument.Font = new System.Drawing.Font("Consolas", 10F);
-        this.txtDocument.Location = new System.Drawing.Point(0, 0);
-        this.txtDocument.Multiline = true;
-        this.txtDocument.Name = "txtDocument";
-        this.txtDocument.ReadOnly = true;
-        this.txtDocument.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-        this.txtDocument.Size = new System.Drawing.Size(700, 560);
-        this.txtDocument.TabIndex = 0;
-
-        this.pnlButtons.Controls.Add(this.btnClose);
-        this.pnlButtons.Controls.Add(this.btnPrint);
-        this.pnlButtons.Controls.Add(this.btnSave);
-        this.pnlButtons.Controls.Add(this.btnCopy);
-        this.pnlButtons.Dock = System.Windows.Forms.DockStyle.Bottom;
-        this.pnlButtons.Location = new System.Drawing.Point(0, 560);
-        this.pnlButtons.Name = "pnlButtons";
-        this.pnlButtons.Padding = new System.Windows.Forms.Padding(10);
-        this.pnlButtons.Size = new System.Drawing.Size(700, 60);
-        this.pnlButtons.TabIndex = 1;
-
-        this.btnCopy.Location = new System.Drawing.Point(13, 12);
-        this.btnCopy.Name = "btnCopy";
-        this.btnCopy.Size = new System.Drawing.Size(120, 36);
-        this.btnCopy.TabIndex = 0;
-        this.btnCopy.Text = "Copy";
-        this.btnCopy.UseVisualStyleBackColor = true;
-        this.btnCopy.Click += new System.EventHandler(this.btnCopy_Click);
-
-        this.btnSave.Location = new System.Drawing.Point(139, 12);
-        this.btnSave.Name = "btnSave";
-        this.btnSave.Size = new System.Drawing.Size(120, 36);
-        this.btnSave.TabIndex = 1;
-        this.btnSave.Text = "Save as .txt";
-        this.btnSave.UseVisualStyleBackColor = true;
-        this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
-
-        this.btnPrint.Location = new System.Drawing.Point(265, 12);
-        this.btnPrint.Name = "btnPrint";
-        this.btnPrint.Size = new System.Drawing.Size(120, 36);
-        this.btnPrint.TabIndex = 2;
-        this.btnPrint.Text = "Print Preview";
-        this.btnPrint.UseVisualStyleBackColor = true;
-        this.btnPrint.Click += new System.EventHandler(this.btnPrint_Click);
-
-        this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-        this.btnClose.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-        this.btnClose.Location = new System.Drawing.Point(567, 12);
-        this.btnClose.Name = "btnClose";
-        this.btnClose.Size = new System.Drawing.Size(120, 36);
-        this.btnClose.TabIndex = 3;
-        this.btnClose.Text = "Close";
-        this.btnClose.UseVisualStyleBackColor = true;
-        this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
-
-        this.CancelButton = this.btnClose;
-        this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-        this.ClientSize = new System.Drawing.Size(700, 620);
-        this.Controls.Add(this.txtDocument);
-        this.Controls.Add(this.pnlButtons);
-        this.MinimumSize = new System.Drawing.Size(600, 500);
-        this.Name = "DocumentPreviewForm";
-        this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-        this.Text = "Document Preview";
-        this.Load += new System.EventHandler(this.DocumentPreviewForm_Load);
-        this.pnlButtons.ResumeLayout(false);
         this.ResumeLayout(false);
         this.PerformLayout();
     }
-
-    #endregion
-
-    private System.Windows.Forms.TextBox txtDocument;
-    private System.Windows.Forms.Panel pnlButtons;
-    private System.Windows.Forms.Button btnCopy;
-    private System.Windows.Forms.Button btnSave;
-    private System.Windows.Forms.Button btnPrint;
-    private System.Windows.Forms.Button btnClose;
 }

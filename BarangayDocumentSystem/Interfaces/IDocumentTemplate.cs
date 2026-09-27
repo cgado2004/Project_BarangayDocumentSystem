@@ -1,74 +1,58 @@
+// =====================================================================
+//  PART:    Interfaces - one document type knows how to render itself
+//  ORIGIN:  the group's shared design - first modelled in Draft - Jonathan F. Del Rosario,
+//           given this place in the tree by Fdraft - Frent Dhieniel Raborar;
+//           the code and comments in this file are my v3.1 rewrite (leader_draft - Clint Wood Gado)
+//  EDITS:   Clint Wood Gado - header only
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.IO;
 using BarangayDocumentSystem.Models;
 
 namespace BarangayDocumentSystem.Interfaces;
 
 /// <summary>
-/// Produces the body text of one kind of barangay document.
+/// The layout contract for one kind of barangay document.
 ///
-/// ── OPEN/CLOSED PRINCIPLE ───────────────────────────────────────────────
-/// Before: DocumentPrinter was a 310-line class with a switch over every
-/// DocumentType and one private Append* method per document. Adding a new
-/// certificate meant EDITING that class — reopening working, tested code and
-/// risking the seven documents that already worked.
+/// v3.1 splits the document text from the engine that draws it. A template
+/// knows WHAT a Certificate of Indigency says; the DocumentRenderer knows
+/// HOW a page is laid out - letterhead, margins, wrapping, the signature
+/// block, the print job. That way a new document type is one small class,
+/// and a change to the barangay letterhead is one edit for every document
+/// at once.
 ///
-/// Now each document is its own small class implementing this interface, and
-/// the printer discovers them from a registry. Adding a certificate means
-/// ADDING a file and one registration line. The printer itself never changes.
-///
-/// Open for extension, closed for modification.
-///
-/// ── SINGLE RESPONSIBILITY ───────────────────────────────────────────────
-/// Each template knows the wording of exactly one document. When the Punong
-/// Barangay wants the indigency wording changed, there is precisely one file
-/// to open, and nothing else can break.
+/// The contract is deliberately text-shaped: templates return logical
+/// lines (an empty string is a paragraph break) and stay free of any
+/// GDI+ dependency. The renderer measures and wraps them, on paper and in
+/// the plain-text rendering used by the rule checks.
 /// </summary>
 public interface IDocumentTemplate
 {
-    /// <summary>Which document this template renders.</summary>
-    DocumentType DocumentType { get; }
+    /// <summary>The document this template is for. One template instance per
+    /// value; the registry in DocumentRenderer maps them.</summary>
+    DocumentType Type { get; }
 
-    /// <summary>Heading printed under the letterhead, e.g. "BARANGAY CLEARANCE".</summary>
+    /// <summary>The title printed under the letterhead, for example
+    /// "CERTIFICATE OF INDIGENCY".</summary>
     string Title { get; }
 
-    /// <summary>
-    /// Optional second heading line, e.g. "(First Time Jobseeker)".
-    ///
-    /// Not a default-implemented property: .NET Framework's CLR (unlike
-    /// .NET Core 3.0+) cannot execute default interface members, so every
-    /// template must implement this itself. Five of the seven just return
-    /// null — see any of them for the one-line pattern.
-    /// </summary>
-    string? Subtitle { get; }
+    /// <summary>An optional line under the title, for example "For Local
+    /// Employment" on a clearance. It is per-request because two requests
+    /// for the same document type can differ in what the paper must say.
+    /// Null when there is none.</summary>
+    string? SubtitleFor(DocumentRequest request);
 
-    /// <summary>
-    /// The body paragraphs. Returned as separate strings so the renderer owns
-    /// wrapping and centring — the template only decides WHAT is said, never
-    /// HOW it is laid out. That separation is why changing the page width does
-    /// not touch any template.
-    /// </summary>
-    IEnumerable<string> BuildBody(DocumentRequest request, BarangayProfile profile);
-}
+    /// <summary>The body of the document as logical lines. An empty string
+    /// marks a paragraph break; the renderer does the wrapping.</summary>
+    IEnumerable<string> BodyLines(DocumentRequest request, BarangayProfile barangay);
 
-/// <summary>
-/// Identity of the issuing barangay.
-///
-/// ── DRY ─────────────────────────────────────────────────────────────────
-/// Before, "BARANGAY MAGUGPO POBLACION" and "CITY OF TAGUM" were repeated as
-/// literals across seven Append* methods. Changing the Punong Barangay's name
-/// meant hunting through 310 lines. One object now, injected once.
-/// </summary>
-public record BarangayProfile(
-    string BarangayName,
-    string CityName,
-    string ProvinceName,
-    string PunongBarangay)
-{
-    /// <summary>Defaults for this deployment.</summary>
-    public static BarangayProfile MagugpoPoblacion => new(
-        "BARANGAY MAGUGPO POBLACION",
-        "CITY OF TAGUM",
-        "PROVINCE OF DAVAO DEL NORTE",
-        "HON. [PUNONG BARANGAY NAME]");
+    /// <summary>True when the document carries an oath the requester must
+    /// sign, as RA 11261 requires of the first-time jobseeker.</summary>
+    bool RequiresOath { get; }
+
+    /// <summary>The lines of that oath, when RequiresOath is true.</summary>
+    IEnumerable<string> OathLines(DocumentRequest request);
 }

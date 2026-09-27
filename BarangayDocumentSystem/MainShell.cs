@@ -1,213 +1,305 @@
-#nullable enable
+// =====================================================================
+//  PART:    Shell - navigation, theming, sizing and the status bar
+//  ORIGIN:  Draft - Jonathan F. Del Rosario (the shell design: one window, sidebar navigation,
+//           long-lived views swapped into a content panel, status strip)
+//           Fdraft - Frent Dhieniel Raborar (this file's place in the tree)
+//  EDITS:   Clint Wood Gado - v3.1: theme from AppTheme, logo, per-monitor DPI handling;
+//           v3.2: the status bar reads the repository's StorageDescription
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Windows.Forms;
-using BarangayDocumentSystem.CustomControls;
-using BarangayDocumentSystem.UIHelpers;
+using System.Linq;
+using System.IO;
+using BarangayDocumentSystem.Forms;
 using BarangayDocumentSystem.Views;
+using BarangayDocumentSystem.CustomControls;
+using System.Drawing;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
+using BarangayDocumentSystem.UIHelpers;
+using BarangayDocumentSystem.Interfaces;
+using BarangayDocumentSystem.Models;
+using BarangayDocumentSystem.BusinessRules;
+using static BarangayDocumentSystem.UIHelpers.AppTheme;
 
 namespace BarangayDocumentSystem;
 
-public class MainShell : Form
+/// <summary>
+/// My main window - the shell the whole application lives in.
+///
+/// v3.1 thins it right down: the navigation rail is the NavigationSidebar
+/// control, the dashboard is a view like the other two, and the shell keeps
+/// only navigation, theming, sizing and the status bar. SwapContent never
+/// disposes a view, because the views are long-lived and get reused every
+/// time you navigate back.
+///
+/// It also owns the first half of the multi-monitor DPI fix (core fix 6):
+/// the WM_DPICHANGED handler below applies the window rectangle Windows
+/// suggests when the form crosses onto a monitor with a different DPI,
+/// restyles the shell's own fonts, and tells the open view to refresh -
+/// while WinForms' PerMonitorV2 support rescales the child controls.
+/// </summary>
+public partial class MainShell : Form
 {
-    private readonly Dictionary<string, ViewBase> _views = new();
-    private readonly NavigationSidebar _sidebar = new();
-    private readonly Panel _content = new();
-    private readonly Label _contentTitle = new();
-    private readonly Label _contentSubtitle = new();
-    private readonly Label _statusLabel = new();
+    private const int WM_DPICHANGED = 0x02E0;
 
-    private ViewBase? _current;
-
-    public MainShell()
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
     {
-        Text = "Barangay Resident & Document Management";
-        StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(1366, 768);
-        MinimumSize = new Size(1180, 720);
-        BackColor = AppTheme.Background;
-        Font = AppTheme.BodyFont;
-        DoubleBuffered = true;
-
-        BuildChrome();
+        public int Left, Top, Right, Bottom;
     }
 
-    private void BuildChrome()
+    private readonly IBarangayRepository _repository;
+    private readonly FeeSchedule _fees;
+
+    private DashboardView? _dashboardView;
+    private ResidentsView? _residentsView;
+    private RequestsView? _requestsView;
+
+    /// <summary>
+    /// I take the repository and the fee rules from outside rather than
+    /// creating them here. That is what lets me swap the in-memory store for
+    /// MySQL without touching this form, and it is why Program.cs is the only
+    /// file that names a concrete store.
+    /// </summary>
+    public MainShell(IBarangayRepository repository, FeeSchedule fees)
     {
-        var root = new TableLayoutPanel
+        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _fees = fees ?? throw new ArgumentNullException(nameof(fees));
+
+        InitializeComponent();
+        ApplyTheme();
+        SizeToScreen();
+        LoadLogo();
+        UpdateDpiReadout();
+
+        ShowDashboard();
+    }
+
+    /// <summary>
+    /// I apply colours and fonts in code rather than hard-coding them into the
+    /// designer file.
+    ///
+    /// My reason: the designer stores a literal colour on every control, so
+    /// changing the palette would mean editing dozens of lines. Reading them
+    /// from AppTheme means one edit changes the whole window, and it is what
+    /// let me swap the typography to the Inter stack in a single place.
+    /// </summary>
+    private void ApplyTheme()
+    {
+        BackColor = Canvas;
+
+        sidebar.ApplyTheme();
+
+        pnlStatus.BackColor = Surface;
+
+        lblPageTitle.Font = Display;
+        lblPageTitle.ForeColor = Ink;
+        lblPageSubtitle.Font = Body;
+        lblPageSubtitle.ForeColor = Muted;
+
+        lblStatus.Font = Small;
+        lblStatus.ForeColor = Muted;
+        lblStatusRight.Font = Small;
+        lblStatusRight.ForeColor = MutedSoft;
+    }
+
+    /// <summary>
+    /// I load the barangay seal from the Assets folder.
+    ///
+    /// I wrap it in a try/catch because a missing image file must never stop
+    /// the program opening. If the seal is not there the app still runs, just
+    /// without the picture - which is far better than a crash on startup in
+    /// front of a panel.
+    ///
+    /// The sidebar owns a detached bitmap, so the source file is not locked.
+    /// </summary>
+    private void LoadLogo()
+    {
+        try
         {
-            Dock = DockStyle.Fill,
-            ColumnCount = 2,
-            RowCount = 1,
-            BackColor = AppTheme.Background,
-            Margin = new Padding(0),
-            Padding = new Padding(0)
-        };
-        root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, AppTheme.SidebarWidth));
-        root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            string path = Path.Combine(AppContext.BaseDirectory, "Assets", "barangay-logo.png");
+            if (!File.Exists(path)) return;
 
-        _sidebar.Dock = DockStyle.Fill;
-        root.Controls.Add(_sidebar, 0, 0);
-
-        var right = new TableLayoutPanel
+            using (var source = Image.FromFile(path))
+                sidebar.Logo = new Bitmap(source);
+        }
+        catch (Exception)
         {
-            Dock = DockStyle.Fill,
-            ColumnCount = 1,
-            RowCount = 3,
-            BackColor = AppTheme.Background,
-            Margin = new Padding(0),
-            Padding = new Padding(0)
-        };
-        right.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        right.RowStyles.Add(new RowStyle(SizeType.Absolute, 96F));
-        right.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        right.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
-
-        right.Controls.Add(BuildHeader(), 0, 0);
-        right.Controls.Add(BuildContentArea(), 0, 1);
-        right.Controls.Add(BuildStatusBar(), 0, 2);
-
-        root.Controls.Add(right, 1, 0);
-        Controls.Add(root);
-
-        _sidebar.NavigationChanged += (_, key) => ShowView(key);
+            // No seal on screen, but the app still works.
+        }
     }
 
-    private Control BuildHeader()
+    /// <summary>
+    /// I size the window against the screen it is actually opening on.
+    ///
+    /// On a small laptop it fills most of the screen; on a large monitor it
+    /// stops at a sensible width instead of stretching to something unusable.
+    /// This is the difference between the app working on my machine and
+    /// working on everyone's.
+    /// </summary>
+    private void SizeToScreen()
     {
-        var header = new Panel
+        var area = Screen.PrimaryScreen?.WorkingArea ?? new System.Drawing.Rectangle(0, 0, 1280, 800);
+
+        ClientSize = new System.Drawing.Size(
+            Math.Min(1360, (int)(area.Width * 0.92)),
+            Math.Min(860, (int)(area.Height * 0.92)));
+
+        MinimumSize = new System.Drawing.Size(
+            Math.Min(1020, area.Width),
+            Math.Min(660, area.Height));
+    }
+
+    // =================================================================
+    //  Navigation
+    // =================================================================
+
+    private void OnSidebarNavigate(object? sender, string key)
+    {
+        switch (key)
         {
-            Dock = DockStyle.Fill,
-            BackColor = AppTheme.Surface,
-            Padding = new Padding(0),
-            Margin = new Padding(0)
-        };
+            case "residents": ShowResidents(null); break;
+            case "requests":  ShowRequests(null);  break;
+            default:          ShowDashboard();     break;
+        }
+    }
 
-        header.Paint += (s, e) =>
+    /// <summary>
+    /// I swap whichever view is in the content panel.
+    ///
+    /// I remove the old control rather than disposing it, because my views are
+    /// long-lived and get reused every time you navigate back. Disposing one
+    /// would destroy its controls and leave a blank screen on the second visit.
+    /// </summary>
+    private void SwapContent(Control view)
+    {
+        pnlContent.SuspendLayout();
+        pnlContent.Controls.Clear();
+        view.Dock = DockStyle.Fill;
+        pnlContent.Controls.Add(view);
+        pnlContent.ResumeLayout();
+    }
+
+    private void SetHeader(string title, string subtitle)
+    {
+        lblPageTitle.Text = title;
+        lblPageSubtitle.Text = subtitle;
+    }
+
+    public void ShowDashboard()
+    {
+        if (_dashboardView is null)
         {
-            using var pen = new Pen(AppTheme.Border);
-            e.Graphics.DrawLine(pen, 0, header.Height - 1, header.Width, header.Height - 1);
-        };
+            _dashboardView = new DashboardView(_repository);
+            _dashboardView.RequestNavigate += (_, e) =>
+            {
+                if (e.View == "residents") ShowResidents(e.Filter);
+                else ShowRequests(e.Filter);
+            };
+        }
 
-        var stack = new TableLayoutPanel
+        sidebar.SetActive("dashboard");
+        SetHeader("Dashboard", "Live figures for the barangay office");
+        SwapContent(_dashboardView);
+        _dashboardView.OnShown();
+        UpdateStatus();
+    }
+
+    public void ShowResidents(string? filter)
+    {
+        _residentsView ??= BuildResidentsView();
+
+        sidebar.SetActive("residents");
+        SetHeader("Residents", "The barangay registry");
+        SwapContent(_residentsView);
+
+        if (filter is not null) _residentsView.ApplyFilter(filter);
+        _residentsView.OnShown();
+        UpdateStatus();
+    }
+
+    public void ShowRequests(string? filter)
+    {
+        _requestsView ??= new RequestsView(_repository, _fees);
+
+        sidebar.SetActive("requests");
+        SetHeader("Document requests", "Track each request from filing to release");
+        SwapContent(_requestsView);
+
+        if (filter is not null) _requestsView.ApplyFilter(filter);
+        _requestsView.OnShown();
+        UpdateStatus();
+    }
+
+    private ResidentsView BuildResidentsView()
+    {
+        var view = new ResidentsView(_repository, _fees);
+        view.RequestNavigate += (_, e) => ShowRequests(e.Filter);
+        return view;
+    }
+
+    private void UpdateStatus()
+    {
+        var s = _repository.GetStatistics();
+        lblStatus.Text =
+            $"{s.TotalResidents} residents   ·   {s.TotalRequests} requests   ·   " +
+            $"{DisplayFormat.Peso(s.TotalCollected)} collected   ·   " +
+            $"{BarangayProfile.Current.PunongBarangay}";
+    }
+
+    /// <summary>
+    /// The right-hand status: where the data is, and the DPI.
+    ///
+    /// The storage description comes from the repository itself, so this
+    /// reads "MySQL - localhost/barangay_db" on a real install and
+    /// "In-memory demo - nothing is saved" in demo mode. Nobody should have
+    /// to guess which one they are typing into.
+    /// </summary>
+    private void UpdateDpiReadout()
+    {
+        try
         {
-            Dock = DockStyle.Fill,
-            ColumnCount = 1,
-            RowCount = 2,
-            BackColor = AppTheme.Surface,
-            Margin = new Padding(0),
-            Padding = new Padding(32, 22, 32, 14)
-        };
-        stack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
-        stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 22F));
-
-        _contentTitle.Dock = DockStyle.Fill;
-        _contentTitle.Font = AppTheme.PageTitleFont;
-        _contentTitle.ForeColor = AppTheme.TextPrimary;
-        _contentTitle.TextAlign = ContentAlignment.MiddleLeft;
-        _contentTitle.Margin = new Padding(0);
-        _contentTitle.Text = "Dashboard";
-
-        _contentSubtitle.Dock = DockStyle.Fill;
-        _contentSubtitle.Font = AppTheme.SmallFont;
-        _contentSubtitle.ForeColor = AppTheme.TextSecondary;
-        _contentSubtitle.TextAlign = ContentAlignment.MiddleLeft;
-        _contentSubtitle.Margin = new Padding(0);
-
-        stack.Controls.Add(_contentTitle, 0, 0);
-        stack.Controls.Add(_contentSubtitle, 0, 1);
-
-        header.Controls.Add(stack);
-        return header;
-    }
-
-    private Control BuildContentArea()
-    {
-        _content.Dock = DockStyle.Fill;
-        _content.BackColor = AppTheme.Background;
-        _content.Padding = new Padding(28, 20, 28, 20);
-        _content.Margin = new Padding(0);
-        return _content;
-    }
-
-    private Control BuildStatusBar()
-    {
-        var bar = new Panel
+            lblStatusRight.Text = $"{_repository.StorageDescription}  •  {DeviceDpi} DPI";
+        }
+        catch
         {
-            Dock = DockStyle.Fill,
-            BackColor = AppTheme.Surface,
-            Padding = new Padding(28, 0, 28, 0),
-            Margin = new Padding(0)
-        };
+            lblStatusRight.Text = _repository.StorageDescription;
+        }
+    }
 
-        bar.Paint += (s, e) =>
+    // =================================================================
+    //  WM_DPICHANGED - the per-monitor DPI handler, core fix 6
+    // =================================================================
+
+    /// <summary>
+    /// Windows sends WM_DPICHANGED when the window is dragged onto a monitor
+    /// with a different DPI. wParam's low word is the NEW DPI; lParam points
+    /// at the rectangle Windows suggests for the window at that DPI.
+    ///
+    /// WinForms' PerMonitorV2 support rescales the child controls for me;
+    /// what it cannot know is my shell-owned theming and my custom-painted
+    /// views, so I do three things here: take the suggested rectangle, apply
+    /// the theme again so the shell's own fonts pick up the new scale, and
+    /// refresh whichever view is open so its custom-drawn cards repaint at
+    /// the new size.
+    /// </summary>
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == WM_DPICHANGED)
         {
-            using var pen = new Pen(AppTheme.Border);
-            e.Graphics.DrawLine(pen, 0, 0, bar.Width, 0);
-        };
+            var rect = Marshal.PtrToStructure<RECT>(m.LParam);
+            Bounds = System.Drawing.Rectangle.FromLTRB(rect.Left, rect.Top, rect.Right, rect.Bottom);
 
-        _statusLabel.Dock = DockStyle.Fill;
-        _statusLabel.TextAlign = ContentAlignment.MiddleLeft;
-        _statusLabel.Font = AppTheme.SmallFont;
-        _statusLabel.ForeColor = AppTheme.TextSecondary;
-        _statusLabel.Text = "Ready";
-        _statusLabel.Margin = new Padding(0);
-        bar.Controls.Add(_statusLabel);
-        return bar;
-    }
+            ApplyTheme();
+            UpdateDpiReadout();
 
-    public void AddView(string key, string label, string glyph, ViewBase view)
-    {
-        view.StatusChanged += (_, message) => SetStatus(message);
-        view.NavigateRequested += (_, req) => NavigateTo(req.Key, req.Argument);
-        _views[key] = view;
-        _sidebar.AddItem(key, label, glyph);
-    }
+            _dashboardView?.OnShown();
+            _residentsView?.OnShown();
+            _requestsView?.OnShown();
+        }
 
-    public void NavigateTo(string key, string? argument = null)
-    {
-        _sidebar.Navigate(key);
-
-        if (!_views.TryGetValue(key, out var view)) return;
-        if (!ReferenceEquals(_current, view)) ShowView(key);
-
-        if (argument is not null && view is RequestsView rv)
-            rv.ApplyNavigationArgument(argument);
-    }
-
-    private void ShowView(string key)
-    {
-        if (!_views.TryGetValue(key, out var view)) return;
-
-        _content.SuspendLayout();
-        _content.Controls.Clear();
-        _content.Controls.Add(view);
-        _content.ResumeLayout();
-
-        _contentTitle.Text = view.Title;
-        _contentSubtitle.Text = view.Subtitle;
-
-        view.RefreshData();
-        _current = view;
-    }
-
-    public void RefreshAll()
-    {
-        foreach (var view in _views.Values) view.RefreshData();
-    }
-
-    public ViewBase? Current => _current;
-
-    public void SetStatus(string message) =>
-        _statusLabel.Text = $"{DateTime.Now:HH:mm:ss}   {message}";
-
-    public void Start(string initialKey)
-    {
-        _sidebar.Navigate(initialKey);
-        if (_current is null && _views.ContainsKey(initialKey))
-            ShowView(initialKey);
+        base.WndProc(ref m);
     }
 }

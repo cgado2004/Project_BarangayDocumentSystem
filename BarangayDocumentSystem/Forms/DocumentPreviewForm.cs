@@ -1,124 +1,184 @@
-using System.Windows.Forms;
-using System.Drawing;
+// =====================================================================
+//  PART:    Forms - print preview of a document
+//  ORIGIN:  the group's shared design - first modelled in Draft - Jonathan F. Del Rosario,
+//           given this place in the tree by Fdraft - Frent Dhieniel Raborar;
+//           the code and comments in this file are my v3.1 rewrite (leader_draft - Clint Wood Gado)
+//  EDITS:   Clint Wood Gado - v3.1 content, header
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.IO;
+using System.Drawing;
+using BarangayDocumentSystem.Forms;
+using BarangayDocumentSystem.Views;
+using BarangayDocumentSystem.CustomControls;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
 using BarangayDocumentSystem.UIHelpers;
+using BarangayDocumentSystem.Models;
+using BarangayDocumentSystem.BusinessRules;
+using static BarangayDocumentSystem.UIHelpers.AppTheme;
 
 namespace BarangayDocumentSystem.Forms;
 
 /// <summary>
-/// Shows the rendered document and offers Copy / Save / Print.
+/// The multi-monitor scaled print preview, v3.1 core fix 6.
 ///
-/// Printing uses System.Drawing.Printing.PrintDocument, which is part of the
-/// framework — no third-party package needed.
+/// The preview is a real PrintPreviewControl over the same PrintDocument
+/// the Print button uses, so what you see is exactly what prints. The zoom
+/// starts at 100% and can be stepped, and - the fix - when the form lands
+/// on a monitor with a different DPI, WM_DPICHANGED arrives and I rescale
+/// the zoom by the same ratio, so the page keeps its apparent size on
+/// screen instead of snapping smaller or larger.
 /// </summary>
-public partial class DocumentPreviewForm : Form
+public partial class DocumentPreviewForm : DialogBase
 {
-    private readonly string _documentText;
-    private string[] _linesToPrint = Array.Empty<string>();
-    private int _lineIndex;
+    private const int WM_DPICHANGED = 0x02E0;
 
-    public DocumentPreviewForm(string title, string documentText)
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    private DocumentRequest? _request;
+    private PrintDocument? _document;
+
+    private readonly PrintPreviewControl _preview = new();
+    private readonly PillButton _zoomOut = new() { Text = "–", Width = 44 };
+    private readonly PillButton _zoomIn  = new() { Text = "+", Width = 44 };
+    private readonly Label _zoomLabel = new();
+    private readonly PillButton _print  = new() { Text = "Print", Width = 100 };
+    private readonly PillButton _close  = new() { Text = "Close", Width = 100, Look = PillButton.Style.Outline };
+
+    private double _zoom = 1.0;
+    private int _lastDpi = 96;
+
+    public DocumentPreviewForm()
     {
         InitializeComponent();
-        Text = $"Preview — {title}";
-        _documentText = documentText;
+        BuildUi();
+
+        // The DPI the form opened at. When WM_DPICHANGED arrives I compare
+        // against this, then keep it current.
+        try { _lastDpi = DeviceDpi; } catch { _lastDpi = 96; }
     }
 
-    private void DocumentPreviewForm_Load(object sender, EventArgs e)
+    public DocumentPreviewForm(DocumentRequest request) : this()
     {
-        txtDocument.Text = _documentText;
-        txtDocument.SelectionStart = 0;
+        _request = request;
+
+        Text = $"Preview — {request.GetReferenceNumber()}";
+
+        var renderer = new DocumentRenderer(BarangayProfile.Current);
+        _document = renderer.CreatePrintDocument(request);
+        _preview.Document = _document;
+        ApplyZoom();
     }
 
-    private void btnCopy_Click(object sender, EventArgs e)
+    private void BuildUi()
     {
-        if (string.IsNullOrEmpty(_documentText)) return;
+        _preview.Dock = DockStyle.Fill;
+        _preview.AutoZoom = false;
+        _preview.Zoom = 1.0;
+        _preview.BackColor = System.Drawing.Color.FromArgb(0xE8, 0xEC, 0xF4);
+        _preview.BorderStyle = BorderStyle.None;
+        _preview.StartPage = 0;
 
-        // Requires [STAThread] on Main — the clipboard is a COM API.
-        Clipboard.SetText(_documentText);
-        Dialog.Info("Document copied to the clipboard.", "Copied");
-    }
-
-    private void btnSave_Click(object sender, EventArgs e)
-    {
-        using var dialog = new SaveFileDialog
+        var bar = new System.Windows.Forms.FlowLayoutPanel
         {
-            Filter = "Text file (*.txt)|*.txt|All files (*.*)|*.*",
-            FileName = $"{Text.Replace("Preview — ", "").Replace(' ', '_')}.txt"
+            Dock = DockStyle.Bottom,
+            Height = 60,
+            FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft,
+            BackColor = System.Drawing.Color.Transparent,
+            Padding = new Padding(0, 10, 0, 0),
+            WrapContents = false
         };
 
-        if (dialog.ShowDialog(this) != DialogResult.OK)
-            return;
+        _close.Width = 100;
+        _print.Width = 110;
+        _zoomIn.Width = 46;
+        _zoomOut.Width = 46;
+
+        _zoomLabel.Text = "100 %";
+        _zoomLabel.Font = SmallBold;
+        _zoomLabel.ForeColor = Muted;
+        _zoomLabel.AutoSize = true;
+        _zoomLabel.Margin = new Padding(10, 14, 10, 0);
+        _zoomLabel.BackColor = System.Drawing.Color.Transparent;
+
+        bar.Controls.Add(_close);
+        bar.Controls.Add(_print);
+        bar.Controls.Add(_zoomLabel);
+        bar.Controls.Add(_zoomIn);
+        bar.Controls.Add(_zoomOut);
+
+        _zoomIn.Click  += (_, _) => { _zoom = Math.Min(4.0, _zoom * 1.25); ApplyZoom(); };
+        _zoomOut.Click += (_, _) => { _zoom = Math.Max(0.20, _zoom / 1.25); ApplyZoom(); };
+        _print.Click   += (_, _) => PrintDocument();
+        _close.Click   += (_, _) => Close();
+        CancelButton = _close;
+
+        previewHost.Controls.Add(_preview);
+        Controls.Add(bar);
+        Controls.Add(previewHost);
+    }
+
+    private void ApplyZoom()
+    {
+        _preview.Zoom = _zoom;
+        _zoomLabel.Text = $"{(int)Math.Round(_zoom * 100)} %";
+    }
+
+    private void PrintDocument()
+    {
+        if (_document is null) return;
 
         try
         {
-            File.WriteAllText(dialog.FileName, _documentText);
-            Dialog.Info($"Saved to:\n\n{dialog.FileName}", "Saved");
+            _document.Print();
         }
-        catch (Exception ex)
+        catch (SystemException ex)
         {
-            // File I/O can fail for many reasons (permissions, disk full,
-            // path too long) — report rather than crash.
-            Dialog.Error($"Could not save the file.\n\n{ex.Message}", "Save failed");
-        }
-    }
-
-    private void btnPrint_Click(object sender, EventArgs e)
-    {
-        // .NET Framework has no Split(string) overload -- only Split(string[], ...).
-        _linesToPrint = _documentText.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-        _lineIndex = 0;
-
-        using var printDoc = new System.Drawing.Printing.PrintDocument();
-        printDoc.PrintPage += PrintDoc_PrintPage;
-
-        using var preview = new PrintPreviewDialog
-        {
-            Document = printDoc,
-            Width = 900,
-            Height = 700,
-            StartPosition = FormStartPosition.CenterParent
-        };
-
-        try
-        {
-            preview.ShowDialog(this);
-        }
-        catch (Exception ex)
-        {
-            Dialog.Warn($"Could not open the print preview.\n\n{ex.Message}\n\n"
-                      + "This usually means no printer is installed on this machine.",
-                        "Print failed");
+            // No printer, spooler stopped, whatever it is - the preview must
+            // survive it and say what happened.
+            Dialog.Error(this,
+                $"The document could not be printed on this machine.\n\n{ex.Message}",
+                "Print");
         }
     }
+
+    // =================================================================
+    //  WM_DPICHANGED - the multi-monitor handler, core fix 6
+    // =================================================================
 
     /// <summary>
-    /// Draws one page. PrintPage fires repeatedly while HasMorePages is true,
-    /// so we track our position in the line array between calls.
+    /// Windows sends WM_DPICHANGED when the form crosses onto a monitor with
+    /// a different DPI. lParam carries the rectangle Windows suggests for
+    /// the window at the new DPI, and wParam's low word is the new DPI. I
+    /// apply the suggested rectangle and scale the preview zoom by the same
+    /// ratio, so the paper holds its on-screen size instead of jumping.
     /// </summary>
-    private void PrintDoc_PrintPage(object sender, System.Drawing.Printing.PrintPageEventArgs e)
+    protected override void WndProc(ref Message m)
     {
-        if (e.Graphics is null) return;
-
-        using var font = new Font("Consolas", 10);
-        float lineHeight = font.GetHeight(e.Graphics);
-        float y = e.MarginBounds.Top;
-        int linesPerPage = (int)(e.MarginBounds.Height / lineHeight);
-        int printed = 0;
-
-        while (printed < linesPerPage && _lineIndex < _linesToPrint.Length)
+        if (m.Msg == WM_DPICHANGED)
         {
-            e.Graphics.DrawString(_linesToPrint[_lineIndex], font, Brushes.Black,
-                                  e.MarginBounds.Left, y);
-            y += lineHeight;
-            _lineIndex++;
-            printed++;
+            int newDpi = m.WParam.ToInt32() & 0xFFFF;
+
+            if (newDpi > 0 && _lastDpi > 0 && newDpi != _lastDpi)
+            {
+                double ratio = (double)newDpi / _lastDpi;
+                _zoom = Math.Max(0.20, Math.Min(4.0, _zoom * ratio));
+                _lastDpi = newDpi;
+                ApplyZoom();
+            }
+
+            var rect = Marshal.PtrToStructure<RECT>(m.LParam);
+            Bounds = System.Drawing.Rectangle.FromLTRB(rect.Left, rect.Top, rect.Right, rect.Bottom);
         }
 
-        e.HasMorePages = _lineIndex < _linesToPrint.Length;
-        if (!e.HasMorePages) _lineIndex = 0;   // reset for a second preview
+        base.WndProc(ref m);
     }
-
-    private void btnClose_Click(object sender, EventArgs e) => Close();
 }

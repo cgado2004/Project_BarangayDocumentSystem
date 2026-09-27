@@ -1,303 +1,335 @@
-#nullable enable
+// =====================================================================
+//  PART:    Views - the request queue and the buttons that move a request along
+//  ORIGIN:  Draft - Jonathan F. Del Rosario (the screen: status filters over a grid, actions below)
+//           Fdraft - Frent Dhieniel Raborar (this file's place in the tree)
+//           the code and comments are my v3.1 rewrite (leader_draft - Clint Wood Gado)
+//  EDITS:   Clint Wood Gado - v3.2: writes go through ViewBase.Persist; RecordPayment now
+//           records the payment on the request (the bug PR #3 flagged); UiFactory.StyleGrid
+//  VOICE:   every comment in this file is mine (Clint), in the first person
+// =====================================================================
 using System;
-using System.Drawing;
+using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Forms;
-using BarangayDocumentSystem.BusinessRules;
+using System.IO;
 using BarangayDocumentSystem.Forms;
+using BarangayDocumentSystem.Views;
+using BarangayDocumentSystem.CustomControls;
+using System.Drawing;
+using System.Windows.Forms;
+using BarangayDocumentSystem.UIHelpers;
 using BarangayDocumentSystem.Interfaces;
 using BarangayDocumentSystem.Models;
-using BarangayDocumentSystem.UIHelpers;
+using BarangayDocumentSystem.BusinessRules;
+using static BarangayDocumentSystem.UIHelpers.AppTheme;
 
 namespace BarangayDocumentSystem.Views;
 
-public class RequestsView : ViewBase
+/// <summary>
+/// The request queue, and the buttons that move a request along.
+///
+/// I enable and disable the action buttons based on the status of whichever
+/// row is selected, so the clerk is only ever offered the step that is legally
+/// next.
+///
+/// I want to be clear that the rules still live in DocumentRequest. This
+/// screen only mirrors them so the buttons look right - it does not
+/// re-implement them. If I had copied the rules here they would eventually
+/// disagree with the real ones.
+///
+/// v3.1 adds the RA 11032 aging: the queue counts the working days each open
+/// request has been waiting and flags anything past the three-working-day
+/// standard the Ease of Doing Business Act prescribes for a simple frontline
+/// transaction. A barangay document is one.
+/// </summary>
+public sealed class RequestsView : ViewBase
 {
-    private readonly DocumentRenderer _renderer;
+    private readonly FeeSchedule _fees;
+
     private readonly DataGridView _grid = new();
-    private readonly ComboBox _statusFilter = new();
-    private readonly Label _emptyLabel = new();
+    private readonly FlowLayoutPanel _filters = new();
+    private readonly Label _agingNote = new();
+    private RequestStatus? _filter;
 
-    public override string Title => "Document Requests";
-    public override string Subtitle => "Track requests from filing through release";
+    private readonly PillButton _btnProcess = new() { Text = "Start processing", Look = PillButton.Style.Outline };
+    private readonly PillButton _btnReady   = new() { Text = "Mark ready",       Look = PillButton.Style.Outline };
+    private readonly PillButton _btnPay     = new() { Text = "Record payment" };
+    private readonly PillButton _btnRelease = new() { Text = "Release",          Accent = Success };
+    private readonly PillButton _btnReject  = new() { Text = "Reject",           Look = PillButton.Style.Outline, Accent = Danger };
+    private readonly PillButton _btnPreview = new() { Text = "Preview document", Look = PillButton.Style.Quiet };
 
-    public RequestsView(IBarangayRepository repository, DocumentRenderer renderer)
-        : base(repository)
+    public RequestsView(IBarangayRepository repository, FeeSchedule fees) : base(repository)
     {
-        _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
-        BuildLayout();
-    }
+        _fees = fees ?? throw new ArgumentNullException(nameof(fees));
 
-    private void BuildLayout()
-    {
-        var root = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            ColumnCount = 1,
-            RowCount = 3,
-            BackColor = AppTheme.Background,
-            Margin = new Padding(0),
-            Padding = new Padding(0)
-        };
-        root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 64F));
-        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 56F));
+        var body = new SmoothPanel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
 
-        root.Controls.Add(BuildToolbar(), 0, 0);
-        root.Controls.Add(BuildGrid(), 0, 1);
-        root.Controls.Add(BuildActions(), 0, 2);
-
-        Controls.Add(root);
-    }
-
-    private Control BuildToolbar()
-    {
-        var bar = UiFactory.Toolbar();
-        bar.Margin = new Padding(0, 0, 0, 16);
-
-        var wrap = new Panel
-        {
-            Dock = DockStyle.Left,
-            Width = 260,
-            BackColor = AppTheme.Surface,
-            Padding = new Padding(0, 6, 0, 6)
-        };
-
-        _statusFilter.DropDownStyle = ComboBoxStyle.DropDownList;
-        _statusFilter.Font = AppTheme.BodyFont;
-        _statusFilter.Dock = DockStyle.Fill;
-        _statusFilter.FlatStyle = FlatStyle.Flat;
-        _statusFilter.BackColor = AppTheme.Background;
-        _statusFilter.Items.Add("All statuses");
-        foreach (var name in Enum.GetNames(typeof(RequestStatus)))
-            _statusFilter.Items.Add(name);
-        _statusFilter.SelectedIndex = 0;
-        _statusFilter.SelectedIndexChanged += (_, _) => RefreshData();
-
-        wrap.Controls.Add(_statusFilter);
-
-        var label = new Label
-        {
-            Text = "Show",
-            Dock = DockStyle.Left,
-            Width = 56,
-            TextAlign = ContentAlignment.MiddleLeft,
-            Font = AppTheme.BodyFont,
-            ForeColor = AppTheme.TextSecondary,
-            Padding = new Padding(0, 0, 8, 0)
-        };
-
-        bar.Controls.Add(wrap);
-        bar.Controls.Add(label);
-        return bar;
-    }
-
-    private Control BuildGrid()
-    {
+        var gridCard = new Card { Dock = DockStyle.Fill };
         UiFactory.StyleGrid(_grid);
         _grid.Dock = DockStyle.Fill;
-        _grid.CellFormatting += Grid_CellFormatting;
+        _grid.SelectionChanged += (_, _) => UpdateButtons();
+        _grid.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) PreviewSelected(); };
+        gridCard.Controls.Add(_grid);
 
-        var host = UiFactory.CardHost(_grid);
-        host.Margin = new Padding(0, 0, 0, 16);
-
-        _emptyLabel.Dock = DockStyle.Fill;
-        _emptyLabel.TextAlign = ContentAlignment.MiddleCenter;
-        _emptyLabel.Font = AppTheme.BodyFont;
-        _emptyLabel.ForeColor = AppTheme.TextMuted;
-        _emptyLabel.BackColor = AppTheme.Surface;
-        _emptyLabel.Text = "No requests match this filter";
-        _emptyLabel.Visible = false;
-
-        host.Controls.Add(_emptyLabel);
-        _emptyLabel.BringToFront();
-
-        return host;
-    }
-
-    private Control BuildActions()
-    {
+        // ---- action bar ----
         var actions = new FlowLayoutPanel
         {
-            Dock = DockStyle.Fill,
-            FlowDirection = FlowDirection.LeftToRight,
-            WrapContents = false,
-            BackColor = AppTheme.Background,
-            Margin = new Padding(0),
-            Padding = new Padding(0, 8, 0, 0)
+            Dock = DockStyle.Bottom,
+            Height = 60,
+            BackColor = Color.Transparent,
+            WrapContents = true,          // wrap rather than clip on a narrow window
+            Padding = new Padding(0, 10, 0, 0)
         };
-
-        var transitions = new (string Text, Action<DocumentRequest> Action, string Verb)[]
+        foreach (var b in new[] { _btnProcess, _btnReady, _btnPay, _btnRelease, _btnReject, _btnPreview })
         {
-            ("Start Processing", r => r.StartProcessing(), "moved to processing"),
-            ("Mark Ready", r => r.MarkReadyForRelease(), "marked ready for release"),
-            ("Release", r => r.Release(), "released")
-        };
-
-        foreach (var (text, action, verb) in transitions)
-        {
-            var button = text == "Release"
-                ? UiFactory.PrimaryButton(text, 110)
-                : UiFactory.SecondaryButton(text, 130);
-
-            button.Click += (_, _) => ChangeStatus(action, verb);
-            actions.Controls.Add(button);
+            b.Width = 148;
+            b.Margin = new Padding(0, 0, 8, 8);
+            actions.Controls.Add(b);
         }
 
-        var pay = UiFactory.SecondaryButton("Record Payment", 140);
-        pay.Click += (_, _) => RecordPayment();
+        _btnProcess.Click += (_, _) => Step(r => r.StartProcessing());
+        _btnReady.Click   += (_, _) => Step(r => r.MarkReadyForRelease());
+        _btnRelease.Click += (_, _) => Step(r => r.Release());
+        _btnPay.Click     += (_, _) => RecordPayment();
+        _btnReject.Click  += (_, _) => Reject();
+        _btnPreview.Click += (_, _) => PreviewSelected();
 
-        var print = UiFactory.SecondaryButton("View / Print", 120);
-        print.Click += (_, _) => PrintDocument();
+        // ---- status filter chips ----
+        _filters.Dock = DockStyle.Top;
+        _filters.Height = 44;
+        _filters.WrapContents = false;
+        _filters.BackColor = Color.Transparent;
+        _filters.Padding = new Padding(0, 6, 0, 0);
 
-        var reject = UiFactory.DangerButton("Reject", 90);
-        reject.Click += (_, _) => RejectRequest();
+        _filters.Controls.Add(MakeChip("All", null));
+        foreach (RequestStatus status in ((RequestStatus[])Enum.GetValues(typeof(RequestStatus))))
+            _filters.Controls.Add(MakeChip(status.ToString(), status));
 
-        actions.Controls.Add(pay);
-        actions.Controls.Add(print);
-        actions.Controls.Add(reject);
-        return actions;
+        // ---- the RA 11032 note under the header ----
+        _agingNote.Dock = DockStyle.Top;
+        _agingNote.Height = 30;
+        _agingNote.Font = Small;
+        _agingNote.ForeColor = Muted;
+        _agingNote.BackColor = Color.Transparent;
+        _agingNote.Text =
+            $"  RA 11032 standard: {_fees.RA11032SimpleWorkingDays} working days for a simple transaction. " +
+            "Aged requests are highlighted.";
+
+        body.Controls.Add(gridCard);
+        body.Controls.Add(actions);
+        body.Controls.Add(_filters);
+        body.Controls.Add(_agingNote);
+
+        Controls.Add(body);
     }
 
-    private void Grid_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
+    private Chip MakeChip(string text, RequestStatus? status)
     {
-        if (e.ColumnIndex < 0 || e.ColumnIndex >= _grid.Columns.Count) return;
-        if (_grid.Columns[e.ColumnIndex].Name != "Status") return;
-        if (e.Value is not string status) return;
-
-        e.CellStyle!.ForeColor = AppTheme.StatusColor(status);
-        e.CellStyle.Font = AppTheme.BodyBoldFont;
+        var chip = new Chip
+        {
+            Text = text,
+            Width = 86,
+            Margin = new Padding(0, 0, 8, 6),
+            Accent = Primary
+        };
+        chip.Click += (_, _) =>
+        {
+            _filter = status;
+            foreach (Control c in _filters.Controls)
+                if (c is Chip other) other.Selected = ReferenceEquals(other, chip);
+            LoadGrid();
+        };
+        return chip;
     }
 
-    public override void RefreshData()
+    public override void OnShown()
     {
-        RequestStatus? filter = _statusFilter.SelectedIndex <= 0
-            ? null
-            : (RequestStatus)Enum.Parse(typeof(RequestStatus), _statusFilter.Text);
+        if (_filters.Controls.Count > 0 && _filters.Controls[0] is Chip first)
+        {
+            first.Selected = true;
+            _filter = null;
+        }
+        LoadGrid();
+    }
 
-        _grid.DataSource = Repository.GetRequestsByStatus(filter)
-            .Select(r => new
-            {
-                Reference = r.GetReferenceNumber(),
-                ID = r.RequestId,
-                Resident = r.Resident.GetFullName(),
-                Document = r.GetDocumentName(),
-                Purpose = r.Purpose,
-                Requested = r.DateRequested.ToString("yyyy-MM-dd"),
-                Status = r.Status.ToString(),
-                Fee = r.Fee > 0 ? $"₱{r.Fee:N2}" : "FREE",
-                Paid = r.Fee > 0 ? (r.IsPaid ? "Yes" : "No") : "—"
-            })
+    /// <summary>I apply a status filter that arrived from the dashboard.</summary>
+    public void ApplyFilter(string? filter)
+    {
+        if (string.IsNullOrWhiteSpace(filter))
+        {
+            _filter = null;
+            SelectChip(null);
+        }
+        else if (Enum.TryParse<RequestStatus>(filter, out var status))
+        {
+            _filter = status;
+            SelectChip(status);
+        }
+        LoadGrid();
+    }
+
+    private void SelectChip(RequestStatus? status)
+    {
+        int index = status is null ? 0 : Array.IndexOf(((RequestStatus[])Enum.GetValues(typeof(RequestStatus))), status) + 1;
+        foreach (Control c in _filters.Controls)
+            if (c is Chip chip) chip.Selected = ReferenceEquals(c, _filters.Controls[index]);
+    }
+
+    private void LoadGrid()
+    {
+        var rows = Repository.GetRequestsByStatus(_filter)
+            .OrderByDescending(r => r.DateRequested)
             .ToList();
 
-        if (_grid.Columns["ID"] is { } idColumn)
-            idColumn.Visible = false;
+        _grid.DataSource = rows.Select(r => new
+        {
+            Reference = r.GetReferenceNumber(),
+            Document = FeeSchedule.NameOf(r.DocumentType),
+            Resident = r.Resident.GetSortableName(),
+            Filed = DisplayFormat.GridDate(r.DateRequested),
+            r.Status,
+            Fee = DisplayFormat.PesoOrFree(r.Fee),
+            Paid = r.IsPaid ? "Yes" : (r.Fee == 0 ? "—" : "No"),
+            Queue = DescribeQueue(r)
+        }).ToList();
 
-        _emptyLabel.Visible = _grid.Rows.Count == 0;
+        if (_grid.Columns.Contains("Reference"))
+        {
+            _grid.Columns["Reference"]!.FillWeight = 95;
+            _grid.Columns["Document"]!.FillWeight = 120;
+            _grid.Columns["Resident"]!.FillWeight = 110;
+            _grid.Columns["Filed"]!.FillWeight = 60;
+            _grid.Columns["Queue"]!.FillWeight = 60;
+        }
+
+        HighlightAgedRequests(rows);
+        UpdateButtons();
     }
 
-    public void ApplyNavigationArgument(string argument)
+    /// <summary>
+    /// The queue column: "2 wd" for an open request, "—" once it is out of
+    /// the queue. "wd" reads as working days without needing a wider column.
+    /// </summary>
+    private string DescribeQueue(DocumentRequest r)
     {
-        if (string.IsNullOrEmpty(argument)) return;
-        int idx = _statusFilter.Items.IndexOf(argument);
-        if (idx >= 0) _statusFilter.SelectedIndex = idx;
+        if (r.Status is RequestStatus.Released or RequestStatus.Rejected) return "—";
+        int days = r.WorkingDaysInQueue();
+        return days == 1 ? "1 wd" : $"{days} wd";
+    }
+
+    /// <summary>
+    /// I paint the aged rows. RA 11032 gives a simple frontline transaction
+    /// three working days; anything still open past that is shown in the
+    /// danger colour so it cannot be forgotten, the way a deadline should
+    /// not be forgettable.
+    /// </summary>
+    private void HighlightAgedRequests(List<DocumentRequest> rows)
+    {
+        _grid.ClearSelection();
+        for (int i = 0; i < rows.Count && i < _grid.Rows.Count; i++)
+        {
+            if (!rows[i].IsBeyondRA11032Standard(_fees.RA11032SimpleWorkingDays)) continue;
+
+            _grid.Rows[i].DefaultCellStyle.ForeColor = Danger;
+            _grid.Rows[i].DefaultCellStyle.SelectionForeColor = Danger;
+            _grid.Rows[i].Cells["Queue"].ToolTipText =
+                "Past the RA 11032 standard of " +
+                $"{_fees.RA11032SimpleWorkingDays} working days for a simple transaction.";
+        }
     }
 
     private DocumentRequest? Selected()
     {
-        if (_grid.CurrentRow?.Cells["ID"].Value is not int id) return null;
-        return Repository.Requests.FirstOrDefault(r => r.RequestId == id);
+        if (_grid.CurrentRow is null) return null;
+        var reference = _grid.CurrentRow.Cells["Reference"].Value?.ToString();
+        if (string.IsNullOrEmpty(reference)) return null;
+        return Repository.Requests.FirstOrDefault(r => r.GetReferenceNumber() == reference);
     }
 
-    private void ChangeStatus(Action<DocumentRequest> action, string verb)
+    private void UpdateButtons()
     {
-        var request = Selected();
-        if (request is null) { Dialog.SelectFirst("request"); return; }
+        var r = Selected();
+        bool any = r is not null;
+
+        _btnProcess.Enabled = any && r!.Status == RequestStatus.Pending;
+        _btnReady.Enabled   = any && r!.Status == RequestStatus.Processing;
+        _btnPay.Enabled     = any && r!.Status is RequestStatus.Processing or RequestStatus.ReadyForRelease
+                                   && r!.Fee > 0 && !r!.IsPaid;
+        _btnRelease.Enabled = any && r!.Status == RequestStatus.ReadyForRelease;
+        _btnReject.Enabled  = any && r!.Status != RequestStatus.Released;
+        _btnPreview.Enabled = any;
+    }
+
+    /// <summary>
+    /// The shared wrapper for every change to a request: apply the move,
+    /// then save it.
+    ///
+    /// Two different things can go wrong, and I treat them differently. The
+    /// state machine may throw because the move is illegal - I show the
+    /// reason as a warning, because the reason is exactly what the clerk
+    /// needs to read, and nothing has changed. Or the database may refuse
+    /// the save - Persist shows that and reloads, so the grid goes back to
+    /// what is really stored rather than showing a move that did not stick.
+    /// </summary>
+    private void Step(Action<DocumentRequest> move)
+    {
+        var r = Selected();
+        if (r is null) return;
 
         try
         {
-            action(request);
-            if (!Attempt(() => Repository.SaveRequest(request))) return;
-
-            RefreshData();
-            SetStatus($"{request.GetReferenceNumber()} {verb}.");
+            move(r);
         }
         catch (InvalidOperationException ex)
         {
-            Dialog.Warn(ex.Message, "Cannot perform this action");
+            Dialog.Warn(this, ex.Message, "Not allowed");
+            return;
         }
+
+        Persist(() => Repository.SaveRequest(r), "The change to " + r.GetReferenceNumber());
+        LoadGrid();
     }
 
+    /// <summary>
+    /// Take the official receipt number from the payment dialog, then record
+    /// the payment through the request's own rule (which refuses a second
+    /// payment or a payment on a free document) and save it.
+    ///
+    /// Earlier versions saved the request without ever calling
+    /// RecordPayment, so the receipt was printed and the row still said
+    /// unpaid. The dialog only collects and validates the number; the
+    /// request is the only thing that may mark itself paid.
+    /// </summary>
     private void RecordPayment()
     {
-        var request = Selected();
-        if (request is null) { Dialog.SelectFirst("request"); return; }
+        var r = Selected();
+        if (r is null) return;
 
-        if (request.Fee <= 0)
-        {
-            Dialog.Info($"This document carries no fee.\n\nBasis: {request.FeeBasis}",
-                        "No payment due");
-            return;
-        }
+        using var form = new PaymentForm(r);
+        if (form.ShowDialog(this) != DialogResult.OK) return;
 
-        if (request.IsPaid)
-        {
-            Dialog.Info($"Already paid.\n\nO.R. Number: {request.OfficialReceiptNo}",
-                        "Already paid");
-            return;
-        }
-
-        using var dialog = new PaymentForm(request);
-        if (dialog.ShowDialog(this) != DialogResult.OK) return;
-
-        try
-        {
-            request.RecordPayment(dialog.OfficialReceiptNo);
-            if (!Attempt(() => Repository.SaveRequest(request))) return;
-
-            RefreshData();
-            SetStatus($"Recorded ₱{request.Fee:N2} for {request.GetReferenceNumber()} " +
-                      $"(O.R. {request.OfficialReceiptNo}).");
-        }
-        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
-        {
-            Dialog.Warn(ex.Message, "Cannot record payment");
-        }
+        string receipt = form.ReceiptNumber;
+        Step(x => x.RecordPayment(receipt));
     }
 
-    private void RejectRequest()
+    private void Reject()
     {
-        var request = Selected();
-        if (request is null) { Dialog.SelectFirst("request"); return; }
+        var r = Selected();
+        if (r is null) return;
 
-        string reason = Prompt.Show(this, "Reason for rejection",
-                                    $"Why is {request.GetReferenceNumber()} being rejected?");
+        string? reason = Prompt.Text(this, "Reject request",
+            $"Why is {r.GetReferenceNumber()} being rejected?\n" +
+            "The resident is entitled to be told the reason.");
+        if (reason is null) return;
 
-        if (string.IsNullOrWhiteSpace(reason)) return;
-
-        try
-        {
-            request.Reject(reason);
-            if (!Attempt(() => Repository.SaveRequest(request))) return;
-
-            RefreshData();
-            SetStatus($"{request.GetReferenceNumber()} rejected: {reason}");
-        }
-        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
-        {
-            Dialog.Warn(ex.Message, "Cannot reject");
-        }
+        Step(x => x.Reject(reason!));
     }
 
-    private void PrintDocument()
+    private void PreviewSelected()
     {
-        var request = Selected();
-        if (request is null) { Dialog.SelectFirst("request"); return; }
+        var r = Selected();
+        if (r is null) return;
 
-        string text = _renderer.Render(request);
-
-        using var dialog = new DocumentPreviewForm(request.GetDocumentName(), text);
-        dialog.ShowDialog(this);
+        using var form = new DocumentPreviewForm(r);
+        form.ShowDialog(this);
     }
 }
