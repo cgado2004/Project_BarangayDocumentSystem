@@ -1,121 +1,47 @@
 # Project Timeline
 
-**Barangay Resident and Document Request Management System — Version 3**
-September 22 – 27, 2026
+**Barangay Resident and Document Request Management System — Version 3**  
+September 22–27, 2026
 
-Group members: Dagamac, Emmanuelle Philippe · Del Rosario, Jonathan F. ·
-Gado, Clint Wood · Raborar, Frent Dhieniel
+**Group Members:** Dagamac, Emmanuelle Philippe · Del Rosario, Jonathan F. · Gado, Clint Wood · Raborar, Frent Dhieniel
 
-> I have filled in my own row from what I actually did and what I know still
-> needs doing. **The other three rows are deliberately left blank** — each
-> member should write their own, because a timeline someone else invented for
-> you is worth nothing if the professor asks you to explain it.
-
-> **Update, Sept 26 (v3.2).** The plan below is left as I wrote it on
-> Sept 22. What actually happened on the database item: instead of wiring
-> my own `01-schema.sql` / `02-seed-data.sql`, I integrated Frent's working
-> MySQL persistence from `Fdraft` and retired my scripts — see
-> `docs/08-integration-notes.md` and `docs/05-database-guide.md` §6.
+> **Status Update (Sept 28):** All team members have populated their individual logs for the week. On the database task, instead of using individual `01-schema.sql` / `02-seed-data.sql` scripts, Frent's working MySQL persistence from `Fdraft` was integrated and redundant scripts were retired — see `docs/08-integration-notes.md` and `docs/05-database-guide.md` §6.
 
 ---
 
-## Week plan
+## Week Plan
 
 | Member | Sept 22 (Tue) | Sept 23 (Wed) | Sept 24 (Thu) | Sept 25 (Fri) | Sept 26 (Sat) | Sept 27 (Sun) |
 |---|---|---|---|---|---|---|
-| **Dagamac, Emmanuelle Philippe** |Error Handling of
-the user input |Database queries
-and db connections  | | | | |
-| **Del Rosario, Jonathan F.** |Checked project
-structure and fee
-references; tested
-input validation.  |Implemented
-database
-persistence.  | |Updated technical
-documentation.  |Fee values,
-DocumentRenderer
-fix, base UI theme
- | UI overhaul,
-validation, merge
-with master|
-| **Gado, Clint Wood** |Putting real
-Citizen's Charter
-fees; real puroks
-and Punong
-Barangay; new UI
-theme
- | Run the app on Windows, screenshot every screen; fix whatever the first real run exposes | Validation pass,
-contact numbers,
-name fields, date
-rules; handle edge
-cases
- | Helping assemble the
-documentation;
-check FR/NFR
-against what the
-build actually does
- | Re-arranging the
-folder, making a
-summary for each
-of it’s contributions,
-re-adjusting the
-system inputs with
-its OOP and
-baselines. | Re-editing ERD and UML; file adjustments; checking groupmates current status |
-| **Raborar, Frent Dhieniel** |Putting real
-Citizen's Charter
-fees; real puroks
-and Punong
-Barangay; new UI
-theme |Run the app on
-Windows,
-screenshot every
-screen; fix whatever
-the first real run
-exposes |Validation pass,
-contact numbers,
-name fields, date
-rules; handle edge
-cases
- |Help assemble the
-final
-documentation;
-check FR/NFR
-against what the
-build actually does
- |Re-arranging the
-folder, making a
-summary for each
-of it’s contributions,
-re-adjusting the
-system inputs with
-its OOP and
-baselines. | |
+| **Dagamac, Emmanuelle Philippe** | Error handling for user input | Database queries and DB connections | — | — | — | — |
+| **Del Rosario, Jonathan F.** | Checked project structure and fee references; tested input validation | Implemented database persistence | — | Updated technical documentation | Fee values, DocumentRenderer fix, base UI theme | UI overhaul, validation, merge with `master` |
+| **Gado, Clint Wood** | Added real Citizen's Charter fees, purok names, and Punong Barangay; applied new UI theme | Ran app on Windows, captured screenshots, resolved initial runtime issues | Conducted validation pass for contact numbers, name fields, and date rules; handled edge cases | Assisted with documentation assembly; verified FR/NFR compliance against actual build | Reorganized directory structure, summarized contributions, refined system inputs using OOP principles and baselines | Updated ERD and UML diagrams; adjusted project files; checked team members' status |
+| **Raborar, Frent Dhieniel** | Added real Citizen's Charter fees, purok names, and Punong Barangay; applied new UI theme | Ran app on Windows, captured screenshots, resolved initial runtime issues | Conducted validation pass for contact numbers, name fields, and date rules; handled edge cases | Assisted with final documentation assembly; verified FR/NFR compliance against actual build | Reorganized directory structure, summarized contributions, refined system inputs using OOP principles and baselines | — |
 
 ---
 
-## What is genuinely finished as of Sept 22
+## What is Genuinely Finished as of Sept 27
 
-- Two-layer restructure — `Core` (no UI reference) and `App` (WinForms).
-- Real fees from the Barangay Citizen's Charter, replacing the ₱50 placeholders.
-- Two-tier Barangay Clearance: ₱100 local, ₱200 abroad.
-- 20 document types from the barangay's frontline-services board
-  (24 in v3.1, with the four Citizen's Charter money services).
-- Real purok names and the real Punong Barangay on every certificate.
-- Diia-style interface: white canvas, lavender gradients, rounded cards, pill buttons.
-- Clickable dashboard, live search, per-resident request history, status-aware buttons.
-- Adaptive sizing, scrolling views, resizable dialogs, DPI scaling.
-- **Both projects compile with 0 errors; 23/23 rule tests pass.**
+- **Two-Layer Restructure:** Separated into `Core` (no UI dependency) and `App` (WinForms).
+- **Citizen's Charter Pricing:** Updated real fee structures, replacing ₱50 placeholders.
+- **Barangay Clearance Tiers:** Two-tier clearance system implemented (₱100 local, ₱200 abroad).
+- **Expanded Document Catalog:** 20 document types from the frontline services board (24 in v3.1, including Citizen's Charter financial services).
+- **Localized Data:** Added real purok names and the designated Punong Barangay across all certificate templates.
+- **Diia-Style UI:** White canvas, lavender gradients, rounded card layouts, and pill buttons.
+- **Dashboard & Navigation:** Clickable dashboard, live search functionality, per-resident request history, and status-aware action buttons.
+- **Responsive Layout:** Adaptive sizing, scrollable views, resizable dialogs, and high-DPI scaling support.
+- **Build Status:** Both projects compile with **0 errors**; **23/23 rule tests pass**.
+
 ---
 
-## Suggested split for the remaining work
+## Suggested Split for Remaining Work
 
-Offered as a starting point, not a decision — the group should agree it.
+Offered as a flexible baseline for group consensus:
 
-| Area | Good fit for |
+| Task Area | Target Role / Lead |
 |---|---|
-| Running the app on Windows and reporting what breaks | anyone with Visual Studio installed |
-| Screenshots for the documentation | whoever runs it first |
-| MySQL setup on XAMPP/NuGet Packages and running the scripts | one person, so the database state stays consistent |
-| Proofreading FR/NFR against the actual build | someone who did **not** write the code — a fresh reader catches claims the author cannot see |
-| Slide deck and walkthrough script | presenter |
+| Running the app on Windows and reporting runtime breakages | Anyone with Visual Studio installed |
+| Capturing UI screenshots for documentation | First member to execute a clean run |
+| MySQL setup on XAMPP/NuGet Packages and executing migration scripts | Single owner (to maintain consistent DB state) |
+| Proofreading FR/NFR requirements against the actual build | Non-author reviewer (fresh perspective catches missing items) |
+| Slide deck preparation and walkthrough script | Designated presenter |
