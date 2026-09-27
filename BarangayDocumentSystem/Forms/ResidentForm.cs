@@ -56,28 +56,28 @@ public partial class ResidentForm : Form
 
         Text = $"Edit Resident — {_editing.GetFullName()}";
 
-        txtFirstName.Text  = _editing.FirstName;
+        txtFirstName.Text = _editing.FirstName;
         txtMiddleName.Text = _editing.MiddleName;
-        txtLastName.Text   = _editing.LastName;
-        txtSuffix.Text     = _editing.Suffix;
-        dtpBirth.Value     = _editing.DateOfBirth == default
+        txtLastName.Text = _editing.LastName;
+        txtSuffix.Text = _editing.Suffix;
+        dtpBirth.Value = _editing.DateOfBirth == default
             ? new DateTime(2000, 1, 1) : _editing.DateOfBirth;
 
-        radMale.Checked   = _editing.Gender == Gender.Male;
+        radMale.Checked = _editing.Gender == Gender.Male;
         radFemale.Checked = _editing.Gender == Gender.Female;
 
         cmbCivilStatus.SelectedItem = _editing.CivilStatus.ToString();
-        cmbPurok.Text      = _editing.Purok;
-        txtAddress.Text    = _editing.AddressLine;
-        txtContact.Text    = _editing.ContactNumber;
+        cmbPurok.Text = _editing.Purok;
+        txtAddress.Text = _editing.AddressLine;
+        txtContact.Text = _editing.ContactNumber;
         txtOccupation.Text = _editing.Occupation;
         dtpResidency.Value = _editing.DateOfResidency;
-        chkVoter.Checked   = _editing.IsRegisteredVoter;
+        chkVoter.Checked = _editing.IsRegisteredVoter;
 
-        chkSenior.Checked     = _editing.HasClassification(ResidentClassification.SeniorCitizen);
-        chkPwd.Checked        = _editing.HasClassification(ResidentClassification.PWD);
-        chkIndigent.Checked   = _editing.HasClassification(ResidentClassification.Indigent);
-        chkStudent.Checked    = _editing.HasClassification(ResidentClassification.Student);
+        chkSenior.Checked = _editing.HasClassification(ResidentClassification.SeniorCitizen);
+        chkPwd.Checked = _editing.HasClassification(ResidentClassification.PWD);
+        chkIndigent.Checked = _editing.HasClassification(ResidentClassification.Indigent);
+        chkStudent.Checked = _editing.HasClassification(ResidentClassification.Student);
         chkSoloParent.Checked = _editing.HasClassification(ResidentClassification.SoloParent);
     }
 
@@ -86,20 +86,41 @@ public partial class ResidentForm : Form
         if (!IsValid()) return;
 
         Details = new ResidentDetails(
-            FirstName:         txtFirstName.Text.Trim(),
-            MiddleName:        txtMiddleName.Text.Trim(),
-            LastName:          txtLastName.Text.Trim(),
-            Suffix:            txtSuffix.Text.Trim(),
-            DateOfBirth:       dtpBirth.Value.Date,
-            Gender:            radFemale.Checked ? Gender.Female : Gender.Male,
-            CivilStatus:       (CivilStatus)Enum.Parse(typeof(CivilStatus), cmbCivilStatus.Text),
-            Purok:             cmbPurok.Text.Trim(),
-            AddressLine:       txtAddress.Text.Trim(),
-            ContactNumber:     txtContact.Text.Trim(),
-            Occupation:        txtOccupation.Text.Trim(),
-            DateOfResidency:   dtpResidency.Value.Date,
+            FirstName: txtFirstName.Text.Trim(),
+            MiddleName: txtMiddleName.Text.Trim(),
+            LastName: txtLastName.Text.Trim(),
+            Suffix: txtSuffix.Text.Trim(),
+            DateOfBirth: dtpBirth.Value.Date,
+            Gender: radFemale.Checked ? Gender.Female : Gender.Male,
+            CivilStatus: (CivilStatus)Enum.Parse(typeof(CivilStatus), cmbCivilStatus.Text),
+            Purok: cmbPurok.Text.Trim(),
+            AddressLine: txtAddress.Text.Trim(),
+            ContactNumber: txtContact.Text.Trim(),
+            Occupation: txtOccupation.Text.Trim(),
+            DateOfResidency: dtpResidency.Value.Date,
             IsRegisteredVoter: chkVoter.Checked,
-            Classification:    BuildClassification());
+            Classification: BuildClassification());
+
+        if (!InputValidator.IsValidName(txtFirstName.Text))
+        {
+            Dialog.Warn("First name cannot contain special characters or numbers.");
+            txtFirstName.Focus();
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(txtMiddleName.Text) && !InputValidator.IsValidName(txtMiddleName.Text))
+        {
+            Dialog.Warn("Middle name cannot contain special characters or numbers.");
+            txtMiddleName.Focus();
+            return;
+        }
+
+        if (!InputValidator.IsValidName(txtLastName.Text))
+        {
+            Dialog.Warn("Last name cannot contain special characters or numbers.");
+            txtLastName.Focus();
+            return;
+        }
 
         DialogResult = DialogResult.OK;
         Close();
@@ -149,10 +170,10 @@ public partial class ResidentForm : Form
     {
         var result = ResidentClassification.None;
 
-        if (chkSenior.Checked)     result |= ResidentClassification.SeniorCitizen;
-        if (chkPwd.Checked)        result |= ResidentClassification.PWD;
-        if (chkIndigent.Checked)   result |= ResidentClassification.Indigent;
-        if (chkStudent.Checked)    result |= ResidentClassification.Student;
+        if (chkSenior.Checked) result |= ResidentClassification.SeniorCitizen;
+        if (chkPwd.Checked) result |= ResidentClassification.PWD;
+        if (chkIndigent.Checked) result |= ResidentClassification.Indigent;
+        if (chkStudent.Checked) result |= ResidentClassification.Student;
         if (chkSoloParent.Checked) result |= ResidentClassification.SoloParent;
 
         return result;

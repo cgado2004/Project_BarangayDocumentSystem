@@ -1,6 +1,7 @@
 using System.Windows.Forms;
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 namespace BarangayDocumentSystem.UIHelpers;
 
 /// <summary>
@@ -109,5 +110,14 @@ public static class InputValidator
         Dialog.Warn(message);
         box.Focus();
         box.SelectAll();
+    }
+
+    // <summary> Validates a name field, allowing letters, spaces, hyphens, apostrophes, and periods. </summary>
+    private static readonly Regex NamePattern =
+        new Regex(@"^[a-zA-ZÀ-ÿ' \-\.]+$", RegexOptions.Compiled);
+
+    public static bool IsValidName(string name)
+    {
+        return !string.IsNullOrWhiteSpace(name) && NamePattern.IsMatch(name);
     }
 }
