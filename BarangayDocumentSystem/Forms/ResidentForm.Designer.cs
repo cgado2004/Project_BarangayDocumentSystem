@@ -32,7 +32,6 @@ partial class ResidentForm
         this.lblGender = new System.Windows.Forms.Label();
         this.radMale = new System.Windows.Forms.RadioButton();
         this.radFemale = new System.Windows.Forms.RadioButton();
-        this.radOther = new System.Windows.Forms.RadioButton();
         this.lblCivilStatus = new System.Windows.Forms.Label();
         this.cmbCivilStatus = new System.Windows.Forms.ComboBox();
         this.lblPurok = new System.Windows.Forms.Label();
