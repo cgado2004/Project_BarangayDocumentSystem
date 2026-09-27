@@ -1,185 +1,253 @@
-using System.Windows.Forms;
-using System.Drawing;
+#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 using System.Linq;
+using System.Windows.Forms;
 using BarangayDocumentSystem.Interfaces;
 using BarangayDocumentSystem.UIHelpers;
 
 namespace BarangayDocumentSystem.Views;
 
-
-/// Dashboard: statistic cards plus two breakdown lists.
-///
-/// v1 rendered all of this as one monospaced text blob in a read-only TextBox.
-/// This version uses real cards — the same information, legible at a glance.
-
 public class DashboardView : ViewBase
 {
-    private readonly FlowLayoutPanel _cards = new();
-    private readonly Panel _breakdowns = new();
+    private readonly TableLayoutPanel _cards = new();
+    private readonly TableLayoutPanel _tables = new();
 
     public override string Title => "Dashboard";
-    public override string Subtitle => "Registry and request statistics at a glance";
+    public override string Subtitle => "Operational overview of residents and document requests";
 
     public DashboardView(IBarangayRepository repository) : base(repository)
     {
-        _cards.Dock = DockStyle.Top;
-        _cards.AutoSize = true;
-        _cards.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _cards.AutoScroll = false;
-        _cards.WrapContents = true;
+        AutoScroll = true;
+
+        var root = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 540,
+            ColumnCount = 1,
+            RowCount = 3,
+            BackColor = AppTheme.Background,
+            Margin = new Padding(0),
+            Padding = new Padding(0)
+        };
+        root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 156F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
+        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+
+        _cards.Dock = DockStyle.Fill;
+        _cards.ColumnCount = 4;
+        _cards.RowCount = 1;
         _cards.BackColor = AppTheme.Background;
+        _cards.Margin = new Padding(0);
+        for (int i = 0; i < 4; i++)
+            _cards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+        _cards.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-        _breakdowns.Dock = DockStyle.Fill;
-        _breakdowns.BackColor = AppTheme.Background;
-        _breakdowns.Padding = new Padding(0, AppTheme.SpaceMd, 0, 0);
+        _tables.Dock = DockStyle.Fill;
+        _tables.ColumnCount = 2;
+        _tables.RowCount = 1;
+        _tables.BackColor = AppTheme.Background;
+        _tables.Margin = new Padding(0);
+        _tables.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        _tables.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        _tables.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-        Controls.Add(_breakdowns);
-        Controls.Add(_cards);
+        root.Controls.Add(_cards, 0, 0);
+        root.Controls.Add(_tables, 0, 2);
+
+        Controls.Add(root);
     }
 
     public override void RefreshData()
     {
         var stats = Repository.GetStatistics();
 
-        // Dispose the old controls before clearing — WinForms controls hold
-        // unmanaged window handles, and Clear() alone does not release them.
-        DisposeChildren(_cards);
-        DisposeChildren(_breakdowns);
+        ClearHost(_cards);
+        _cards.Controls.Add(MetricCard("Pending Requests", stats.Pending.ToString(),
+            "Awaiting action", AppTheme.AmberTint, AppTheme.AmberInk, AppTheme.AmberDeep,
+            "requests", "Pending"), 0, 0);
+        _cards.Controls.Add(MetricCard("Ready for Release", stats.ReadyForRelease.ToString(),
+            "Awaiting pickup", AppTheme.SkyTint, AppTheme.SkyInk, AppTheme.SkyDeep,
+            "requests", "ReadyForRelease"), 1, 0);
+        _cards.Controls.Add(MetricCard("Total Residents", stats.TotalResidents.ToString(),
+            $"{stats.RegisteredVoters} registered voters",
+            AppTheme.NavyTint, AppTheme.NavyInk, AppTheme.NavyDeep,
+            "residents", null), 2, 0);
+        _cards.Controls.Add(MetricCard("Revenue Collected", $"₱{stats.TotalCollected:N0}",
+            $"{stats.IssuedFreeOfCharge} issued free",
+            AppTheme.GreenTint, AppTheme.GreenInk, AppTheme.GreenDeep,
+            "requests", "Released"), 3, 0);
 
-        // DRY: one helper builds every card, so all ten look identical.
-        _cards.Controls.Add(StatCard("Total Residents", stats.TotalResidents.ToString(),
-                                     AppTheme.Primary));
-        _cards.Controls.Add(StatCard("Registered Voters", stats.RegisteredVoters.ToString(),
-                                     AppTheme.Info));
-        _cards.Controls.Add(StatCard("Senior Citizens", stats.SeniorCitizens.ToString(),
-                                     AppTheme.Accent));
-        _cards.Controls.Add(StatCard("Total Requests", stats.TotalRequests.ToString(),
-                                     AppTheme.Primary));
-        _cards.Controls.Add(StatCard("Pending", stats.Pending.ToString(), AppTheme.Warning));
-        _cards.Controls.Add(StatCard("Processing", stats.Processing.ToString(), AppTheme.Info));
-        _cards.Controls.Add(StatCard("Ready for Release", stats.ReadyForRelease.ToString(),
-                                     AppTheme.Accent));
-        _cards.Controls.Add(StatCard("Released", stats.Released.ToString(), AppTheme.Success));
-        _cards.Controls.Add(StatCard("Total Collected", $"₱{stats.TotalCollected:N2}",
-                                     AppTheme.Success));
-        _cards.Controls.Add(StatCard("Issued Free", stats.IssuedFreeOfCharge.ToString(),
-                                     AppTheme.TextSecondary));
-
-        var right = BreakdownPanel("Residents by Purok", stats.ResidentsByPurok);
-        right.Dock = DockStyle.Right;
-        right.Width = 340;
-
-        var left = BreakdownPanel("Requests by Document Type", stats.RequestsByDocumentType);
-        left.Dock = DockStyle.Fill;
-
-        _breakdowns.Controls.Add(left);
-        _breakdowns.Controls.Add(right);
+        ClearHost(_tables);
+        _tables.Controls.Add(BreakdownCard("Requests by Document Type",
+            stats.RequestsByDocumentType, new Padding(0, 0, 8, 0)), 0, 0);
+        _tables.Controls.Add(BreakdownCard("Residents by Purok",
+            stats.ResidentsByPurok, new Padding(8, 0, 0, 0)), 1, 0);
     }
 
-    /// One statistic card. Built once, reused ten times (DRY).
-    private static Panel StatCard(string caption, string value, Color accent)
+    private Control MetricCard(string caption, string value, string note,
+        Color tint, Color ink, Color deep, string targetKey, string? argument)
     {
-        var card = new Panel
+        var card = new MetricCardControl
         {
-            Width = 210,
-            Height = 104,
-            BackColor = AppTheme.Surface,
-            Margin = new Padding(0, 0, AppTheme.SpaceMd, AppTheme.SpaceMd),
-            Padding = new Padding(AppTheme.SpaceMd, AppTheme.SpaceSm, AppTheme.SpaceSm, AppTheme.SpaceSm)
+            Caption = caption,
+            Value = value,
+            Note = note,
+            Tint = tint,
+            Ink = ink,
+            Deep = deep,
+            Dock = DockStyle.Fill,
+            Margin = new Padding(0, 0, 14, 0)
         };
-
-        // A coloured stripe down the left edge, drawn rather than imaged so
-        // the app ships with no asset files.
-        var stripe = new Panel { Dock = DockStyle.Left, Width = 5, BackColor = accent };
-
-        var valueLabel = new Label
-        {
-            Text = value,
-            Font = new Font("Segoe UI", 19f, FontStyle.Bold),
-            ForeColor = accent,
-            AutoSize = false,
-            Dock = DockStyle.Top,
-            Height = 46,
-            TextAlign = ContentAlignment.BottomLeft
-        };
-
-        var captionLabel = new Label
-        {
-            Text = caption.ToUpper(),
-            Font = AppTheme.SmallFont,
-            ForeColor = AppTheme.TextSecondary,
-            AutoSize = false,
-            Dock = DockStyle.Top,
-            Height = 26,
-            TextAlign = ContentAlignment.TopLeft
-        };
-
-        card.Controls.Add(captionLabel);
-        card.Controls.Add(valueLabel);
-        card.Controls.Add(stripe);
+        card.Click += (_, _) => NavigateTo(targetKey, argument);
         return card;
     }
 
-    private static Panel BreakdownPanel(string heading, IReadOnlyDictionary<string, int> data)
+    private static Control BreakdownCard(
+        string heading, IReadOnlyDictionary<string, int> data, Padding margin)
     {
-        var panel = new Panel
-        {
-            BackColor = AppTheme.Surface,
-            Padding = new Padding(AppTheme.SpaceMd),
-            Margin = new Padding(AppTheme.SpaceSm)
-        };
-
-        var list = new ListView
+        var card = new BorderedPanel
         {
             Dock = DockStyle.Fill,
-            View = View.Details,
-            FullRowSelect = true,
-            GridLines = false,
-            BorderStyle = BorderStyle.None,
-            Font = AppTheme.BodyFont,
-            HeaderStyle = ColumnHeaderStyle.Nonclickable
+            BackColor = AppTheme.Surface,
+            BorderColor = AppTheme.Border,
+            Padding = new Padding(1),
+            Margin = margin
         };
-
-        list.Columns.Add("Item", 240);
-        list.Columns.Add("Count", 70, HorizontalAlignment.Right);
-
-        if (data.Count == 0)
-        {
-            // Empty state — better than an unexplained blank box.
-            list.Items.Add(new ListViewItem(new[] { "(no data yet)", "" })
-            {
-                ForeColor = AppTheme.TextSecondary
-            });
-        }
-        else
-        {
-            foreach (var pair in data.OrderByDescending(p => p.Value))
-                list.Items.Add(new ListViewItem(new[] { pair.Key, pair.Value.ToString() }));
-        }
 
         var title = new Label
         {
-            Text = heading,
             Dock = DockStyle.Top,
-            Height = 32,
+            Height = 52,
             Font = AppTheme.SubheadFont,
-            ForeColor = AppTheme.TextPrimary
+            ForeColor = AppTheme.TextPrimary,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Padding = new Padding(20, 0, 0, 0),
+            Margin = new Padding(0),
+            Text = heading
         };
 
-        panel.Controls.Add(list);
-        panel.Controls.Add(title);
-        return panel;
+        var grid = new DataGridView();
+        UiFactory.StyleGrid(grid);
+        grid.Dock = DockStyle.Fill;
+        grid.ColumnHeadersVisible = false;
+        grid.CellBorderStyle = DataGridViewCellBorderStyle.None;
+        grid.Columns.Add("Category", "Category");
+        grid.Columns.Add("Count", "Count");
+        grid.Columns[1].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+        grid.Columns[1].AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+        grid.Columns[1].Width = 80;
+
+        if (data.Count == 0)
+            grid.Rows.Add("(no data recorded)", "");
+        else
+            foreach (var pair in data.OrderByDescending(p => p.Value).ThenBy(p => p.Key))
+                grid.Rows.Add(pair.Key, pair.Value.ToString());
+
+        card.Controls.Add(grid);
+        card.Controls.Add(title);
+        return card;
     }
 
-    private static void DisposeChildren(Control parent)
+    private static void ClearHost(Control parent)
     {
-        // ToList() first — mutating Controls while enumerating it throws.
         foreach (Control child in parent.Controls.Cast<Control>().ToList())
         {
             parent.Controls.Remove(child);
             child.Dispose();
+        }
+    }
+
+    private sealed class MetricCardControl : Control
+    {
+        public string Caption { get; set; } = "";
+        public string Value { get; set; } = "";
+        public string Note { get; set; } = "";
+        public Color Tint { get; set; } = AppTheme.Surface;
+        public Color Ink { get; set; } = AppTheme.TextPrimary;
+        public Color Deep { get; set; } = AppTheme.Primary;
+
+        private bool _hover;
+
+        public MetricCardControl()
+        {
+            SetStyle(
+                ControlStyles.AllPaintingInWmPaint |
+                ControlStyles.UserPaint |
+                ControlStyles.OptimizedDoubleBuffer |
+                ControlStyles.ResizeRedraw, true);
+            Cursor = Cursors.Hand;
+        }
+
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            _hover = true;
+            Invalidate();
+            base.OnMouseEnter(e);
+        }
+
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            _hover = false;
+            Invalidate();
+            base.OnMouseLeave(e);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+
+            var rect = new Rectangle(0, 0, Width - 1, Height - 1);
+
+            using (var path = UiFactory.RoundedPath(rect, 12))
+            using (var brush = new SolidBrush(Tint))
+                g.FillPath(brush, path);
+
+            if (_hover)
+            {
+                using var path = UiFactory.RoundedPath(rect, 12);
+                using var pen = new Pen(Color.FromArgb(90, Deep), 1.5f);
+                g.DrawPath(pen, path);
+            }
+
+            using (var capBrush = new SolidBrush(Ink))
+                g.DrawString(Caption.ToUpperInvariant(), AppTheme.SmallBoldFont, capBrush,
+                    new PointF(20, 20));
+
+            using (var valBrush = new SolidBrush(Deep))
+                g.DrawString(Value, AppTheme.MetricFont, valBrush, new PointF(16, 42));
+
+            using (var noteBrush = new SolidBrush(Color.FromArgb(150, Ink)))
+                g.DrawString(Note, AppTheme.BodyFont, noteBrush, new PointF(20, Height - 36));
+        }
+    }
+
+    private sealed class BorderedPanel : Panel
+    {
+        public Color BorderColor { get; set; } = AppTheme.Border;
+
+        public BorderedPanel()
+        {
+            SetStyle(
+                ControlStyles.AllPaintingInWmPaint |
+                ControlStyles.UserPaint |
+                ControlStyles.OptimizedDoubleBuffer |
+                ControlStyles.ResizeRedraw, true);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            using (var bg = new SolidBrush(BackColor))
+                g.FillRectangle(bg, ClientRectangle);
+            using var pen = new Pen(BorderColor);
+            g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
         }
     }
 }

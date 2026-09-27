@@ -37,8 +37,7 @@ public partial class PaymentForm : Form
 
         if (string.IsNullOrWhiteSpace(or))
         {
-            Dialog.Warn("An official receipt number is required.\n\n" +
-                "RA 11032 requires an OR to be issued for every collection.");
+            Dialog.Warn("Enter the O.R. number from the receipt you issued.\n\n" + "RA 11032 requires an O.R. for every collection.");
             txtOr.Focus();
             return;
         }

@@ -1,87 +1,79 @@
 using System.Drawing;
-using System;
+using System.Windows.Forms;
+
 namespace BarangayDocumentSystem.UIHelpers;
 
-/// <summary>
-/// Every colour, font and spacing value in the application.
-///
-/// ── DRY: design tokens ──────────────────────────────────────────────────
-/// Before, `Color.FromArgb(21, 71, 52)` appeared as a literal in six separate
-/// Designer files, and font names were retyped on almost every control.
-/// Rebranding meant a find-and-replace across the whole UI and hoping nothing
-/// was missed.
-///
-/// Now there is one source of truth. Change Primary here and the entire app
-/// follows.
-///
-/// ── FONT SAFETY ─────────────────────────────────────────────────────────
-/// Only fonts that ship with Windows are used — Segoe UI (the system UI font
-/// since Vista) and Consolas (monospace, since Vista).
-///
-/// A custom font that is NOT installed on the grading machine does not throw
-/// an error: Windows silently substitutes a fallback with different metrics,
-/// so text overflows its labels and the layout quietly breaks. Using system
-/// fonts removes that entire class of failure.
-/// </summary>
 public static class AppTheme
 {
-    // ---------- Colour palette ----------
-    public static readonly Color Primary       = Color.FromArgb(21, 71, 52);    // barangay green
-    public static readonly Color PrimaryDark   = Color.FromArgb(14, 50, 36);
-    public static readonly Color PrimaryLight  = Color.FromArgb(34, 102, 76);
-    public static readonly Color Accent        = Color.FromArgb(201, 162, 39);  // gold
+    public static readonly Color Background = Color.FromArgb(243, 239, 231);
+    public static readonly Color Surface = Color.FromArgb(255, 255, 255);
+    public static readonly Color SurfaceAlt = Color.FromArgb(251, 248, 242);
+    public static readonly Color Hover = Color.FromArgb(238, 233, 222);
+    public static readonly Color Border = Color.FromArgb(228, 220, 201);
+    public static readonly Color BorderStrong = Color.FromArgb(200, 191, 168);
 
-    public static readonly Color Surface       = Color.White;
-    public static readonly Color Background    = Color.FromArgb(244, 246, 245);
-    public static readonly Color Border        = Color.FromArgb(222, 226, 224);
+    public static readonly Color SidebarBg = Color.FromArgb(16, 29, 51);
+    public static readonly Color SidebarHover = Color.FromArgb(28, 45, 74);
+    public static readonly Color SidebarActive = Color.FromArgb(212, 160, 23);
+    public static readonly Color SidebarText = Color.FromArgb(138, 155, 181);
+    public static readonly Color SidebarTextActive = Color.White;
 
-    public static readonly Color TextPrimary   = Color.FromArgb(26, 32, 30);
-    public static readonly Color TextSecondary = Color.FromArgb(105, 117, 112);
+    public static readonly Color Primary = Color.FromArgb(11, 37, 69);
+    public static readonly Color PrimaryHover = Color.FromArgb(30, 58, 95);
+    public static readonly Color PrimaryDark = Color.FromArgb(6, 24, 46);
+    public static readonly Color PrimarySoft = Color.FromArgb(230, 237, 247);
+    public static readonly Color Accent = Color.FromArgb(201, 162, 39);
+
+    public static readonly Color TextPrimary = Color.FromArgb(31, 39, 51);
+    public static readonly Color TextSecondary = Color.FromArgb(107, 114, 128);
+    public static readonly Color TextMuted = Color.FromArgb(156, 163, 175);
     public static readonly Color TextOnPrimary = Color.White;
 
-    public static readonly Color Success       = Color.FromArgb(24, 121, 78);
-    public static readonly Color Warning       = Color.FromArgb(181, 122, 12);
-    public static readonly Color Danger        = Color.FromArgb(176, 48, 42);
-    public static readonly Color Info          = Color.FromArgb(38, 98, 158);
+    public static readonly Color Info = Color.FromArgb(3, 105, 161);
+    public static readonly Color Warning = Color.FromArgb(180, 83, 9);
+    public static readonly Color Success = Color.FromArgb(21, 128, 61);
+    public static readonly Color Danger = Color.FromArgb(185, 28, 28);
+    public static readonly Color DangerHover = Color.FromArgb(153, 27, 27);
+    public static readonly Color DangerDark = Color.FromArgb(127, 29, 29);
 
-    // ---------- Typography (system fonts only) ----------
-    private const string UiFont   = "Segoe UI";
-    private const string MonoFont = "Consolas";
+    public static readonly Font BodyFont = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
+    public static readonly Font BodyBoldFont = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
+    public static readonly Font SmallFont = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+    public static readonly Font SmallBoldFont = new Font("Segoe UI", 8.5F, FontStyle.Bold, GraphicsUnit.Point, 0);
+    public static readonly Font SubheadFont = new Font("Segoe UI", 11F, FontStyle.Bold, GraphicsUnit.Point, 0);
+    public static readonly Font HeadingFont = new Font("Segoe UI", 15F, FontStyle.Bold, GraphicsUnit.Point, 0);
+    public static readonly Font PageTitleFont = new Font("Segoe UI", 20F, FontStyle.Bold, GraphicsUnit.Point, 0);
+    public static readonly Font MetricFont = new Font("Segoe UI", 28F, FontStyle.Bold, GraphicsUnit.Point, 0);
 
-    public static Font DisplayFont  => new(UiFont, 17f, FontStyle.Bold);
-    public static Font HeadingFont  => new(UiFont, 13f, FontStyle.Bold);
-    public static Font SubheadFont  => new(UiFont, 11f, FontStyle.Bold);
-    public static Font BodyFont     => new(UiFont, 10f, FontStyle.Regular);
-    public static Font BodyBoldFont => new(UiFont, 10f, FontStyle.Bold);
-    public static Font SmallFont    => new(UiFont, 8.5f, FontStyle.Regular);
-    public static Font MonoBodyFont => new(MonoFont, 10f, FontStyle.Regular);
-
-    // ---------- Spacing (a 4px scale keeps rhythm consistent) ----------
-    public const int SpaceXs = 4;
+    public const int SidebarWidth = 240;
     public const int SpaceSm = 8;
     public const int SpaceMd = 16;
     public const int SpaceLg = 24;
-    public const int SpaceXl = 32;
+    public const int ControlHeight = 26;
 
-    public const int SidebarWidth = 232;
-    public const int HeaderHeight = 72;
-    public const int ControlHeight = 34;
+    public static readonly Color AmberTint = Color.FromArgb(254, 243, 199);
+    public static readonly Color AmberInk = Color.FromArgb(146, 64, 14);
+    public static readonly Color AmberDeep = Color.FromArgb(180, 83, 9);
 
-    /// <summary>
-    /// Maps a request status to its badge colour.
-    ///
-    /// ── DRY ─────────────────────────────────────────────────────────────
-    /// This mapping previously did not exist — the grid just printed status as
-    /// plain text. Defining it once means the grid, any future detail panel,
-    /// and any report all colour statuses identically.
-    /// </summary>
+    public static readonly Color SkyTint = Color.FromArgb(224, 242, 254);
+    public static readonly Color SkyInk = Color.FromArgb(7, 89, 133);
+    public static readonly Color SkyDeep = Color.FromArgb(3, 105, 161);
+
+    public static readonly Color NavyTint = Color.FromArgb(230, 237, 247);
+    public static readonly Color NavyInk = Color.FromArgb(11, 37, 69);
+    public static readonly Color NavyDeep = Color.FromArgb(11, 37, 69);
+
+    public static readonly Color GreenTint = Color.FromArgb(209, 250, 229);
+    public static readonly Color GreenInk = Color.FromArgb(6, 95, 70);
+    public static readonly Color GreenDeep = Color.FromArgb(21, 128, 61);
+
     public static Color StatusColor(string status) => status switch
     {
-        "Pending"         => Warning,
-        "Processing"      => Info,
-        "ReadyForRelease" => Accent,
-        "Released"        => Success,
-        "Rejected"        => Danger,
-        _                 => TextSecondary
+        "Pending" => Warning,
+        "Processing" => Info,
+        "ReadyForRelease" => SkyDeep,
+        "Released" => Success,
+        "Rejected" => Danger,
+        _ => TextSecondary
     };
 }

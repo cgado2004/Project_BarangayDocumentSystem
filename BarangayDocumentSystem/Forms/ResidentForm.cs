@@ -1,34 +1,21 @@
 using System.Windows.Forms;
 using System;
+using System.Linq;
 using BarangayDocumentSystem.Interfaces;
 using BarangayDocumentSystem.Models;
 using BarangayDocumentSystem.UIHelpers;
-using System.Linq;
 
 namespace BarangayDocumentSystem.Forms;
 
-/// <summary>
-/// Register or edit a resident.
-///
-/// ── DRY, two ways ───────────────────────────────────────────────────────
-/// 1. VALIDATION. v1 repeated a six-line "check, warn, focus, select, return
-///    false" block for every field. Each is now one call to InputValidator,
-///    and the whole method reads as a chain of conditions.
-///
-/// 2. OUTPUT. v1 exposed fourteen separate properties, which the caller then
-///    copied one by one. This form now exposes ONE ResidentDetails record, so
-///    adding a field does not touch any call site.
-/// </summary>
 public partial class ResidentForm : Form
 {
-    private readonly Resident? _editing;
+    private readonly Resident _editing;
 
-    /// <summary>Everything the caller needs, in one object.</summary>
-    public ResidentDetails Details { get; private set; } = null!;
+    public ResidentDetails Details { get; private set; }
 
     public ResidentForm() : this(null) { }
 
-    public ResidentForm(Resident? existing)
+    public ResidentForm(Resident existing)
     {
         InitializeComponent();
         _editing = existing;
@@ -43,7 +30,13 @@ public partial class ResidentForm : Form
 
         cmbCivilStatus.Items.AddRange(Enum.GetNames(typeof(CivilStatus)).Cast<object>().ToArray());
 
-        if (_editing is null)
+        // Hook keypress filters for name fields
+        txtFirstName.KeyPress += (s, ev) => InputValidator.AllowNameCharsOnly(ev);
+        txtMiddleName.KeyPress += (s, ev) => InputValidator.AllowNameCharsOnly(ev);
+        txtLastName.KeyPress += (s, ev) => InputValidator.AllowNameCharsOnly(ev);
+        txtSuffix.KeyPress += (s, ev) => InputValidator.AllowNameCharsOnly(ev);
+
+        if (_editing == null)
         {
             Text = "Register Resident";
             cmbPurok.SelectedIndex = 0;
@@ -60,8 +53,7 @@ public partial class ResidentForm : Form
         txtMiddleName.Text = _editing.MiddleName;
         txtLastName.Text   = _editing.LastName;
         txtSuffix.Text     = _editing.Suffix;
-        dtpBirth.Value     = _editing.DateOfBirth == default
-            ? new DateTime(2000, 1, 1) : _editing.DateOfBirth;
+        dtpBirth.Value     = _editing.DateOfBirth == default ? new DateTime(2000, 1, 1) : _editing.DateOfBirth;
 
         radMale.Checked   = _editing.Gender == Gender.Male;
         radFemale.Checked = _editing.Gender == Gender.Female;
@@ -105,26 +97,22 @@ public partial class ResidentForm : Form
         Close();
     }
 
-    /// <summary>
-    /// v1: roughly 60 lines of repeated check-warn-focus blocks.
-    /// Now: a readable chain, because InputValidator owns the repetition.
-    /// </summary>
     private bool IsValid() =>
         InputValidator.Required(txtFirstName, "First name")
+        && InputValidator.NameText(txtFirstName, "First name")
         && InputValidator.Required(txtLastName, "Last name")
+        && InputValidator.NameText(txtLastName, "Last name")
+        && InputValidator.NameText(txtMiddleName, "Middle name")
+        && InputValidator.NameText(txtSuffix, "Suffix")
+        && InputValidator.NameText(txtSuffix, "Suffix")
+        && InputValidator.ValidSuffix(txtSuffix)
         && InputValidator.PlausibleBirthDate(dtpBirth)
         && InputValidator.NotFuture(dtpResidency, "Date of residency")
-        && InputValidator.NotBefore(dtpResidency, dtpBirth,
-                                    "Date of residency", "the date of birth")
+        && InputValidator.NotBefore(dtpResidency, dtpBirth, "Date of residency", "the date of birth")
         && InputValidator.RequiredSelection(cmbPurok, "purok")
-        && InputValidator.ContactNumber(txtContact)
+        && InputValidator.ContactNumber11(txtContact)
         && SeniorAgeIsConsistent();
 
-    /// <summary>
-    /// Domain-specific check that does not generalise, so it stays here rather
-    /// than being forced into InputValidator. Warns instead of blocking —
-    /// early senior status exists in some edge cases.
-    /// </summary>
     private bool SeniorAgeIsConsistent()
     {
         if (!chkSenior.Checked) return true;
@@ -134,33 +122,26 @@ public partial class ResidentForm : Form
 
         if (age >= 60) return true;
 
-        if (Dialog.Confirm(
-                $"This resident is {age} years old, which is under 60.\n\n" +
-                "Senior citizen status normally begins at 60. Tick it anyway?",
-                "Check senior citizen status"))
+        if (Dialog.Confirm($"Resident is {age} years old. Senior Citizen status usually begins at 60. Continue?", "Check Senior Status"))
             return true;
 
         chkSenior.Focus();
         return false;
     }
 
-    /// <summary>Combines the ticked boxes into the [Flags] enum.</summary>
     private ResidentClassification BuildClassification()
     {
         var result = ResidentClassification.None;
-
         if (chkSenior.Checked)     result |= ResidentClassification.SeniorCitizen;
         if (chkPwd.Checked)        result |= ResidentClassification.PWD;
         if (chkIndigent.Checked)   result |= ResidentClassification.Indigent;
         if (chkStudent.Checked)    result |= ResidentClassification.Student;
         if (chkSoloParent.Checked) result |= ResidentClassification.SoloParent;
-
         return result;
     }
 
-    /// <summary>Layer one of validation — blocks bad characters as typed.</summary>
     private void txtContact_KeyPress(object sender, KeyPressEventArgs e) =>
-        InputValidator.AllowDigitsOnly(e, "+- ");
+        InputValidator.AllowDigitsOnly(e);
 
     private void btnCancel_Click(object sender, EventArgs e)
     {

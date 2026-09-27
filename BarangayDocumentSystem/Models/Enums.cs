@@ -1,7 +1,6 @@
 using System;
 namespace BarangayDocumentSystem.Models;
 
-/// <summary>Type of document a resident may request from the barangay.</summary>
 public enum DocumentType
 {
     BarangayClearance,
@@ -13,10 +12,6 @@ public enum DocumentType
     CertificateOfGoodMoralCharacter
 }
 
-/// <summary>
-/// Where a request currently sits. Requests move forward through this
-/// sequence; Released and Rejected are terminal.
-/// </summary>
 public enum RequestStatus
 {
     Pending,
@@ -26,19 +21,15 @@ public enum RequestStatus
     Rejected
 }
 
-/// <summary>
-/// Special classifications that affect fees under national law or local
-/// ordinance. A resident may hold more than one, so this is a [Flags] enum.
-/// </summary>
 [Flags]
 public enum ResidentClassification
 {
-    None          = 0,
-    SeniorCitizen = 1 << 0,   // RA 9994
-    PWD           = 1 << 1,   // RA 10754
-    Indigent      = 1 << 2,   // certified low-income
-    Student       = 1 << 3,
-    SoloParent    = 1 << 4    // RA 8972 / RA 11861
+    None = 0,
+    SeniorCitizen = 1 << 0,
+    PWD = 1 << 1,
+    Indigent = 1 << 2,
+    Student = 1 << 3,
+    SoloParent = 1 << 4
 }
 
 public enum CivilStatus
@@ -53,5 +44,6 @@ public enum CivilStatus
 public enum Gender
 {
     Male,
-    Female
+    Female,
+    Other
 }

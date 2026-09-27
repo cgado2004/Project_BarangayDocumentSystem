@@ -1,29 +1,14 @@
-using System.Windows.Forms;
-using System.Drawing;
+#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Windows.Forms;
 using BarangayDocumentSystem.CustomControls;
 using BarangayDocumentSystem.UIHelpers;
 using BarangayDocumentSystem.Views;
 
 namespace BarangayDocumentSystem;
 
-/// <summary>
-/// Application shell: sidebar, content header, content area, status bar.
-///
-/// ── SINGLE RESPONSIBILITY ───────────────────────────────────────────────
-/// v1's MainForm was 429 lines and did four jobs. This shell does ONE:
-/// arrange the chrome and swap views. It contains no resident logic, no
-/// request logic and no statistics — those live in the three views.
-///
-/// ── OPEN/CLOSED ─────────────────────────────────────────────────────────
-/// Views are registered into a dictionary. Adding a page means adding a
-/// subclass and one AddView line; the switching code never changes.
-///
-/// ── LISKOV ──────────────────────────────────────────────────────────────
-/// The dictionary holds ViewBase. The shell calls Title, Subtitle and
-/// RefreshData() without knowing or caring which concrete view it has.
-/// </summary>
 public class MainShell : Form
 {
     private readonly Dictionary<string, ViewBase> _views = new();
@@ -37,25 +22,131 @@ public class MainShell : Form
 
     public MainShell()
     {
-        Text = "Barangay Resident and Document Request Management System";
+        Text = "Barangay Resident & Document Management";
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(1280, 780);
-        MinimumSize = new Size(1120, 700);
+        ClientSize = new Size(1366, 768);
+        MinimumSize = new Size(1180, 720);
         BackColor = AppTheme.Background;
         Font = AppTheme.BodyFont;
+        DoubleBuffered = true;
 
         BuildChrome();
     }
 
     private void BuildChrome()
     {
-        // ---- status bar ----
-        var statusBar = new Panel
+        var root = new TableLayoutPanel
         {
-            Dock = DockStyle.Bottom,
-            Height = 30,
+            Dock = DockStyle.Fill,
+            ColumnCount = 2,
+            RowCount = 1,
+            BackColor = AppTheme.Background,
+            Margin = new Padding(0),
+            Padding = new Padding(0)
+        };
+        root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, AppTheme.SidebarWidth));
+        root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+
+        _sidebar.Dock = DockStyle.Fill;
+        root.Controls.Add(_sidebar, 0, 0);
+
+        var right = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 3,
+            BackColor = AppTheme.Background,
+            Margin = new Padding(0),
+            Padding = new Padding(0)
+        };
+        right.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        right.RowStyles.Add(new RowStyle(SizeType.Absolute, 96F));
+        right.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        right.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+
+        right.Controls.Add(BuildHeader(), 0, 0);
+        right.Controls.Add(BuildContentArea(), 0, 1);
+        right.Controls.Add(BuildStatusBar(), 0, 2);
+
+        root.Controls.Add(right, 1, 0);
+        Controls.Add(root);
+
+        _sidebar.NavigationChanged += (_, key) => ShowView(key);
+    }
+
+    private Control BuildHeader()
+    {
+        var header = new Panel
+        {
+            Dock = DockStyle.Fill,
             BackColor = AppTheme.Surface,
-            Padding = new Padding(AppTheme.SpaceMd, 0, AppTheme.SpaceMd, 0)
+            Padding = new Padding(0),
+            Margin = new Padding(0)
+        };
+
+        header.Paint += (s, e) =>
+        {
+            using var pen = new Pen(AppTheme.Border);
+            e.Graphics.DrawLine(pen, 0, header.Height - 1, header.Width, header.Height - 1);
+        };
+
+        var stack = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 2,
+            BackColor = AppTheme.Surface,
+            Margin = new Padding(0),
+            Padding = new Padding(32, 22, 32, 14)
+        };
+        stack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
+        stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 22F));
+
+        _contentTitle.Dock = DockStyle.Fill;
+        _contentTitle.Font = AppTheme.PageTitleFont;
+        _contentTitle.ForeColor = AppTheme.TextPrimary;
+        _contentTitle.TextAlign = ContentAlignment.MiddleLeft;
+        _contentTitle.Margin = new Padding(0);
+        _contentTitle.Text = "Dashboard";
+
+        _contentSubtitle.Dock = DockStyle.Fill;
+        _contentSubtitle.Font = AppTheme.SmallFont;
+        _contentSubtitle.ForeColor = AppTheme.TextSecondary;
+        _contentSubtitle.TextAlign = ContentAlignment.MiddleLeft;
+        _contentSubtitle.Margin = new Padding(0);
+
+        stack.Controls.Add(_contentTitle, 0, 0);
+        stack.Controls.Add(_contentSubtitle, 0, 1);
+
+        header.Controls.Add(stack);
+        return header;
+    }
+
+    private Control BuildContentArea()
+    {
+        _content.Dock = DockStyle.Fill;
+        _content.BackColor = AppTheme.Background;
+        _content.Padding = new Padding(28, 20, 28, 20);
+        _content.Margin = new Padding(0);
+        return _content;
+    }
+
+    private Control BuildStatusBar()
+    {
+        var bar = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = AppTheme.Surface,
+            Padding = new Padding(28, 0, 28, 0),
+            Margin = new Padding(0)
+        };
+
+        bar.Paint += (s, e) =>
+        {
+            using var pen = new Pen(AppTheme.Border);
+            e.Graphics.DrawLine(pen, 0, 0, bar.Width, 0);
         };
 
         _statusLabel.Dock = DockStyle.Fill;
@@ -63,94 +154,38 @@ public class MainShell : Form
         _statusLabel.Font = AppTheme.SmallFont;
         _statusLabel.ForeColor = AppTheme.TextSecondary;
         _statusLabel.Text = "Ready";
-        statusBar.Controls.Add(_statusLabel);
-
-        // ---- sidebar ----
-        _sidebar.NavigationChanged += (_, key) => ShowView(key);
-
-        var brand = new Panel
-        {
-            Dock = DockStyle.Top,
-            Height = AppTheme.HeaderHeight,
-            BackColor = AppTheme.PrimaryDark,
-            Padding = new Padding(AppTheme.SpaceMd, AppTheme.SpaceSm, AppTheme.SpaceSm, 0)
-        };
-
-        var brandTitle = new Label
-        {
-            Text = "BARANGAY",
-            Dock = DockStyle.Top,
-            Height = 26,
-            Font = new Font("Segoe UI", 13f, FontStyle.Bold),
-            ForeColor = AppTheme.TextOnPrimary
-        };
-
-        var brandSub = new Label
-        {
-            Text = "Magugpo Poblacion",
-            Dock = DockStyle.Top,
-            Height = 22,
-            Font = AppTheme.SmallFont,
-            ForeColor = AppTheme.Accent
-        };
-
-        brand.Controls.Add(brandSub);
-        brand.Controls.Add(brandTitle);
-
-        // ---- content header ----
-        var header = new Panel
-        {
-            Dock = DockStyle.Top,
-            Height = AppTheme.HeaderHeight,
-            BackColor = AppTheme.Surface,
-            Padding = new Padding(AppTheme.SpaceLg, AppTheme.SpaceSm, AppTheme.SpaceLg, 0)
-        };
-
-        _contentTitle.Dock = DockStyle.Top;
-        _contentTitle.Height = 32;
-        _contentTitle.Font = AppTheme.DisplayFont;
-        _contentTitle.ForeColor = AppTheme.TextPrimary;
-
-        _contentSubtitle.Dock = DockStyle.Top;
-        _contentSubtitle.Height = 22;
-        _contentSubtitle.Font = AppTheme.SmallFont;
-        _contentSubtitle.ForeColor = AppTheme.TextSecondary;
-
-        header.Controls.Add(_contentSubtitle);
-        header.Controls.Add(_contentTitle);
-
-        _content.Dock = DockStyle.Fill;
-        _content.BackColor = AppTheme.Background;
-
-        // Add order matters: Fill must be added before the docked edges it
-        // should sit inside.
-        Controls.Add(_content);
-        Controls.Add(header);
-        Controls.Add(_sidebar);
-        Controls.Add(statusBar);
-
-        _sidebar.Controls.Add(brand);
-        brand.BringToFront();
+        _statusLabel.Margin = new Padding(0);
+        bar.Controls.Add(_statusLabel);
+        return bar;
     }
 
-    /// <summary>
-    /// Registers a view and its sidebar entry.
-    /// Adding a page touches only the caller — never this class (OCP).
-    /// </summary>
     public void AddView(string key, string label, string glyph, ViewBase view)
     {
         view.StatusChanged += (_, message) => SetStatus(message);
-
+        view.NavigateRequested += (_, req) => NavigateTo(req.Key, req.Argument);
         _views[key] = view;
         _sidebar.AddItem(key, label, glyph);
+    }
+
+    public void NavigateTo(string key, string? argument = null)
+    {
+        _sidebar.Navigate(key);
+
+        if (!_views.TryGetValue(key, out var view)) return;
+        if (!ReferenceEquals(_current, view)) ShowView(key);
+
+        if (argument is not null && view is RequestsView rv)
+            rv.ApplyNavigationArgument(argument);
     }
 
     private void ShowView(string key)
     {
         if (!_views.TryGetValue(key, out var view)) return;
 
+        _content.SuspendLayout();
         _content.Controls.Clear();
         _content.Controls.Add(view);
+        _content.ResumeLayout();
 
         _contentTitle.Text = view.Title;
         _contentSubtitle.Text = view.Subtitle;
@@ -159,11 +194,9 @@ public class MainShell : Form
         _current = view;
     }
 
-    /// <summary>Refreshes every view — used after a cross-cutting change.</summary>
     public void RefreshAll()
     {
-        foreach (var view in _views.Values)
-            view.RefreshData();
+        foreach (var view in _views.Values) view.RefreshData();
     }
 
     public ViewBase? Current => _current;
@@ -171,6 +204,10 @@ public class MainShell : Form
     public void SetStatus(string message) =>
         _statusLabel.Text = $"{DateTime.Now:HH:mm:ss}   {message}";
 
-    /// <summary>Opens the first registered destination once everything is wired.</summary>
-    public void Start(string initialKey) => _sidebar.Navigate(initialKey);
+    public void Start(string initialKey)
+    {
+        _sidebar.Navigate(initialKey);
+        if (_current is null && _views.ContainsKey(initialKey))
+            ShowView(initialKey);
+    }
 }
