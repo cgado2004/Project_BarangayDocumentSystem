@@ -381,14 +381,13 @@ sequenceDiagram
     Clerk->>RequestsView: Start processing / Mark ready / Record payment / Release
     RequestsView->>DocumentRequest: guarded transition (may throw InvalidOperation)
     RequestsView->>Repo: Persist(() => SaveRequest(request))
-    Repo->>DB: BEGIN; UPDATE document_requests; UPDATE residents.has_availed_jobseeker; COMMIT
+    Repo->>DB: BEGIN&#59; UPDATE document_requests&#59; UPDATE residents.has_availed_jobseeker&#59; COMMIT
     alt MySQL fails
         Repo-->>RequestsView: RepositoryException
         RequestsView->>Repo: Reload()
         RequestsView-->>Clerk: "was not saved" + the reason
     end
 ```
-
 ---
 
 ## 7. Where SOLID and DRY actually are
