@@ -1,6 +1,7 @@
 using System.Windows.Forms;
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace BarangayDocumentSystem.UIHelpers;
 
@@ -17,7 +18,7 @@ public static class InputValidator
     public static bool NameText(TextBox box, string fieldName)
     {
         if (string.IsNullOrWhiteSpace(box.Text)) return true;
-        
+
         string val = box.Text.Trim();
         if (val.All(c => char.IsLetter(c) || c == ' ' || c == '.' || c == '-')) return true;
 
@@ -89,16 +90,27 @@ public static class InputValidator
         box.Focus();
         box.SelectAll();
     }
- public static bool ValidSuffix(TextBox box)
- {
-     if (string.IsNullOrWhiteSpace(box.Text)) return true;
- 
-     string val = box.Text.Trim().TrimEnd('.').ToUpperInvariant();
-     string[] allowed = { "JR", "SR", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X" };
- 
-     if (Array.IndexOf(allowed, val) >= 0) return true;
- 
-     Fail(box, "Suffix must be one of Jr., Sr., II, III, IV, V — or leave it blank.");
-     return false;
- }
+
+  
+    public static bool ValidSuffix(TextBox box)
+    {
+        if (string.IsNullOrWhiteSpace(box.Text)) return true;
+
+        string val = box.Text.Trim().TrimEnd('.').ToUpperInvariant();
+        string[] allowed = { "JR", "SR", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X" };
+
+        if (Array.IndexOf(allowed, val) >= 0) return true;
+
+        Fail(box, "Suffix must be one of Jr., Sr., II, III, IV, V — or leave it blank.");
+        return false;
+    }
+
+    // ── Philippe
+    private static readonly Regex NamePattern =
+        new Regex(@"^[a-zA-ZÀ-ÿ' \-\.]+$", RegexOptions.Compiled);
+
+    public static bool IsValidName(string name)
+    {
+        return !string.IsNullOrWhiteSpace(name) && NamePattern.IsMatch(name);
+    }
 }

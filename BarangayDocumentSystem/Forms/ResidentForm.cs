@@ -9,13 +9,13 @@ namespace BarangayDocumentSystem.Forms;
 
 public partial class ResidentForm : Form
 {
-    private readonly Resident _editing;
+    private readonly Resident? _editing;
 
-    public ResidentDetails Details { get; private set; }
+    public ResidentDetails Details { get; private set; } = null!;
 
     public ResidentForm() : this(null) { }
 
-    public ResidentForm(Resident existing)
+    public ResidentForm(Resident? existing)
     {
         InitializeComponent();
         _editing = existing;
@@ -30,13 +30,13 @@ public partial class ResidentForm : Form
 
         cmbCivilStatus.Items.AddRange(Enum.GetNames(typeof(CivilStatus)).Cast<object>().ToArray());
 
-        // Hook keypress filters for name fields
+        // Block invalid characters as the user types.
         txtFirstName.KeyPress += (s, ev) => InputValidator.AllowNameCharsOnly(ev);
         txtMiddleName.KeyPress += (s, ev) => InputValidator.AllowNameCharsOnly(ev);
         txtLastName.KeyPress += (s, ev) => InputValidator.AllowNameCharsOnly(ev);
         txtSuffix.KeyPress += (s, ev) => InputValidator.AllowNameCharsOnly(ev);
 
-        if (_editing == null)
+        if (_editing is null)
         {
             Text = "Register Resident";
             cmbPurok.SelectedIndex = 0;
@@ -49,66 +49,92 @@ public partial class ResidentForm : Form
 
         Text = $"Edit Resident — {_editing.GetFullName()}";
 
-        txtFirstName.Text  = _editing.FirstName;
+        txtFirstName.Text = _editing.FirstName;
         txtMiddleName.Text = _editing.MiddleName;
-        txtLastName.Text   = _editing.LastName;
-        txtSuffix.Text     = _editing.Suffix;
-        dtpBirth.Value     = _editing.DateOfBirth == default ? new DateTime(2000, 1, 1) : _editing.DateOfBirth;
+        txtLastName.Text = _editing.LastName;
+        txtSuffix.Text = _editing.Suffix;
+        dtpBirth.Value = _editing.DateOfBirth == default
+            ? new DateTime(2000, 1, 1) : _editing.DateOfBirth;
 
-        radMale.Checked   = _editing.Gender == Gender.Male;
+        radMale.Checked = _editing.Gender == Gender.Male;
         radFemale.Checked = _editing.Gender == Gender.Female;
 
         cmbCivilStatus.SelectedItem = _editing.CivilStatus.ToString();
-        cmbPurok.Text      = _editing.Purok;
-        txtAddress.Text    = _editing.AddressLine;
-        txtContact.Text    = _editing.ContactNumber;
+        cmbPurok.Text = _editing.Purok;
+        txtAddress.Text = _editing.AddressLine;
+        txtContact.Text = _editing.ContactNumber;
         txtOccupation.Text = _editing.Occupation;
         dtpResidency.Value = _editing.DateOfResidency;
-        chkVoter.Checked   = _editing.IsRegisteredVoter;
+        chkVoter.Checked = _editing.IsRegisteredVoter;
 
-        chkSenior.Checked     = _editing.HasClassification(ResidentClassification.SeniorCitizen);
-        chkPwd.Checked        = _editing.HasClassification(ResidentClassification.PWD);
-        chkIndigent.Checked   = _editing.HasClassification(ResidentClassification.Indigent);
-        chkStudent.Checked    = _editing.HasClassification(ResidentClassification.Student);
+        chkSenior.Checked = _editing.HasClassification(ResidentClassification.SeniorCitizen);
+        chkPwd.Checked = _editing.HasClassification(ResidentClassification.PWD);
+        chkIndigent.Checked = _editing.HasClassification(ResidentClassification.Indigent);
+        chkStudent.Checked = _editing.HasClassification(ResidentClassification.Student);
         chkSoloParent.Checked = _editing.HasClassification(ResidentClassification.SoloParent);
     }
 
     private void btnSave_Click(object sender, EventArgs e)
     {
         if (!IsValid()) return;
+        if (!NamesAreValid()) return;
 
         Details = new ResidentDetails(
-            FirstName:         txtFirstName.Text.Trim(),
-            MiddleName:        txtMiddleName.Text.Trim(),
-            LastName:          txtLastName.Text.Trim(),
-            Suffix:            txtSuffix.Text.Trim(),
-            DateOfBirth:       dtpBirth.Value.Date,
-            Gender:            radFemale.Checked ? Gender.Female : Gender.Male,
-            CivilStatus:       (CivilStatus)Enum.Parse(typeof(CivilStatus), cmbCivilStatus.Text),
-            Purok:             cmbPurok.Text.Trim(),
-            AddressLine:       txtAddress.Text.Trim(),
-            ContactNumber:     txtContact.Text.Trim(),
-            Occupation:        txtOccupation.Text.Trim(),
-            DateOfResidency:   dtpResidency.Value.Date,
+            FirstName: txtFirstName.Text.Trim(),
+            MiddleName: txtMiddleName.Text.Trim(),
+            LastName: txtLastName.Text.Trim(),
+            Suffix: txtSuffix.Text.Trim(),
+            DateOfBirth: dtpBirth.Value.Date,
+            Gender: radFemale.Checked ? Gender.Female : Gender.Male,
+            CivilStatus: (CivilStatus)Enum.Parse(typeof(CivilStatus), cmbCivilStatus.Text),
+            Purok: cmbPurok.Text.Trim(),
+            AddressLine: txtAddress.Text.Trim(),
+            ContactNumber: txtContact.Text.Trim(),
+            Occupation: txtOccupation.Text.Trim(),
+            DateOfResidency: dtpResidency.Value.Date,
             IsRegisteredVoter: chkVoter.Checked,
-            Classification:    BuildClassification());
+            Classification: BuildClassification());
 
         DialogResult = DialogResult.OK;
         Close();
     }
 
+    // Regex check — blocks digits and special characters beyond the allowlist.
+    private bool NamesAreValid()
+    {
+        if (!InputValidator.IsValidName(txtFirstName.Text))
+        {
+            Dialog.Warn("First name cannot contain special characters or numbers.");
+            txtFirstName.Focus();
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(txtMiddleName.Text) &&
+            !InputValidator.IsValidName(txtMiddleName.Text))
+        {
+            Dialog.Warn("Middle name cannot contain special characters or numbers.");
+            txtMiddleName.Focus();
+            return false;
+        }
+
+        if (!InputValidator.IsValidName(txtLastName.Text))
+        {
+            Dialog.Warn("Last name cannot contain special characters or numbers.");
+            txtLastName.Focus();
+            return false;
+        }
+
+        return true;
+    }
+
     private bool IsValid() =>
         InputValidator.Required(txtFirstName, "First name")
-        && InputValidator.NameText(txtFirstName, "First name")
         && InputValidator.Required(txtLastName, "Last name")
-        && InputValidator.NameText(txtLastName, "Last name")
-        && InputValidator.NameText(txtMiddleName, "Middle name")
-        && InputValidator.NameText(txtSuffix, "Suffix")
-        && InputValidator.NameText(txtSuffix, "Suffix")
         && InputValidator.ValidSuffix(txtSuffix)
         && InputValidator.PlausibleBirthDate(dtpBirth)
         && InputValidator.NotFuture(dtpResidency, "Date of residency")
-        && InputValidator.NotBefore(dtpResidency, dtpBirth, "Date of residency", "the date of birth")
+        && InputValidator.NotBefore(dtpResidency, dtpBirth,
+                                    "Date of residency", "the date of birth")
         && InputValidator.RequiredSelection(cmbPurok, "purok")
         && InputValidator.ContactNumber11(txtContact)
         && SeniorAgeIsConsistent();
@@ -122,7 +148,10 @@ public partial class ResidentForm : Form
 
         if (age >= 60) return true;
 
-        if (Dialog.Confirm($"Resident is {age} years old. Senior Citizen status usually begins at 60. Continue?", "Check Senior Status"))
+        if (Dialog.Confirm(
+                $"This resident is {age} years old, which is under 60.\n\n" +
+                "Senior citizen status normally begins at 60. Tick it anyway?",
+                "Check senior citizen status"))
             return true;
 
         chkSenior.Focus();
@@ -132,11 +161,13 @@ public partial class ResidentForm : Form
     private ResidentClassification BuildClassification()
     {
         var result = ResidentClassification.None;
-        if (chkSenior.Checked)     result |= ResidentClassification.SeniorCitizen;
-        if (chkPwd.Checked)        result |= ResidentClassification.PWD;
-        if (chkIndigent.Checked)   result |= ResidentClassification.Indigent;
-        if (chkStudent.Checked)    result |= ResidentClassification.Student;
+
+        if (chkSenior.Checked) result |= ResidentClassification.SeniorCitizen;
+        if (chkPwd.Checked) result |= ResidentClassification.PWD;
+        if (chkIndigent.Checked) result |= ResidentClassification.Indigent;
+        if (chkStudent.Checked) result |= ResidentClassification.Student;
         if (chkSoloParent.Checked) result |= ResidentClassification.SoloParent;
+
         return result;
     }
 
