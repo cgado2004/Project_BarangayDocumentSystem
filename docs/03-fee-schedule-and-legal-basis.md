@@ -1,4 +1,4 @@
-# Fee Schedule and Legal Basis — v3.1
+# Fee Schedule and Legal Basis 
 
 **Barangay Resident and Document Request Management System**
 Barangay Magugpo Poblacion, City of Tagum, Davao del Norte
