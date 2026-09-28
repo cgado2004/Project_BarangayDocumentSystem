@@ -1,4 +1,4 @@
-# Software Requirements and Project Timeline — Docu v7
+# Software Requirements and Project Timeline 
 
 **Barangay Resident and Document Request Management System**
 Barangay Magugpo Poblacion, City of Tagum, Davao del Norte
@@ -54,12 +54,12 @@ The following are outside the coverage of this version of the system:
   in MySQL but cached in memory, so two copies running at once will not see
   each other's changes until restarted.
 - The system has no login, user accounts, or user roles. It does not
-  distinguish between a clerk and the punong barangay.
+  distinguish between a clerk and the punong barangay. (X)
 - The database credential is read from `App.config` in plain text unless
   the `BARANGAY_DB_CONNECTION` environment variable is set instead.
 - The fee amounts used are placeholder values based on typical Philippine
   rates. They must be replaced with the rates fixed by the barangay revenue
-  ordinance before the system is used to collect actual payments.
+  ordinance before the system is used to collect actual payments. (X)
 - The system does not capture photographs or biometric data for Barangay
   IDs.
 - The punong barangay's name printed on documents is a placeholder that
@@ -82,23 +82,23 @@ provides to barangay staff and the rules it enforces.
 
 | ID | Requirement |
 |---|---|
-| FR-01 | The system shall allow staff to register a new resident with name, date of birth, gender, civil status, purok, address, contact number, occupation, voter status, and date of residency. |
-| FR-02 | The system shall allow staff to view, search, edit, and delete existing resident records. |
+| FR-01 | The system shall allow staff to register a new resident with name, date of birth, gender, civil status, purok (X), address (X), contact number, occupation, voter status, and date of residency. |
+| FR-02 | The system shall allow staff to view, search, edit, and delete existing (X) resident records. |
 | FR-03 | The system shall allow a resident to be tagged with one or more classifications (senior citizen, PWD, indigent, student, solo parent). |
 | FR-04 | The system shall allow staff to file a document request for a registered resident, selecting the document type and stating the purpose. |
 | FR-05 | The system shall support seven document types: Barangay Clearance, Certificate of Residency, Certificate of Indigency, Barangay Business Clearance, Barangay ID, First-Time Jobseeker Certificate, and Certificate of Good Moral Character. |
 | FR-06 | The system shall automatically compute the fee for each request and display the legal basis for the amount charged or waived. |
-| FR-07 | The system shall waive document fees for senior citizens (RA 9994), persons with disability (RA 10754), and indigent residents, and shall issue the Certificate of Indigency free of charge (DILG MC 2019-177). |
-| FR-08 | The system shall exclude the Barangay Business Clearance from all personal fee exemptions, as it is a regulatory fee on an enterprise. |
+| (N)FR-07 (X) | The system shall waive document fees for senior citizens (RA 9994), persons with disability (RA 10754), and indigent residents, and shall issue the Certificate of Indigency free of charge (DILG MC 2019-177). |
+| FR-08 (On going) | The system shall exclude the Barangay Business Clearance from all personal fee exemptions, as it is a regulatory fee on an enterprise. |
 | FR-09 | The system shall verify First-Time Jobseeker eligibility under RA 11261 by checking at least six months of residency and that the benefit has not been availed before, and shall block and explain a request that fails either condition. |
-| FR-10 | The system shall move a request through the workflow Pending → Processing → Ready for Release → Released, and shall allow rejection with a required reason from any stage before release. |
-| FR-11 | The system shall prevent the release of a fee-bearing document until payment is recorded against an official receipt number (RA 11032). |
+| FR-10 (Major adjustments) | The system shall move a request through the workflow Pending → Processing → Ready for Release → Released, and shall allow rejection with a required reason from any stage before release. |
+| FR-11 (X) | The system shall prevent the release of a fee-bearing document until payment is recorded against an official receipt number (RA 11032). |
 | FR-12 | The system shall reject any invalid status transition and display an explanatory message instead of terminating. |
 | FR-13 | The system shall generate a printable document for each request, using the barangay letterhead and the wording required for that document type, including the Oath of Undertaking for the First-Time Jobseeker Certificate. |
 | FR-14 | The system shall provide a preview of the generated document before printing. |
 | FR-15 | The system shall display a dashboard showing resident counts, request counts by status, total revenue collected, documents issued free of charge, and breakdowns by document type and by purok. |
 | FR-16 | The system shall validate all user input, requiring mandatory fields and rejecting impossible dates, non-numeric contact numbers, and a date of residency earlier than the date of birth. |
-
+| FR-17 | The system shall generate Crystal Report. |
 ---
 
 ## III. Non-Functional Requirements
@@ -116,9 +116,9 @@ quality attributes and constraints it must satisfy.
 | NFR-06 | Extensibility — Adding a new document type shall require adding one template class implementing IDocumentTemplate and registering it, without modifying the renderer or any view. |
 | NFR-07 | Data Persistence — Every add, edit, and workflow action shall be written to the MySQL database before the on-screen list is updated, so the interface never shows a state the database does not have. |
 | NFR-08 | Compatibility — The system shall run on Windows with the .NET Framework 4.8 runtime and a MySQL-compatible server (MySQL, MariaDB, or XAMPP) listening on port 3306, and shall use only system-installed fonts (Segoe UI, Consolas) so that layout does not break on another machine. |
-| NFR-09 | Accuracy — Fee computation shall apply statutory exemptions in a fixed order and shall return both the amount and its legal basis for every assessment. |
+| NFR-09 (X) | Accuracy — Fee computation shall apply statutory exemptions in a fixed order and shall return both the amount and its legal basis for every assessment. |
 | NFR-10 | Auditability — Every collection shall be recorded against an official receipt number, and every released document shall remain in the record as a historical fact. |
-| NFR-11 | Security — A production deployment shall support user accounts with separate clerk and punong barangay roles, and shall keep the database credential out of source control (via an environment variable) before handling live resident data. |
+| NFR-11 (X) | Security — A production deployment shall support user accounts with separate clerk and punong barangay roles, and shall keep the database credential out of source control (via an environment variable) before handling live resident data. |
 | NFR-12 | Data Integrity — A resident record and its document requests shall be independent, so that later edits to a resident's details do not alter documents already released. |
 | NFR-13 | Startup Resilience — On launch, the system shall create the database and its tables automatically if they do not already exist, and shall report the reason and exit cleanly, rather than crash, if the database is unreachable. |
 
