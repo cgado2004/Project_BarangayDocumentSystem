@@ -1,15 +1,5 @@
--- ============================================================================
+
 --  Barangay Document System — MySQL schema
---
---  To run it manually (MySQL Workbench / phpMyAdmin / mysql CLI):
---      CREATE DATABASE barangay_db CHARACTER SET utf8mb4;
---      USE barangay_db;
---      -- then run everything below
---
---  Enum columns store the enum NAME (for example 'Female', 'ReadyForRelease')
---  so the data is readable in a table browser.
---  NOTE FOR THE PARSER: do not put a semicolon inside a comment or a string.
--- ============================================================================
 
 CREATE TABLE IF NOT EXISTS residents (
     resident_id           INT           NOT NULL AUTO_INCREMENT,
