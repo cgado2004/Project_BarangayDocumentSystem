@@ -1,6 +1,6 @@
 # Project Timeline
 
-**Barangay Resident and Document Request Management System — Version 3**  
+**Barangay Resident and Document Request Management System**  
 September 22–27, 2026
 
 **Group Members:** Dagamac, Emmanuelle Philippe · Del Rosario, Jonathan F. · Gado, Clint Wood · Raborar, Frent Dhieniel
