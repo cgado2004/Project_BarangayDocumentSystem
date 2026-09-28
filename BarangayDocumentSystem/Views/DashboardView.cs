@@ -77,7 +77,7 @@ public class DashboardView : ViewBase
         _breakdowns.Controls.Add(right);
     }
 
-    /// <summary>One statistic card. Built once, reused ten times (DRY).</summary>
+    /// One statistic card. Built once, reused ten times (DRY).
     private static Panel StatCard(string caption, string value, Color accent)
     {
         var card = new Panel
