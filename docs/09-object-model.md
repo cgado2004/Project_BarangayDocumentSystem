@@ -363,29 +363,33 @@ sequenceDiagram
     actor Clerk
     participant RV as ResidentsView
     participant RF as RequestForm
-    participant Repo as RepositoryBase (MySql)
+    participant Repo as RepositoryBase<br/>(MySQL)
     participant Fees as FeeSchedule
+    participant DR as DocumentRequest
     participant DB as MySQL
+    participant ReqV as RequestsView
 
     Clerk->>RV: New request
     RV->>RF: ShowDialog(resident, fees)
-    RF->>Fees: Assess(resident, type, input)   (live, as the type changes)
+    RF->>Fees: Assess(resident, type, input)
+    Note right of Fees: live, as the type changes
     Fees-->>RF: FeeAssessment (fee, basis, blocked?)
     RF-->>RV: OK: type, purpose, input
     RV->>Repo: Persist(() => CreateRequest(...))
-    Repo->>Fees: Assess(resident, type, input)   (the store prices it itself)
+    Repo->>Fees: Assess(resident, type, input)
+    Note right of Repo: the store prices it itself
     Repo->>DB: INSERT document_requests (...)
     DB-->>Repo: request_id
     Repo-->>RV: DocumentRequest (Pending, fee, basis)
 
-    Clerk->>RequestsView: Start processing / Mark ready / Record payment / Release
-    RequestsView->>DocumentRequest: guarded transition (may throw InvalidOperation)
-    RequestsView->>Repo: Persist(() => SaveRequest(request))
-    Repo->>DB: BEGIN&#59; UPDATE document_requests&#59; UPDATE residents.has_availed_jobseeker&#59; COMMIT
+    Clerk->>ReqV: Start processing / Mark ready / Record payment / Release
+    ReqV->>DR: guarded transition (may throw InvalidOperation)
+    ReqV->>Repo: Persist(() => SaveRequest(request))
+    Repo->>DB: BEGIN<br/>UPDATE document_requests<br/>UPDATE residents.has_availed_jobseeker<br/>COMMIT
     alt MySQL fails
-        Repo-->>RequestsView: RepositoryException
-        RequestsView->>Repo: Reload()
-        RequestsView-->>Clerk: "was not saved" + the reason
+        Repo-->>ReqV: RepositoryException
+        ReqV->>Repo: Reload()
+        ReqV-->>Clerk: "was not saved" + the reason
     end
 ```
 ---
