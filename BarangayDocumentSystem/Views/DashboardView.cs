@@ -8,12 +8,11 @@ using BarangayDocumentSystem.UIHelpers;
 
 namespace BarangayDocumentSystem.Views;
 
-/// <summary>
+
 /// Dashboard: statistic cards plus two breakdown lists.
 ///
 /// v1 rendered all of this as one monospaced text blob in a read-only TextBox.
 /// This version uses real cards — the same information, legible at a glance.
-/// </summary>
 public class DashboardView : ViewBase
 {
     private readonly FlowLayoutPanel _cards = new();
