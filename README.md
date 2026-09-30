@@ -148,12 +148,6 @@ Oath of Undertaking that receiving agencies (NBI, PSA, BIR) look for.
 | **RA 9994** | Senior citizen — document fees waived |
 | **RA 10754** | PWD — document fees waived |
 | **DILG MC 2019-177** | Certificate of indigency issued free |
-| **RA 11032** | Official receipt required for every collection |
-
-Other laws the barangay works under, discovered for this version
-
-| Law | What it has to do with us |
-|---|---|
 | **RA 11291** (Magna Carta of the Poor) | Fee relief for indigent residents; the anchor of waiver #3. |
 | **RA 11861** (Expanded Solo Parents Welfare Act) | The solo parent certification references it; the barangay certifies facts it knows first-hand, the LGU social-welfare office evaluates the benefit. Issued free as social-service documentation. |
 | **RA 8371** (IPRA) | Context for the IP scholarship certification; recognizes ICC/IP rights. |
