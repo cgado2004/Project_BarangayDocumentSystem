@@ -150,6 +150,19 @@ Oath of Undertaking that receiving agencies (NBI, PSA, BIR) look for.
 | **DILG MC 2019-177** | Certificate of indigency issued free |
 | **RA 11032** | Official receipt required for every collection |
 
+Other laws the barangay works under, discovered for this version
+
+| Law | What it has to do with us |
+|---|---|
+| **RA 11291** (Magna Carta of the Poor) | Fee relief for indigent residents; the anchor of waiver #3. |
+| **RA 11861** (Expanded Solo Parents Welfare Act) | The solo parent certification references it; the barangay certifies facts it knows first-hand, the LGU social-welfare office evaluates the benefit. Issued free as social-service documentation. |
+| **RA 8371** (IPRA) | Context for the IP scholarship certification; recognizes ICC/IP rights. |
+| **RA 11310** (4Ps Act) | Context for the 4Ps scholarship certification. |
+| **RA 9262** (Anti-VAWC Act) | Barangay Protection Orders are issued **free of charge**. *Outside this system's scope — noted so nobody reads the Taripa as applying to BPOs.* |
+| **RA 11032 / ARTA advisories** | Refusing a service without proper grounds is a violation; the rejection path always demands and records a reason. |
+| **RA 7160 Sec. 391–393** | The barangay secretary's records (the blotter) are the basis of the blotter-related certification; the certificate says it certifies the ENTRY, not the truth of the report. |
+
+
 > **Business clearance is deliberately excluded** from personal exemptions —
 > it is a regulatory fee on an enterprise, not a personal document. A senior
 > citizen still pays it.
