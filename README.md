@@ -22,7 +22,7 @@ certificate.
 
 ---
 
-> **v2 — refactored.** Layered folders for SOLID, duplication
+> Layered folders for SOLID, duplication
 > removed for DRY, and the TabControl replaced with a sidebar shell.
 > Full write-up: [`docs/04-refactor-notes.md`](docs/04-refactor-notes.md).
 
@@ -107,6 +107,21 @@ free of charge, and breakdowns by document type and purok.
 | Barangay ID | ₱100 | |
 | First-Time Jobseeker Certificate | **FREE** | RA 11261 |
 | Certificate of Good Moral Character | ₱50 | |
+
+## Should be followed
+
+| Service | Fee the system charges | Where it lives in the code |
+|---|---|---|
+| Barangay Clearance — local employment | ₱100.00 | `FeeSchedule` (1) |
+| Barangay Clearance — work abroad | ₱200.00 | `FeeSchedule` (1) |
+| Certification (residency, good moral, other) | ₱100.00 | `FeeSchedule` (2) |
+| Other processing fee under the Barangay Taripa | assessed per Taripa item | `FeeSchedule.AssessTarifa` |
+| Certificate of Indigency | FREE | `FeeSchedule` (1) |
+| Certificate of Low Income | FREE | `FeeSchedule` (1) |
+| Business Clearance | **VARIES** with the law violated; ₱200 standard | `FeeSchedule.AssessBusiness` |
+| Cedula (community tax) | **VARIES** — computed from sworn income | `FeeSchedule.AssessCommunityTax` |
+| Filing a case (Katarungang Pambarangay) | ₱150.00 | `FeeSchedule.AssessLuponFiling` |
+| Barangay facilities | ₱200.00 per hour or part | `FeeSchedule.AssessFacility` |
 
 ---
 
