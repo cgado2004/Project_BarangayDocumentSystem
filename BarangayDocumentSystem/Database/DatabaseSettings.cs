@@ -3,7 +3,7 @@ using System.Configuration;
 
 namespace BarangayDocumentSystem.Database;
 
-/// <summary>
+
 /// Where the MySQL server is and how to log in.
 ///
 /// Read from <c>App.config</c> (<c>connectionStrings</c> and
@@ -14,7 +14,7 @@ namespace BarangayDocumentSystem.Database;
 ///
 /// The environment variable <see cref="EnvironmentVariable"/>, if set, wins
 /// over the file — handy for keeping a real password out of source control.
-/// </summary>
+
 public sealed class DatabaseSettings
 {
     /// <summary>A stock local MySQL / XAMPP install: user root, blank password.</summary>
