@@ -10,7 +10,7 @@ using BarangayDocumentSystem.Models;
 
 namespace BarangayDocumentSystem.Database;
 
-/// <summary>
+
 /// MySQL implementation of <see cref="IBarangayRepository"/>.
 ///
 /// HOW IT WORKS — "load once, write through"
@@ -31,7 +31,7 @@ namespace BarangayDocumentSystem.Database;
 ///
 /// Limit of this design: it assumes ONE running copy of the app. Two clerks on
 /// two machines would not see each other's changes until Reload/restart.
-/// </summary>
+
 public class MySqlBarangayRepository : IBarangayRepository
 {
     // ---------------------------------------------------------------- SQL
