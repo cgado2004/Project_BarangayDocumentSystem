@@ -5,13 +5,7 @@ namespace BarangayDocumentSystem.Database;
 
 
 /// Where the MySQL server is and how to log in.
-///
-/// Read from <c>App.config</c> (<c>connectionStrings</c> and
-/// <c>appSettings</c>) — the standard place a .NET Framework WinForms app
-/// keeps this, via <see cref="ConfigurationManager"/>. Changing the server
-/// or password only means editing <c>BarangayDocumentSystem.exe.config</c>
-/// next to the .exe; it never needs a rebuild.
-///
+// 
 /// The environment variable <see cref="EnvironmentVariable"/>, if set, wins
 /// over the file — handy for keeping a real password out of source control.
 
