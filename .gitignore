@@ -1,9 +1,0 @@
-bin/
-obj/
-.vs/
-*.suo
-*.user
-*.userosscache
-*.userprefs
-.vscode/
-*.pubxml.user
