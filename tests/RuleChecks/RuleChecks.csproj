@@ -1,15 +1,32 @@
 <Project ToolsVersion="Current" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>Exe</OutputType>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <AssemblyName>RuleChecks</AssemblyName>
+    <RootNamespace>BarangayDocumentSystem.RuleChecks</RootNamespace>
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <LangVersion>10.0</LangVersion>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols><DebugType>full</DebugType>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <Optimize>true</Optimize><DebugType>pdbonly</DebugType>
+    <DefineConstants>TRACE</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" /><Reference Include="System.Core" />
+    <!-- The rule checks talk to the real classes, so they need the same
+         assemblies the program itself uses. Nothing extra is installed. -->
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
     <Compile Include="Program.cs" />
     <ProjectReference Include="..\..\BarangayDocumentSystem\BarangayDocumentSystem.csproj">
       <Project>{9077BDF9-C14F-4BC1-A068-2BF52A9FA8CB}</Project>

@@ -1,345 +1,459 @@
-// =====================================================================
-//  PART:    Models - one request for one document, and the rules that move it along
-//  ORIGIN:  the group's shared design - first modelled in Draft - Jonathan F. Del Rosario,
-//           given this place in the tree by Fdraft - Frent Dhieniel Raborar;
-//           the code and comments in this file are my v3.1 rewrite (leader_draft - Clint Wood Gado)
-//  EDITS:   Clint Wood Gado - v3.1: RequestInput, guarded transitions, Rehydrate, RA 11032 aging;
-//           v3.2: the internal constructor takes the filing time so both stores agree on it
-//  VOICE:   every comment in this file is mine (Clint), in the first person
-// =====================================================================
-using BarangayDocumentSystem.BusinessRules;
+// ---------------------------------------------------------------------------
+//  DocumentRequest.cs - one request for one paper.
+//  Mine, in my own words.
+// ---------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.IO;
-namespace BarangayDocumentSystem.Models;
 
-/// <summary>
-/// Everything a request needs beside its type, carried as one object.
-///
-/// The v3.1 fee schedule has documents whose price is not fixed: the
-/// business clearance varies with the law violated, the cedula is computed
-/// from sworn income, facility use is charged by the hour, and the Barangay
-/// Taripa items are assessed case by case. Rather than grow a method
-/// signature a parameter at a time, one record carries all of it, and the
-/// fields that do not apply to a document are simply left at their
-/// defaults.
-/// </summary>
-public sealed record RequestInput(
-    ClearanceScope Scope = ClearanceScope.Local,
-
-    /// <summary>The assessed amount, for a document priced by the clerk -
-    /// a business clearance under a violated ordinance, or a Taripa
-    /// line. Zero means "use the standard rate".</summary>
-    decimal Amount = 0m,
-
-    /// <summary>Hours of barangay facility use. Charged per hour or part
-    /// of an hour.</summary>
-    decimal Hours = 0m,
-
-    /// <summary>The declarant's sworn gross annual income, for the
-    /// community tax computation under RA 7160 Sec. 156.</summary>
-    decimal GrossAnnualIncome = 0m,
-
-    /// <summary>Free text that travels with the fee: the law or ordinance
-    /// violated, the Taripa item, or the facility used.</summary>
-    string Detail = "",
-
-    /// <summary>Set when a first-time jobseeker asks for a Barangay
-    /// Clearance and chooses to claim the RA 11261 one-time waiver, which
-    /// the law grants for the clearance as well as the certificate.</summary>
-    bool ApplyJobseekerWaiver = false)
+namespace BarangayDocumentSystem.Models
 {
-    public static RequestInput Default { get; } = new();
-}
-
-/// <summary>
-/// One request by a resident for one barangay document.
-///
-/// I guard every status change here: a released document cannot be
-/// rejected, a rejected one cannot be released, and so on. I deliberately
-/// put these rules in this class rather than in a form, so they hold no
-/// matter who calls them - including a screen I have not written yet.
-///
-///     Pending → Processing → ReadyForRelease → Released
-///        └──────────┴───────────────┴────────→ Rejected
-///
-/// v3.1 also makes this class the home of the fee result: the repository
-/// applies a FeeAssessment from FeeSchedule through ApplyAssessment, and
-/// from then on the amount and its legal basis travel together.
-/// </summary>
-public class DocumentRequest
-{
-    public int RequestId { get; private set; }
-
-    /// <summary>The resident who asked for this. I never allow it to be null -
-    /// a document with nobody attached to it is meaningless.</summary>
-    public Resident Resident { get; }
-
-    public DocumentType DocumentType { get; }
-
-    /// <summary>Why the document is needed. I print this on the certificate
-    /// itself, so it has to be something fit to appear on paper.</summary>
-    public string Purpose { get; set; } = string.Empty;
-
-    public DateTime DateRequested { get; private set; }
-    public DateTime? DateReleased { get; private set; }
-
-    public RequestStatus Status { get; private set; }
-
-    /// <summary>The fee after I have applied every exemption. Zero when I have
-    /// waived it entirely.</summary>
-    public decimal Fee { get; private set; }
-
-    /// <summary>My reason for the amount above, for example "RA 11261". I keep
-    /// it beside the fee so the two can never be separated.</summary>
-    public string FeeBasis { get; private set; } = string.Empty;
-
-    public bool IsPaid { get; private set; }
-
-    /// <summary>The official receipt number. I leave it blank for a zero-fee
-    /// document, because there is no payment to trace.</summary>
-    public string OfficialReceiptNo { get; private set; } = string.Empty;
-
-    public string Remarks { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Local or abroad, and only meaningful for a Barangay Clearance.
-    ///
-    /// I need this because the Citizen's Charter charges ₱100 for local
-    /// employment and ₱200 for work abroad, so I cannot work the fee out
-    /// from the document type on its own. The value lives on the input
-    /// record; this property reads it back.
-    /// </summary>
-    public ClearanceScope Scope => Input.Scope;
-
-    /// <summary>The circumstances the fee was assessed against - the entered
-    /// amount, hours, sworn income and free-text detail.</summary>
-    public RequestInput Input { get; private set; }
-
-    /// <summary>
-    /// True when this request consumed the resident's once-only RA 11261
-    /// benefit - either the First-Time Jobseeker Certificate itself, or a
-    /// Barangay Clearance issued under the jobseeker waiver. Release()
-    /// marks the resident from this flag.
-    /// </summary>
-    public bool AvailedUnderJobseekerAct { get; private set; }
-
-    /// <summary>
-    /// A brand-new, Pending request.
-    ///
-    /// Only the repository calls this (it is internal), because the store is
-    /// the one that hands out ids and prices the request. The filing time is
-    /// a parameter rather than always DateTime.Now so that the repository can
-    /// write the same instant to MySQL that it keeps in memory - MySQL's
-    /// DATETIME has whole-second precision, and the two must not disagree -
-    /// and so the sample data can file one request in the past for the RA
-    /// 11032 aging demonstration.
-    /// </summary>
-    internal DocumentRequest(
-        int requestId, Resident resident, DocumentType documentType, string purpose,
-        RequestInput? input = null, DateTime? filedOn = null)
+    /// <summary>One line of the request's history: who moved it, when, and why.</summary>
+    public class RequestStatusChange
     {
-        RequestId = requestId;
-        Resident = resident ?? throw new ArgumentNullException(nameof(resident));
-        DocumentType = documentType;
-        Purpose = purpose;
-        Input = input ?? RequestInput.Default;
-        DateRequested = filedOn ?? DateTime.Now;
-        Status = RequestStatus.Pending;
-    }
+        public RequestStatus Status { get; set; }
+        public DateTime ChangedOn { get; set; }
+        public string ChangedBy { get; set; }
+        public string Reason { get; set; }
 
-    /// <summary>The readable name of this document, which I use on screen and
-    /// on the printed page.</summary>
-    public string GetDocumentName() => FeeSchedule.NameOf(DocumentType);
-
-    // -----------------------------------------------------------------
-    //  The fee result, applied once at filing time by the repository.
-    // -----------------------------------------------------------------
-
-    /// <summary>
-    /// I write the assessment's amount and legal basis onto the request in
-    /// one move, so the two can never disagree. The screens never call
-    /// this - only the store that creates the request does.
-    /// </summary>
-    internal void ApplyAssessment(BusinessRules.FeeAssessment assessment)
-    {
-        if (assessment is null) throw new ArgumentNullException(nameof(assessment));
-        Fee = assessment.FinalFee;
-        FeeBasis = assessment.Basis;
-        AvailedUnderJobseekerAct = assessment.MarksJobseekerAvailment;
-    }
-
-    // -----------------------------------------------------------------
-    //  Status transitions. Each one checks its own preconditions before it
-    //  changes anything, so an illegal move fails loudly instead of quietly.
-    // -----------------------------------------------------------------
-    public void StartProcessing()
-    {
-        if (Status != RequestStatus.Pending)
-            throw new InvalidOperationException(
-                $"Only a pending request can be moved to processing. Current status: {Status}.");
-
-        Status = RequestStatus.Processing;
-    }
-
-    public void MarkReadyForRelease()
-    {
-        if (Status != RequestStatus.Processing)
-            throw new InvalidOperationException(
-                $"Only a request being processed can be marked ready. Current status: {Status}.");
-
-        Status = RequestStatus.ReadyForRelease;
-    }
-
-    /// <summary>
-    /// I release the document.
-    ///
-    /// A fee-bearing request must be paid first. This is the single most
-    /// important check I wrote: it is what stops a document leaving the office
-    /// without the money being recorded against a receipt.
-    /// </summary>
-    public void Release()
-    {
-        if (Status != RequestStatus.ReadyForRelease)
-            throw new InvalidOperationException(
-                $"Only a request that is ready for release can be released. Current status: {Status}.");
-
-        if (Fee > 0 && !IsPaid)
-            throw new InvalidOperationException(
-                $"This document has an unpaid fee of {BusinessRules.DisplayFormat.Peso(Fee)}. Record the payment before releasing.");
-
-        Status = RequestStatus.Released;
-        DateReleased = DateTime.Now;
-
-        // RA 11261 may be availed only once, so I mark the resident here -
-        // whether the benefit was claimed on the certificate itself or on
-        // a barangay clearance issued under the waiver. If I forgot this,
-        // the same person could come back next month and claim it again.
-        if (DocumentType == DocumentType.FirstTimeJobseekerCertificate || AvailedUnderJobseekerAct)
-            Resident.HasAvailedFirstTimeJobseeker = true;
-    }
-
-    public void Reject(string reason)
-    {
-        if (Status == RequestStatus.Released)
-            throw new InvalidOperationException("A released document cannot be rejected.");
-
-        if (string.IsNullOrWhiteSpace(reason))
-            throw new ArgumentException("A reason is required when rejecting a request.", nameof(reason));
-
-        Status = RequestStatus.Rejected;
-        Remarks = reason;
-    }
-
-    /// <summary>I record the payment and the official receipt number together.
-    /// One without the other would leave money I cannot account for.</summary>
-    public void RecordPayment(string officialReceiptNo)
-    {
-        if (Fee <= 0)
-            throw new InvalidOperationException("This document carries no fee, so no payment is due.");
-
-        if (IsPaid)
-            throw new InvalidOperationException("This request has already been paid.");
-
-        if (string.IsNullOrWhiteSpace(officialReceiptNo))
-            throw new ArgumentException("An official receipt number is required.", nameof(officialReceiptNo));
-
-        IsPaid = true;
-        OfficialReceiptNo = officialReceiptNo.Trim();
-    }
-
-    /// <summary>The tracking reference I give the resident, for example
-    /// "BMP-2026-0042". I build it from the year and the id rather than
-    /// storing it, so it can never disagree with the row it belongs to.</summary>
-    public string GetReferenceNumber() => $"BMP-{DateRequested:yyyy}-{RequestId:D4}";
-
-    // -----------------------------------------------------------------
-    //  RA 11032 service standard
-    // -----------------------------------------------------------------
-
-    /// <summary>
-    /// Working days (Monday to Friday) the request has been in the queue.
-    ///
-    /// RA 11032, the Ease of Doing Business Act, prescribes three working
-    /// days for a simple frontline transaction, and a barangay document is
-    /// one. I count weekdays only and I do not subtract Philippine public
-    /// holidays - that would need a holiday table I do not have - so the
-    /// count is the cautious upper bound, which is the right direction to
-    /// err in when the law sets a deadline.
-    /// </summary>
-    public int WorkingDaysInQueue() =>
-        WorkingDaysBetween(DateRequested, DateTime.Now);
-
-    /// <summary>True when this open request has sat longer than the RA 11032
-    /// standard for a simple transaction.</summary>
-    public bool IsBeyondRA11032Standard(int simpleWorkingDays)
-    {
-        if (Status is RequestStatus.Released or RequestStatus.Rejected) return false;
-        return WorkingDaysInQueue() > simpleWorkingDays;
-    }
-
-    public static int WorkingDaysBetween(DateTime from, DateTime to)
-    {
-        int days = 0;
-        var day = from.Date;
-        var end = to.Date;
-
-        while (day < end)
+        public RequestStatusChange()
         {
-            day = day.AddDays(1);
-            if (day.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday)
-                days++;
+            ChangedBy = string.Empty;
+            Reason = string.Empty;
         }
 
-        return days;
+        public string ToDisplay()
+        {
+            string text = ChangedOn.ToString("dd MMM yyyy h:mm tt") + " - " + EnumText.Of(Status);
+            if (!string.IsNullOrWhiteSpace(Reason)) text += " (" + Reason + ")";
+            if (!string.IsNullOrWhiteSpace(ChangedBy)) text += " by " + ChangedBy;
+            return text;
+        }
     }
 
-    public override string ToString() =>
-        $"{GetReferenceNumber()} — {GetDocumentName()} for {Resident.GetFullName()} [{Status}]";
-
-    // -----------------------------------------------------------------
-    //  Rebuilding a request that came back out of the database
-    // -----------------------------------------------------------------
-
     /// <summary>
-    /// I rebuild a request from a row that is already saved in MySQL.
+    /// A resident's request for a document.
     ///
-    /// WHY I NEEDED THIS. Status, DateRequested, DateReleased, IsPaid and
-    /// OfficialReceiptNo all have private setters on purpose, so the only way
-    /// to change them is through StartProcessing, Release and the rest - and
-    /// every one of those checks my rules first. That is exactly what I want
-    /// while the program is running.
+    /// The rules that matter live in this class, not in the screens, because a
+    /// screen can be bypassed by a stale label or a shortcut key but a method
+    /// cannot:
     ///
-    /// But a row coming back out of the database has ALREADY been through all
-    /// of that. If I had to replay those steps to load an old released
-    /// request, I would be re-running today's rules against history, and my
-    /// unpaid-release check would reject rows that were legitimately released
-    /// years ago.
+    ///  * a request only moves forward through the states I allow;
+    ///  * nothing is released until the fee is settled against an official
+    ///    receipt (or the fee is zero in the first place);
+    ///  * a rejection always carries a reason;
+    ///  * a released document is history and cannot be changed back.
     ///
-    /// So I gave loading its own door. It is public only because my RuleChecks
-    /// harness lives in its own assembly and needs to build historical rows
-    /// for its checks; no screen in this project calls it. The screens still
-    /// cannot set a status without going through the proper method.
+    /// About the money: the request stores the AMOUNT and, separately, the
+    /// legal basis behind it. The basis is internal - it is written on the
+    /// activity log and it is available to the admin, but it is deliberately
+    /// not shown to the clerk on the request screen, which is what the
+    /// barangay asked for.
     /// </summary>
-    public static DocumentRequest Rehydrate(
-        int requestId, Resident resident, DocumentType documentType, string purpose,
-        DateTime dateRequested, DateTime? dateReleased, RequestStatus status,
-        decimal fee, string feeBasis, bool isPaid, string officialReceiptNo, string remarks,
-        RequestInput? input = null, bool availedUnderJobseekerAct = false)
+    public class DocumentRequest
     {
-        var request = new DocumentRequest(requestId, resident, documentType, purpose, input)
+        private readonly List<RequestStatusChange> _history = new List<RequestStatusChange>();
+
+        public int RequestId { get; internal set; }
+
+        /// <summary>The number the resident is given at the counter, e.g.
+        /// "2026-000123". I build it from the year plus a running count so it
+        /// is easy to write by hand on the paper stub.</summary>
+        public string ReferenceNumber { get; set; }
+
+        public int ResidentId { get; set; }
+
+        /// <summary>Filled in when the request is loaded with its resident.
+        /// It saves the screens a second lookup.</summary>
+        public string ResidentName { get; set; }
+
+        public DocumentType DocumentType { get; set; }
+        public string Purpose { get; set; }
+        public DateTime DateRequested { get; set; }
+        public RequestStatus Status { get; internal set; }
+
+        // ---- the money ----
+        public decimal Fee { get; internal set; }
+
+        /// <summary>Why that amount was charged or waived. Internal only - see
+        /// the class comment. The admin sees it on the activity log and in the
+        /// collection report.</summary>
+        public string FeeBasis { get; internal set; }
+
+        public bool IsPaid { get; internal set; }
+        public string OfficialReceiptNumber { get; internal set; }
+
+        /// <summary>The control number of the government receipt booklet the
+        /// collection was written in. This is what makes the collection
+        /// auditable, so it is part of the release check, not an extra.</summary>
+        public string OrControlNumber { get; internal set; }
+
+        public DateTime? PaymentDate { get; internal set; }
+        public string CollectedBy { get; internal set; }
+
+        // ---- what the fee was worked out from ----
+        public ClearanceScope Scope { get; set; }
+        public decimal AssessedAmount { get; set; }
+        public decimal Hours { get; set; }
+        public decimal GrossAnnualIncome { get; set; }
+        public string Detail { get; set; }
+        public bool ApplyJobseekerWaiver { get; set; }
+        public bool AvailedUnderJobseekerAct { get; set; }
+
+        // ---- business clearance part ----
+        /// <summary>Only filled in for a Barangay Business Clearance. A
+        /// business request always needs validation before it can be cleared,
+        /// which is why it goes to Processing instead of straight to Cleared.</summary>
+        public BusinessDetails Business { get; set; }
+
+        /// <summary>True when this request has to be checked by a person
+        /// before it can be cleared (business clearances, and anything the
+        /// clerk ticks as needing validation).</summary>
+        public bool RequiresValidation { get; set; }
+
+        // ---- filing time rule ----
+        /// <summary>True when the request was filed between 8:00 AM and
+        /// 4:00 PM. I keep the flag so the queue can explain itself later
+        /// ("filed outside office hours - cleared the next working day").</summary>
+        public bool FiledDuringOfficeWindow { get; set; }
+
+        /// <summary>True when the request is still waiting for the next office
+        /// window to open, so the screen can show "for clearing" instead of a
+        /// bare "Pending".</summary>
+        public bool WaitsForNextWindow
         {
-            DateRequested             = dateRequested,
-            DateReleased              = dateReleased,
-            Status                    = status,
-            Fee                       = fee,
-            FeeBasis                  = feeBasis,
-            IsPaid                    = isPaid,
-            OfficialReceiptNo         = officialReceiptNo,
-            Remarks                   = remarks,
-            AvailedUnderJobseekerAct  = availedUnderJobseekerAct
-        };
-        return request;
+            get
+            {
+                return Status == RequestStatus.Pending
+                    && !RequiresValidation
+                    && !FiledDuringOfficeWindow;
+            }
+        }
+
+        // ---- release ----
+        public DateTime? DateReleased { get; internal set; }
+        public string ReleasedBy { get; internal set; }
+        public string ReceivedBy { get; set; }
+
+        public string RejectionReason { get; internal set; }
+        public string Remarks { get; set; }
+
+        public DateTime LastStatusChangeOn { get; internal set; }
+        public string LastStatusChangeBy { get; internal set; }
+
+        public IReadOnlyList<RequestStatusChange> History { get { return _history.AsReadOnly(); } }
+
+        public DocumentRequest()
+        {
+            ReferenceNumber = string.Empty;
+            ResidentName = string.Empty;
+            Purpose = string.Empty;
+            Detail = string.Empty;
+            FeeBasis = string.Empty;
+            OfficialReceiptNumber = string.Empty;
+            OrControlNumber = string.Empty;
+            CollectedBy = string.Empty;
+            ReleasedBy = string.Empty;
+            ReceivedBy = string.Empty;
+            RejectionReason = string.Empty;
+            Remarks = string.Empty;
+            LastStatusChangeBy = string.Empty;
+            DateRequested = DateTime.Now;
+            Status = RequestStatus.Pending;
+        }
+
+        // ==================================================================
+        //  Reading the request
+        // ==================================================================
+
+        public bool IsReleased { get { return Status == RequestStatus.Released; } }
+        public bool IsRejected { get { return Status == RequestStatus.Rejected; } }
+        public bool IsClosed { get { return IsReleased || IsRejected; } }
+        public bool IsBusinessRequest { get { return DocumentType == DocumentType.BarangayBusinessClearance; } }
+
+        /// <summary>True when there is still money to collect before the paper
+        /// can be handed over.</summary>
+        public bool HasUnsettledFee
+        {
+            get { return Fee > 0m && !IsPaid; }
+        }
+
+        /// <summary>The amount the resident still has to pay today.</summary>
+        public decimal OutstandingAmount
+        {
+            get { return IsPaid ? 0m : Fee; }
+        }
+
+        /// <summary>What the clerk is allowed to see: the amount, and whether
+        /// it has been paid. No sentence of law, no figure to argue with.</summary>
+        public string GetFeeText()
+        {
+            if (Fee <= 0m) return "Free";
+            return "P" + Fee.ToString("#,##0.00") + (IsPaid ? " (paid)" : string.Empty);
+        }
+
+        public string GetStatusText()
+        {
+            if (WaitsForNextWindow) return "Pending (next working day)";
+            return EnumText.Of(Status);
+        }
+
+        public string GetDocumentName()
+        {
+            return EnumText.Spaced(DocumentType.ToString());
+        }
+
+        /// <summary>How many working days the request has been sitting on the
+        /// counter. The queue colours anything past the RA 11032 limit.</summary>
+        public int GetWaitingDays(DateTime today)
+        {
+            return Math.Max(0, (today.Date - DateRequested.Date).Days);
+        }
+
+        // ==================================================================
+        //  Guards, in one place
+        // ==================================================================
+
+        /// <summary>
+        /// Whether this request may be handed to the resident.
+        ///
+        /// I wrote it as a question that returns a reason rather than a plain
+        /// true/false, because a clerk staring at a disabled button deserves
+        /// to know what is missing. The screen shows that sentence.
+        /// </summary>
+        public bool CanRelease(out string reason)
+        {
+            if (Status == RequestStatus.Released)
+            {
+                reason = "This document was already released.";
+                return false;
+            }
+
+            if (Status == RequestStatus.Rejected)
+            {
+                reason = "This request was rejected. File a new one instead of releasing this.";
+                return false;
+            }
+
+            if (Status != RequestStatus.ReadyForRelease)
+            {
+                reason = "Only a request that is Ready for Release can be handed over. This one is "
+                       + GetStatusText() + ".";
+                return false;
+            }
+
+            if (HasUnsettledFee)
+            {
+                reason = "The fee of P" + Fee.ToString("#,##0.00")
+                       + " has not been collected yet. Record the official receipt first.";
+                return false;
+            }
+
+            reason = string.Empty;
+            return true;
+        }
+
+        // ==================================================================
+        //  Moving the request
+        // ==================================================================
+
+        /// <summary>Send the request to validation. Business clearances always
+        /// come through here, because a business has to be inspected and its
+        /// papers checked before the barangay signs.</summary>
+        public void SendToProcessing(string reason, string changedBy, DateTime when)
+        {
+            Require(Status == RequestStatus.Pending || Status == RequestStatus.Processing,
+                "Only a pending request can be sent for processing. This one is " + GetStatusText() + ".");
+            Move(RequestStatus.Processing, reason, changedBy, when);
+        }
+
+        /// <summary>Approve the request. This is what the 8:00 AM to 4:00 PM
+        /// rule does automatically for requests that need no validation, and
+        /// what a validator does by hand for the rest.</summary>
+        public void Clear(string reason, string changedBy, DateTime when)
+        {
+            Require(Status == RequestStatus.Pending || Status == RequestStatus.Processing,
+                "Only a pending or processing request can be cleared. This one is " + GetStatusText() + ".");
+
+            if (RequiresValidation && Status == RequestStatus.Pending)
+                throw new InvalidOperationException(
+                    "This request needs validation first, so it has to pass through Processing before it can be cleared.");
+
+            Move(RequestStatus.Cleared, reason, changedBy, when);
+        }
+
+        /// <summary>Mark the document as printed and waiting on the counter.
+        /// Money is checked here: I will not put a fee-bearing document in the
+        /// ready tray before the receipt exists.</summary>
+        public void MarkReadyForRelease(string changedBy, DateTime when)
+        {
+            Require(Status == RequestStatus.Cleared,
+                "Only a cleared request can be made ready for release. This one is " + GetStatusText() + ".");
+            Require(!HasUnsettledFee,
+                "The fee of P" + Fee.ToString("#,##0.00") + " has to be collected before the document is prepared.");
+
+            Move(RequestStatus.ReadyForRelease, string.Empty, changedBy, when);
+        }
+
+        /// <summary>Hand the document over. This is the last step; after this
+        /// the request is history.</summary>
+        public void Release(string receivedBy, string releasedBy, DateTime when)
+        {
+            string reason;
+            if (!CanRelease(out reason)) throw new InvalidOperationException(reason);
+
+            ReceivedBy = receivedBy == null ? string.Empty : receivedBy.Trim();
+            DateReleased = when;
+            ReleasedBy = releasedBy ?? string.Empty;
+            Move(RequestStatus.Released, "Released to " + ReceivedBy, releasedBy, when);
+        }
+
+        /// <summary>Refuse the request. A reason is mandatory: a resident who
+        /// is told "no" is always told why, and that sentence goes on the log.</summary>
+        public void Reject(string reason, string changedBy, DateTime when)
+        {
+            if (string.IsNullOrWhiteSpace(reason))
+                throw new InvalidOperationException("I need a reason before I can reject a request.");
+
+            Require(!IsReleased, "A released document cannot be rejected.");
+            Require(!IsRejected, "This request was already rejected.");
+
+            Move(RequestStatus.Rejected, reason.Trim(), changedBy, when);
+        }
+
+        /// <summary>Put back into the queue when a request was rejected by
+        /// mistake. Only the administrator gets to do this, and it is logged.</summary>
+        public void ReopenFromRejection(string reason, string changedBy, DateTime when)
+        {
+            Require(IsRejected, "Only a rejected request can be reopened.");
+            Move(RequestStatus.Pending, reason, changedBy, when);
+        }
+
+        // ==================================================================
+        //  Payment
+        // ==================================================================
+
+        /// <summary>
+        /// Record the collection. The official receipt number and its control
+        /// number are both compulsory when money changes hands - that is the
+        /// "Government OR control receipt" requirement, and it is also the
+        /// only way a collection can be traced back to a booklet in an audit.
+        /// </summary>
+        public void RecordPayment(decimal amount, string orNumber, string orControlNumber,
+                                  string collectedBy, DateTime when)
+        {
+            if (amount < 0m) throw new ArgumentOutOfRangeException("amount", "A collection cannot be negative.");
+            if (amount < Fee)
+                throw new InvalidOperationException("The collection of P" + amount.ToString("#,##0.00")
+                    + " is short of the assessed fee of P" + Fee.ToString("#,##0.00") + ".");
+            if (string.IsNullOrWhiteSpace(orNumber))
+                throw new InvalidOperationException("The official receipt number is required.");
+            if (string.IsNullOrWhiteSpace(orControlNumber))
+                throw new InvalidOperationException("The control number of the receipt booklet is required.");
+
+            IsPaid = true;
+            OfficialReceiptNumber = orNumber.Trim();
+            OrControlNumber = orControlNumber.Trim();
+            PaymentDate = when;
+            CollectedBy = collectedBy ?? string.Empty;
+        }
+
+        /// <summary>Marks the resident as having used the once-only RA 11261
+        /// benefit. I call this at release time, not at filing time, because a
+        /// request that is rejected must not consume the benefit.</summary>
+        public void MarkJobseekerBenefitUsed()
+        {
+            if (AvailedUnderJobseekerAct) HasAvailedFirstTimeJobseeker = true;
+        }
+
+        /// <summary>
+        /// Puts the request back to unpaid when the receipt that settled it has
+        /// been voided.
+        ///
+        /// Without this, voiding a receipt would leave the request looking paid
+        /// and the document could be handed over on a collection the barangay
+        /// has already cancelled - which is exactly the hole an audit looks
+        /// for. If the document was already prepared for release, it drops back
+        /// to Cleared so it cannot be handed over either.
+        /// </summary>
+        public void ClearPaymentForVoidedReceipt(string changedBy, DateTime when)
+        {
+            IsPaid = false;
+            OfficialReceiptNumber = string.Empty;
+            OrControlNumber = string.Empty;
+            PaymentDate = null;
+            CollectedBy = string.Empty;
+
+            if (Status == RequestStatus.ReadyForRelease)
+                Move(RequestStatus.Cleared, "The receipt for this request was voided, so it went back to Cleared.",
+                    changedBy, when);
+        }
+
+        public bool HasAvailedFirstTimeJobseeker { get; internal set; }
+
+        public void AddJobseekerWaiver(string basis, decimal originalFee)
+        {
+            ApplyJobseekerWaiver = true;
+            AvailedUnderJobseekerAct = true;
+            AssessedAmount = originalFee;
+        }
+
+        // ==================================================================
+        //  Internals
+        // ==================================================================
+
+        /// <summary>Filing-time decisions: the fee comes from the fee schedule,
+        /// and the starting status comes from the time on the clock.</summary>
+        internal void SetAssessment(decimal fee, string basis)
+        {
+            Fee = fee;
+            FeeBasis = basis ?? string.Empty;
+        }
+
+        internal void SetInitialStatus(RequestStatus status, string reason, string changedBy, DateTime when)
+        {
+            Status = status;
+            LastStatusChangeOn = when;
+            LastStatusChangeBy = changedBy ?? string.Empty;
+            _history.Add(new RequestStatusChange
+            {
+                Status = status,
+                ChangedOn = when,
+                ChangedBy = changedBy ?? string.Empty,
+                Reason = reason ?? string.Empty
+            });
+        }
+
+        internal void LoadHistory(IEnumerable<RequestStatusChange> history)
+        {
+            _history.Clear();
+            if (history != null) _history.AddRange(history);
+        }
+
+        private void Move(RequestStatus status, string reason, string changedBy, DateTime when)
+        {
+            Status = status;
+            LastStatusChangeOn = when;
+            LastStatusChangeBy = changedBy ?? string.Empty;
+
+            if (status == RequestStatus.Rejected) RejectionReason = reason ?? string.Empty;
+
+            _history.Add(new RequestStatusChange
+            {
+                Status = status,
+                ChangedOn = when,
+                ChangedBy = changedBy ?? string.Empty,
+                Reason = reason ?? string.Empty
+            });
+        }
+
+        private static void Require(bool condition, string message)
+        {
+            if (!condition) throw new InvalidOperationException(message);
+        }
+
+        public override string ToString()
+        {
+            return ReferenceNumber + " - " + GetDocumentName() + " (" + GetStatusText() + ")";
+        }
     }
 }

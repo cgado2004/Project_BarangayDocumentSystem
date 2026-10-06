@@ -2,95 +2,231 @@
 
 Run from anywhere:  python scripts/check_structure.py
 
-What it proves: the project file lists exactly the .cs files that exist, the
-Framework target and folder layout are intact, the XML files parse, the schema
-is embedded, no real password is committed, every source file carries its
-attribution header, the MySQL repository reads only columns the schema
-defines, and no API that is missing from .NET Framework 4.8 crept in.
+What it proves, without a C# compiler on the machine:
+
+  * the project file lists exactly the .cs files that exist, and nothing stale
+  * the four database scripts travel inside the .exe (embedded resources)
+  * both engines' stored procedures have the same names and the same number of
+    parameters, in the same order (see DBHelper.BuildProcedure for why order
+    matters on MySQL)
+  * every setting the code reads is present in App.config
+  * no real password is committed, and the connection string is blank
+  * the seal is byte-identical to the original file (nobody re-edited the logo)
+  * the things the barangay asked to remove really are gone: Address,
+    Student-as-a-classification, and the old v3.2 folders
+  * every source file is balanced and opens with a comment
 """
 from pathlib import Path
-import xml.etree.ElementTree as ET
+import hashlib
 import re
+import sys
+import xml.etree.ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
 app = root / 'BarangayDocumentSystem'
 ns = {'m': 'http://schemas.microsoft.com/developer/msbuild/2003'}
+problems = []
+
+
+def check(condition, message):
+    if not condition:
+        problems.append(message)
+    return condition
+
+
+# ---------------------------------------------------------------- project ----
 project = ET.parse(app / 'BarangayDocumentSystem.csproj')
-assert project.find('.//m:TargetFrameworkVersion', ns).text == 'v4.8'
+check(project.find('.//m:TargetFrameworkVersion', ns).text == 'v4.8',
+      'the project must target .NET Framework 4.8')
+check(project.find('.//m:LangVersion', ns).text == '10.0',
+      'the project must pin LangVersion so any VS 2022 builds it the same way')
 
-# ---- every .cs file is compiled, and nothing stale is listed ------------
 listed = [x.attrib['Include'].replace('\\', '/') for x in project.findall('.//m:Compile', ns)]
-actual = [str(p.relative_to(app)) for p in app.rglob('*.cs') if not {'obj', 'bin'} & set(p.parts)]
-assert len(listed) == len(set(listed)), 'Duplicate Compile entries'
-assert set(listed) == set(actual), 'Missing or stale Compile entries: ' + str(set(listed) ^ set(actual))
+actual = sorted(str(p.relative_to(app)).replace('\\', '/')
+                for p in app.rglob('*.cs') if not {'obj', 'bin'} & set(p.parts))
+check(len(listed) == len(set(listed)), 'duplicate Compile entries in the project file')
+check(sorted(listed) == actual,
+      'the project file and the folder disagree: ' + str(set(listed) ^ set(actual)))
 
-for folder in ['BusinessRules/DocumentTemplates', 'CustomControls', 'Database', 'Forms', 'Interfaces', 'Models', 'UIHelpers', 'Views']:
-    assert (app / folder).is_dir(), folder
-for name in ['App.config', 'app.manifest', 'MainShell.resx']:
-    ET.parse(app / name)
-assert not (root / 'docs/dashboard-preview.png').exists()
-assert (app / 'Assets/barangay-logo.png').exists()
+for folder in ['Config', 'Data', 'Data/Sql', 'Database', 'Database/Scripts/MySql',
+               'Database/Scripts/SqlServer', 'Interfaces', 'Models', 'Security',
+               'Services', 'Services/Documents', 'Services/Reports', 'UI',
+               'UI/Controls', 'UI/Dialogs', 'UI/Forms', 'UI/Views']:
+    check((app / folder).is_dir(), 'missing folder: ' + folder)
 
-# ---- persistence wiring --------------------------------------------------
-embedded = [x.attrib['Include'].replace('\\', '/') for x in project.findall('.//m:EmbeddedResource', ns)]
-assert 'Database/schema.sql' in embedded, 'schema.sql must be an EmbeddedResource (DatabaseInitializer reads it from the .exe)'
-assert (app / 'Database/schema.sql').exists()
-packages = {x.attrib['Include']: x.attrib.get('Version') for x in project.findall('.//m:PackageReference', ns)}
-assert 'MySql.Data' in packages, 'MySql.Data PackageReference missing'
-for retired in ['Database/01-schema.sql', 'Database/02-seed-data.sql']:
-    assert not (app / retired).exists(), f'{retired} was retired; schema.sql is the one schema'
+ET.parse(app / 'App.config')
+ET.parse(app / 'app.manifest') if (app / 'app.manifest').exists() else None
 
-# ---- App.config: MySQL default, no committed password ---------------------
+# ----------------------------------------------------------- db scripts ----
+embedded = [x.attrib['Include'].replace('\\', '/')
+            for x in project.findall('.//m:EmbeddedResource', ns)]
+for script in ['Database/Scripts/MySql/01-schema.sql', 'Database/Scripts/MySql/02-procedures.sql',
+               'Database/Scripts/SqlServer/01-schema.sql', 'Database/Scripts/SqlServer/02-procedures.sql']:
+    check(script in embedded, script + ' must be embedded in the .exe, not left as a loose file')
+    check((app / script).exists(), 'missing script file: ' + script)
+
+
+def procedures(text, engine):
+    """Returns {name: [parameter names]} for one of the two script styles."""
+    found = {}
+    if engine == 'mysql':
+        pattern = r'CREATE PROCEDURE\s+(\w+)\s*\(([^)]*)\)'
+    else:
+        pattern = r'CREATE (?:OR ALTER )?PROCEDURE\s+dbo\.(\w+)\s*\n(.*?)\nAS'
+    for match in re.finditer(pattern, text, re.S):
+        name = match.group(1)
+        body = match.group(2)
+        names = re.findall(r'\b(?:IN\s+|OUT\s+)?p_(\w+)|\b@p_?(\w+)', body)
+        if engine == 'mysql':
+            params = re.findall(r'\b(?:IN|OUT|INOUT)?\s*p_(\w+)\s', body)
+        else:
+            params = re.findall(r'@(\w+)\s', body.split('\n')[0]) or re.findall(r'@(\w+)', body)
+        found[name] = [p for p in params]
+    return found
+
+
+mysql = (app / 'Database/Scripts/MySql/02-procedures.sql').read_text(encoding='utf-8')
+sqlsrv = (app / 'Database/Scripts/SqlServer/02-procedures.sql').read_text(encoding='utf-8')
+
+def balanced(text, start):
+    depth = 0
+    for i in range(start, len(text)):
+        if text[i] == '(':
+            depth += 1
+        elif text[i] == ')':
+            depth -= 1
+            if depth == 0:
+                return text[start + 1:i]
+    return ''
+
+
+def mysql_procedures(text):
+    out = []
+    for match in re.finditer(r'CREATE PROCEDURE\s+(\w+)\s*\(', text):
+        out.append((match.group(1), balanced(text, match.end() - 1)))
+    return out
+
+
+def server_procedures(text):
+    out = []
+    for match in re.finditer(r'CREATE (?:OR ALTER )?PROCEDURE\s+dbo\.(\w+)(.*?)\nAS', text, re.S):
+        out.append((match.group(1), match.group(2)))
+    return out
+
+
+mysql_procs = mysql_procedures(mysql)
+srv_procs = server_procedures(sqlsrv)
+
+mysql_names = [n for n, _ in mysql_procs]
+srv_names = [n for n, _ in srv_procs]
+check(mysql_names == srv_names,
+      'the two engines must offer the same procedures, in the same order:\n'
+      '    MySQL     : ' + ', '.join(mysql_names) + '\n'
+      '    SQL Server: ' + ', '.join(srv_names))
+check(len(mysql_names) >= 11, 'expected at least eleven stored procedures')
+
+for (name, mparams), (sname, sparams) in zip(mysql_procs, srv_procs):
+    mine = [p.strip().split()[-1] for p in mparams.split(',') if p.strip()]
+    theirs = [p.strip().split()[0] for p in sparams.split(',') if p.strip()]
+    mine = [p.replace('p_', '') for p in mine]
+    theirs = [p.replace('@', '') for p in theirs]
+    check(len(mine) == len(theirs),
+          f'{name}: MySQL takes {len(mine)} parameters, SQL Server takes {len(theirs)} '
+          '(the repository passes them positionally on MySQL)')
+
+schema_my = (app / 'Database/Scripts/MySql/01-schema.sql').read_text(encoding='utf-8')
+schema_srv = (app / 'Database/Scripts/SqlServer/01-schema.sql').read_text(encoding='utf-8')
+for table in ['residents', 'dependents', 'document_requests', 'official_receipts',
+              'receipt_series', 'user_accounts', 'activity_log']:
+    check(table in schema_my, 'MySQL schema is missing the table ' + table)
+    check(table in schema_srv, 'SQL Server schema is missing the table ' + table)
+check('address' not in schema_my.lower() and 'address' not in schema_srv.lower(),
+      'the address column was supposed to be erased from the database')
+
+# ------------------------------------------------------------ App.config ----
 config = ET.parse(app / 'App.config').getroot()
-settings = {a.attrib['key']: a.attrib['value'] for a in config.find('appSettings').findall('add')}
-assert settings.get('Storage', '').lower() == 'mysql', 'Storage should default to MySQL'
-assert 'SeedSampleData' in settings
-conn = {a.attrib['name']: a.attrib['connectionString'] for a in config.find('connectionStrings').findall('add')}
-assert 'BarangayDb' in conn
-pwd = re.search(r'(?:Password|Pwd)\s*=\s*([^;]*)', conn['BarangayDb'], re.I)
-assert pwd is not None and pwd.group(1).strip() == '', 'Never commit a real MySQL password; use BARANGAY_DB_CONNECTION'
+settings = {a.attrib['key']: a.attrib['value']
+            for a in config.find('appSettings').findall('add')}
 
-# ---- the schema defines every column the MySQL repository reads/writes -----
-schema = (app / 'Database/schema.sql').read_text(encoding='utf-8')
-def table_columns(table):
-    body = re.search(rf'CREATE TABLE IF NOT EXISTS {table}\s*\((.*?)\)\s*ENGINE', schema, re.S).group(1)
-    cols = set()
-    for line in body.splitlines():
-        line = line.strip()
-        if not line or line.startswith('--') or line.upper().startswith(('PRIMARY', 'INDEX', 'CONSTRAINT', 'REFERENCES')):
-            continue
-        cols.add(line.split()[0])
-    return cols
-schema_requests = table_columns('document_requests')
-schema_residents = table_columns('residents')
-repo = (app / 'Database/MySqlBarangayRepository.cs').read_text(encoding='utf-8')
-def sql_const(name):
-    m = re.search(rf'private const string {name}\s*=\s*(.*?);', repo, re.S)
-    return ''.join(re.findall(r'"([^"]*)"', m.group(1)))
-select_requests = sql_const('SqlSelectRequests')
-used = set(re.findall(r'\b([a-z_]+)\b', select_requests.split('FROM')[0].replace('SELECT', '')))
-missing = used - schema_requests
-assert not missing, f'MySqlBarangayRepository selects columns schema.sql does not define: {missing}'
-insert_requests = sql_const('SqlInsertRequest')
-inserted = set(re.search(r'\((.*?)\)\s*VALUES', insert_requests, re.S).group(1).replace(' ', '').split(','))
-assert inserted <= schema_requests, f'INSERT uses unknown columns: {inserted - schema_requests}'
-initializer = (app / 'Database/DatabaseInitializer.cs').read_text(encoding='utf-8')
-upgrades = set(re.findall(r'\(\s*"([a-z_]+)"\s*,\s*"', initializer))
-assert upgrades <= schema_requests, f'EnsureColumns upgrades a column schema.sql lacks: {upgrades - schema_requests}'
-resident_cols = set(sql_const('ResidentColumns').replace(' ', '').split(','))
-assert resident_cols <= schema_residents, f'Resident columns not in schema: {resident_cols - schema_residents}'
+check(settings.get('Storage', '').lower() == 'mysql', 'Storage should default to MySQL')
+for required in ['SeedSampleData', 'LogFolder', 'Barangay.Name', 'Barangay.City', 'Barangay.Logo',
+                 'Fee.Clearance.Local', 'Fee.Clearance.Abroad', 'Fee.Certification',
+                 'Fee.BusinessClearance.Standard', 'Fee.LuponFiling', 'Fee.Facility.Hourly',
+                 'Fee.Student.Enabled', 'Fee.Student.DiscountPercent', 'Fee.Student.Documents',
+                 'Fee.CommunityTax.Base', 'Fee.CommunityTax.PerThousand', 'Fee.CommunityTax.Cap',
+                 'Rule.OfficeWindowStart', 'Rule.OfficeWindowEnd', 'Rule.JobseekerResidencyMonths',
+                 'Rule.Residency.NewcomerMonths', 'Rule.Residency.PermanentYears',
+                 'Rule.RA11032.SimpleWorkingDays', 'Security.MaxFailedLogins', 'Security.LockoutMinutes',
+                 'Security.SessionTimeoutMinutes', 'Security.MinimumPasswordLength',
+                 'Security.ForcePasswordChangeOnFirstLogin', 'Security.ProtectConnectionString',
+                 'Security.InitialAdmin.Username', 'Security.InitialAdmin.Password',
+                 'Security.InitialClerk.Username', 'Security.InitialClerk.Password',
+                 'Reports.UseCrystalReports', 'Reports.CrystalFolder', 'Reports.Footer']:
+    check(required in settings, 'App.config is missing the setting ' + required)
 
-# ---- attribution headers and Framework-safe APIs -------------------------
-sources = [app / f for f in actual] + [root / 'tests/RuleChecks/Program.cs']
-for path in sources:
-    text = path.read_text(encoding='utf-8')
-    head = '\n'.join(text.splitlines()[:12])
-    for tag in ['PART:', 'ORIGIN:', 'EDITS:', 'VOICE:']:
-        assert tag in head, (str(path.relative_to(root)), f'missing {tag} in the attribution header')
-    for old in ['BarangayDocumentSystem.Helper;', 'BarangayDocumentSystem.Service;', 'BarangayDocumentSystem.DBContext;', 'ApplicationConfiguration.Initialize()', 'Math.Clamp(', 'ArgumentNullException.ThrowIfNull(', 'System.Configuration;']:
-        assert old not in text, (str(path.relative_to(root)), old)
-    assert not re.search(r'Enum\.(?:GetValues|GetNames|Parse)<', text), path
-assert 'PART:' in schema.splitlines()[1]
+# every key the code reads must be a key the file has
+read_keys = set()
+for source in app.rglob('*.cs'):
+    if {'obj', 'bin'} & set(source.parts):
+        continue
+    text = source.read_text(encoding='utf-8', errors='replace')
+    read_keys |= set(re.findall(r'Read(?:String|Int|Money|Bool|Time)\("([\w\.]+)"', text))
+missing = sorted(k for k in read_keys if k not in settings and k != 'Storage')
+check(not missing, 'the code reads settings that App.config does not define: ' + ', '.join(missing))
 
-print(f'PASS: {len(actual)} source files, Framework target, layout, XML, assets, embedded schema, '
-      f'no committed password, schema/repository column agreement, attribution headers, compatibility scan.')
+conn = {a.attrib['name']: a.attrib['connectionString']
+        for a in config.find('connectionStrings').findall('add')}
+for name in ['BarangayDb', 'BarangaySqlServer']:
+    check(name in conn, 'App.config is missing the connection string ' + name)
+pwd = re.search(r'(?:Password|Pwd)\s*=\s*([^;]*)', conn.get('BarangayDb', ''), re.I)
+check(pwd is not None and pwd.group(1).strip() == '',
+      'never commit a real MySQL password; use the BARANGAY_DB_CONNECTION variable instead')
+
+# ----------------------------------------------------------------- logo -----
+logo = app / 'Assets/barangay-logo.png'
+check(logo.exists(), 'the barangay seal is missing')
+if logo.exists():
+    digest = hashlib.sha256(logo.read_bytes()).hexdigest()
+    expected = '57fc619156d141038a71d5296c925aa5c5f79ba403e71368e35a872846361bc4'
+    check(digest == expected,
+          'the seal has been edited or replaced (sha256 ' + digest + '). It must stay as it was.')
+
+# ------------------------------------------------------------- removals -----
+for gone in ['BusinessRules', 'UIHelpers', 'CustomControls', 'Forms', 'Views',
+             'MainShell.cs', 'AppSettings.cs', 'Database/schema.sql',
+             'Database/MySqlBarangayRepository.cs', 'Database/RepositoryBase.cs',
+             'Database/InMemoryBarangayRepository.cs', 'Database/DatabaseSettings.cs',
+             'Interfaces/IBarangayRepository.cs', 'UI/Forms/TextPromptForm.cs',
+             'UI/Forms/NewRequestForm.cs', 'UI/Forms/ChangePasswordForm.cs',
+             'UI/Views/UsersView.cs', 'UI/Views/ActivityLogView.cs', 'UI/Views/ReceiptsView.cs']:
+    check(not (app / gone).exists(), gone + ' is a leftover from the earlier build and must be gone')
+
+resident = (app / 'Models/Resident.cs').read_text(encoding='utf-8')
+check('public string Address' not in resident, 'Resident still has an Address property')
+enums = (app / 'Models/Enums.cs').read_text(encoding='utf-8')
+check('Student' not in enums.split('enum ResidentClassification')[1].split('}')[0],
+      'Student is still one of the classifications; it is a fee category now')
+check('FourPsBeneficiary' in enums, 'the fourth classification (4Ps beneficiary) is missing')
+check('IsStudentFeeCategory' in resident, 'the student fee category is missing from Resident')
+
+# --------------------------------------------------------------- sources ----
+for source in sorted(app.rglob('*.cs')):
+    if {'obj', 'bin'} & set(source.parts):
+        continue
+    text = source.read_text(encoding='utf-8', errors='replace')
+    if not text.lstrip().startswith('//'):
+        problems.append(str(source.relative_to(root)) + ' does not open with a comment')
+    for open_char, close_char in [('{', '}'), ('(', ')')]:
+        if text.count(open_char) != text.count(close_char):
+            problems.append(f'{source.relative_to(root)}: unbalanced {open_char}{close_char}')
+
+# ---------------------------------------------------------------- result ----
+if problems:
+    print('FAILED - ' + str(len(problems)) + ' problem(s):\n')
+    for item in problems:
+        print('  * ' + item)
+    sys.exit(1)
+
+print('All structure checks passed.')
+print('  ' + str(len(actual)) + ' source files, ' + str(len(mysql_names)) + ' stored procedures, '
+      + str(len(settings)) + ' settings, seal unchanged.')

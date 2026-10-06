@@ -1,5 +1,11 @@
 # Branch integration notes — v3.2
 
+> **Note (re-design):** this document describes the earlier build. The
+> re-designed system and the list of every request with the file that
+> implements it are in `docs/10-revamp-notes.md`; the current database
+> scripts are in `BarangayDocumentSystem/Database/Scripts/`.
+
+
 *Written by Clint Wood Gado.* How the three drafts became one program, what
 came from whom, and what each principle cost or saved. The object model the
 code was written from is `docs/09-object-model.md`.

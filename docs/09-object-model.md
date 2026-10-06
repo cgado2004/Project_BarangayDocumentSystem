@@ -1,5 +1,11 @@
 # Object Model — v3.2 (the drafts integrated on the Fdraft baseline)
 
+> **Note (re-design):** this document describes the earlier build. The
+> re-designed system and the list of every request with the file that
+> implements it are in `docs/10-revamp-notes.md`; the current database
+> scripts are in `BarangayDocumentSystem/Database/Scripts/`.
+
+
 *Written by Clint Wood Gado.* This is the object-oriented model I built the
 code from: which classes exist, what each one is responsible for, how they
 relate, and where each SOLID and DRY decision lives. Diagrams are Mermaid, so

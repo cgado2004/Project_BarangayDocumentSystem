@@ -1,137 +1,211 @@
-// =====================================================================
-//  PART:    Program - the composition root
-//  ORIGIN:  leader_draft - Clint Wood Gado (profile, fees and store from
-//           App.config; every screen gets its dependencies handed in)
-//           Fdraft - Frent Dhieniel Raborar (the start-up order for MySQL:
-//           settings, create the database, open the store, seed if empty,
-//           and explain-then-exit when the server cannot be reached)
-//  EDITS:   Clint Wood Gado - merged the two; AppSettings moved to its own
-//           file; the "MySQL is not wired up yet" fallback is gone because
-//           MySQL is wired up now
-//  VOICE:   every comment in this file is mine (Clint), in the first person
-// =====================================================================
+// ---------------------------------------------------------------------------
+//  Program.cs - where the program starts, and the only place that decides
+//  which concrete classes get used.
+//  Mine, in my own words.
+// ---------------------------------------------------------------------------
 using System;
+using System.Configuration;
 using System.Windows.Forms;
-using BarangayDocumentSystem.BusinessRules;
+using BarangayDocumentSystem.Config;
+using BarangayDocumentSystem.Data;
 using BarangayDocumentSystem.Database;
 using BarangayDocumentSystem.Interfaces;
 using BarangayDocumentSystem.Models;
-using BarangayDocumentSystem.UIHelpers;
+using BarangayDocumentSystem.Security;
+using BarangayDocumentSystem.Services;
+using BarangayDocumentSystem.UI;
+using BarangayDocumentSystem.UI.Forms;
 
-namespace BarangayDocumentSystem;
-
-/// <summary>
-/// Where my program starts, and the ONLY place that decides which concrete
-/// classes get used.
-///
-/// Everything below this point is handed what it needs through its
-/// constructor, so no screen ever creates its own repository. That is the
-/// dependency-inversion principle in one sentence, and it is what let me
-/// drop Frent's MySQL store in without touching a single form: the views
-/// were already written against IBarangayRepository.
-/// </summary>
-internal static class Program
+namespace BarangayDocumentSystem
 {
-    [STAThread]
-    private static void Main()
-    {
-        Application.EnableVisualStyles();
-        Application.SetCompatibleTextRenderingDefault(false);
-
-        // I work out which fonts this machine actually has before I create a
-        // single control, so every form is built with the right family from
-        // the start rather than being restyled afterwards.
-        AppTheme.Resolve();
-
-        // I read App.config first, so the barangay details and the fees on
-        // every printed document come from the file rather than from numbers
-        // I hard-coded months ago.
-        BarangayProfile.Current = new BarangayProfile
-        {
-            BarangayName   = AppSettings.Text("Barangay.Name", "Barangay Magugpo Poblacion"),
-            CityName       = AppSettings.Text("Barangay.City", "City of Tagum"),
-            ProvinceName   = AppSettings.Text("Barangay.Province", "Davao del Norte"),
-            PunongBarangay = AppSettings.Text("Barangay.PunongBarangay", "HON. EUGENIA SOLIS HINGPIT, MD"),
-            OfficeHours    = AppSettings.Text("Barangay.OfficeHours", "Monday to Friday, 8:00 AM - 5:00 PM")
-        };
-
-        // The Citizen's Charter rates and the two statutory rules. The
-        // numbers live in App.config; the LAW behind each one lives in
-        // FeeSchedule and docs/07.
-        var fees = new FeeSchedule(
-            AppSettings.Money("Fee.Clearance.Local", 100m),
-            AppSettings.Money("Fee.Clearance.Abroad", 200m),
-            AppSettings.Money("Fee.Certification", 100m),
-            AppSettings.Money("Fee.BusinessClearance.Standard", 200m),
-            AppSettings.Money("Fee.LuponFiling", 150m),
-            AppSettings.Money("Fee.Facility.Hourly", 200m),
-            AppSettings.Money("Fee.CommunityTax.Base", 5m),
-            AppSettings.Money("Fee.CommunityTax.PerThousand", 1m),
-            AppSettings.Money("Fee.CommunityTax.Cap", 5000m),
-            AppSettings.Count("Rule.JobseekerResidencyMonths", 6),
-            AppSettings.Count("Rule.RA11032.SimpleWorkingDays", 3));
-
-        IBarangayRepository repository;
-        try
-        {
-            repository = CreateRepository(fees);
-        }
-        catch (RepositoryException ex)
-        {
-            // Frent's rule, kept on purpose: if the database cannot be
-            // reached I say exactly why and stop. I do NOT quietly fall back
-            // to sample data, because a clerk who then spends the morning
-            // encoding residents into a store that forgets everything at
-            // closing time would have every right to be angry with me.
-            Dialog.Error(null,
-                ex.Message + "\n\n" +
-                "The program will close. Start MySQL (or fix the BarangayDb connection " +
-                "string in BarangayDocumentSystem.exe.config) and open it again.\n\n" +
-                "For a demonstration without a database, set Storage to \"Memory\" in " +
-                "the same file.",
-                "Cannot open the barangay database");
-            return;
-        }
-        catch (ArgumentException ex)
-        {
-            // MySqlConnectionStringBuilder throws this for a malformed
-            // connection string - a typo in App.config, in other words.
-            Dialog.Error(null,
-                "The BarangayDb connection string in BarangayDocumentSystem.exe.config " +
-                "could not be read:\n\n" + ex.Message,
-                "Cannot open the barangay database");
-            return;
-        }
-
-        Application.Run(new MainShell(repository, fees));
-    }
-
     /// <summary>
-    /// I pick the store named in App.config and get it ready to use.
+    /// The start of everything.
     ///
-    /// MySQL is the default, and Frent's start-up order makes it painless on
-    /// a fresh XAMPP: create the database and tables if they are missing,
-    /// open the store, and if it is empty and the config allows, fill it
-    /// with my sample residents so the first screen is never blank.
+    /// This file is the composition root, which is a grand name for a simple
+    /// idea: the one place where the program decides WHAT it is made of. Every
+    /// screen is handed the store and the services it needs through its
+    /// constructor and never builds its own - which is why swapping MySQL for
+    /// SQL Server, or the database for the in-memory store, changed this file
+    /// and nothing else. That is the object-oriented design the barangay asked
+    /// for, doing actual work rather than being a diagram in a document.
     ///
-    /// "Memory" keeps the demo store for a machine with no MySQL at all,
-    /// and for my RuleChecks harness. The status bar says which one is
-    /// running, so nobody can mistake the demo for the real thing.
+    /// The order here matters and I keep it the same every time:
+    ///
+    ///   1. read the settings file, so the barangay's own details and fees are
+    ///      in place before anything is drawn;
+    ///   2. work out which fonts this computer really has;
+    ///   3. prepare the database (create it, run the scripts, upgrade, seed the
+    ///      first administrator and, if asked, the sample data);
+    ///   4. open the sign-in window, and only after that open the main window.
+    ///
+    /// Nothing is written by this file. It only wires things together.
     /// </summary>
-    private static IBarangayRepository CreateRepository(FeeSchedule fees)
+    internal static class Program
     {
-        if (!AppSettings.UseMySql())
-            return new InMemoryBarangayRepository(fees);
+        [STAThread]
+        private static void Main()
+        {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
 
-        var settings = DatabaseSettings.Load();
+            // ---- 1. the settings file ----
+            AppConfig.Load();
 
-        DatabaseInitializer.EnsureCreated(settings.ConnectionString);
+            // ---- 2. the lettering ----
+            AppTheme.Resolve();
 
-        var repository = new MySqlBarangayRepository(settings.ConnectionString, fees);
+            // A crash nobody saw is a crash that gets reported as "the computer
+            // is broken", so I write the details to the log and say so on screen.
+            AppDomain.CurrentDomain.UnhandledException += delegate (object sender,
+                UnhandledExceptionEventArgs e)
+            {
+                Exception error = e.ExceptionObject as Exception;
+                AppLog.Error("Something went wrong and the program had to stop.", error);
 
-        if (settings.SeedSampleData && repository.Residents.Count == 0)
-            SampleData.Seed(repository);
+                MessageBox.Show(
+                    "The program had to stop because of a problem it could not get past."
+                    + Environment.NewLine + Environment.NewLine
+                    + (error == null ? string.Empty : error.Message) + Environment.NewLine + Environment.NewLine
+                    + "The details were written to the log folder next to the program. Please give that file "
+                    + "to whoever looks after the system.",
+                    "Barangay Document System", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            };
 
-        return repository;
+            // ---- 3. the store ----
+            IBarangayRepository repository = null;
+            string preparation = string.Empty;
+
+            try
+            {
+                repository = BuildRepository(out preparation);
+            }
+            catch (RepositoryException error)
+            {
+                Report(repository, error.Message);
+                return;
+            }
+            catch (ConfigurationErrorsException error)
+            {
+                Report(repository, "The settings file could not be read:" + Environment.NewLine
+                    + error.Message);
+                return;
+            }
+            catch (Exception error)
+            {
+                AppLog.Error("The store could not be opened.", error);
+                Report(repository, "The barangay database could not be opened." + Environment.NewLine
+                    + Environment.NewLine + error.Message);
+                return;
+            }
+
+            if (repository == null) return;
+
+            // ---- 4. signing in ----
+            SessionManager session = new SessionManager();
+            SessionManager.Current = session;
+
+            IClock clock = new SystemClock();
+            ActivityLogService activity = new ActivityLogService(repository, session, clock);
+            AuthenticationService authentication = new AuthenticationService(repository, activity, clock);
+
+            try
+            {
+                using (LoginForm login = new LoginForm(authentication, repository))
+                {
+                    login.ShowDialog();
+
+                    if (login.SignedInUser == null)
+                    {
+                        AppTheme.Release();
+                        return;
+                    }
+
+                    session.SignIn(login.SignedInUser);
+                }
+
+                activity.Record(ActivityModule.Security, "Signed in", "Session", session.Username,
+                    "Signed in on " + Environment.MachineName + "." + preparation);
+
+                using (ShellForm shell = new ShellForm(repository, session, clock, authentication))
+                {
+                    Application.Run(shell);
+                }
+            }
+            catch (RepositoryException error)
+            {
+                // The database was there at the start of the morning and is not
+                // there now. Saying so plainly beats a stack trace on a counter.
+                Report(repository, error.Message);
+            }
+            catch (Exception error)
+            {
+                AppLog.Error("The main window stopped.", error);
+                Report(repository, "The program stopped because of a problem it could not get past."
+                    + Environment.NewLine + Environment.NewLine + error.Message);
+            }
+            finally
+            {
+                AppTheme.Release();
+            }
+        }
+
+        // ==================================================================
+        //  Choosing and preparing the store
+        // ==================================================================
+
+        /// <summary>
+        /// Picks the store named in the settings file and gets it ready.
+        ///
+        /// MySQL is the default because that is what the barangay hall runs,
+        /// and SQL Server is there for an office that already has it - the
+        /// screens cannot tell the difference, because both sit behind the same
+        /// contract. "Memory" is the third choice and it exists for two honest
+        /// reasons: a machine with no database server at all, and my rule
+        /// checks, which run the same services against a store that forgets
+        /// everything when the window closes.
+        /// </summary>
+        private static IBarangayRepository BuildRepository(out string preparation)
+        {
+            preparation = string.Empty;
+
+            if (AppConfig.IsMemory)
+            {
+                preparation = " Using the in-memory store: nothing is saved when the program closes.";
+                AppLog.Warn(preparation.Trim());
+
+                return new InMemoryBarangayRepository();
+            }
+
+            // The provider is chosen by AppConfig, which reads the same
+            // settings file the person can open and edit. DBContext follows
+            // that choice; this line is why there is only one place to change
+            // it, and the rule checks use the same path with a different value.
+            //
+            // The context is deliberately left open: the repository keeps it
+            // for the whole working day, because every screen asks it for
+            // something and opening a connection per screen is slower and
+            // harder to keep track of.
+            DBContext context = DBContext.FromConfiguration();
+
+            DatabaseInitializer initializer = new DatabaseInitializer(context);
+            preparation = " " + initializer.Run();
+
+            return new SqlBarangayRepository(context);
+        }
+
+        private static void Report(IBarangayRepository repository, string message)
+        {
+            string storage = repository == null ? AppConfig.StorageProvider : repository.Describe();
+
+            MessageBox.Show(
+                message + Environment.NewLine + Environment.NewLine
+                + "Storage in the settings file: " + storage + Environment.NewLine
+                + "Settings file: " + AppConfig.SettingsFile + Environment.NewLine
+                + "Log folder: " + AppConfig.LogFolder + Environment.NewLine + Environment.NewLine
+                + "Fix the database (or the connection string) and open the program again."
+                + Environment.NewLine
+                + "To run without a database for a demonstration, set Storage to \"Memory\" in the same file.",
+                "Barangay Document System", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 }

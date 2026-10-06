@@ -1,196 +1,385 @@
-// =====================================================================
-//  PART:    Database - the one copy of my sample residents and requests
-//  ORIGIN:  leader_draft - Clint Wood Gado (the seed from my in-memory store)
-//           Fdraft - Frent Dhieniel Raborar (the idea of seeding MySQL on an
-//           empty database, from his SampleDataSeeder)
-//  EDITS:   Clint Wood Gado - merged his seeder and mine into one that
-//           works through the repository, so it fills either store
-//  VOICE:   every comment in this file is mine (Clint), in the first person
-// =====================================================================
+// ---------------------------------------------------------------------------
+//  SampleData.cs - the demo barangay, so the screens are not empty.
+//  Mine, in my own words.
+// ---------------------------------------------------------------------------
 using System;
+using System.Collections.Generic;
+using BarangayDocumentSystem.Data;
+using BarangayDocumentSystem.Data.Sql;
 using BarangayDocumentSystem.Interfaces;
 using BarangayDocumentSystem.Models;
+using BarangayDocumentSystem.Services;
 
-namespace BarangayDocumentSystem.Database;
-
-/// <summary>
-/// My sample residents and requests, using the real purok names of Magugpo
-/// Poblacion.
-///
-/// I gave each person a different situation on purpose, so that during the
-/// demo I can show every branch of the fee rules - the flat rates, the two
-/// clearance scopes, all four waivers, and every one of the v3.1 variable-fee
-/// documents - without inventing data on the spot in front of the panel.
-///
-/// There used to be two copies of these people: mine inside the in-memory
-/// store and Frent's inside his SampleDataSeeder, with different names and
-/// his placeholder fees. Now there is one, and it only talks to the
-/// repository's public surface (plus the internal File for the one
-/// backdated request). That is why the same method can fill the in-memory
-/// store for the RuleChecks harness and a freshly created MySQL database
-/// on first run - and why the two can never show different demo data.
-/// </summary>
-internal static class SampleData
+namespace BarangayDocumentSystem.Database
 {
-    public static void Seed(RepositoryBase repository)
+    /// <summary>
+    /// Loads a small but realistic set of records: fourteen purok households,
+    /// dependents, requests in every state of the queue, official receipts with
+    /// control numbers, and an activity log with something in it.
+    ///
+    /// I wrote this so that whoever opens the program for the first time - my
+    /// panel, my group-mates, the barangay clerk during the demo - sees a
+    /// working system instead of empty grids. It only runs against a database
+    /// with no residents in it, so it can never land on top of real records.
+    ///
+    /// The names, puroks and businesses are made up. The puroks are the real
+    /// ones from the barangay's own list.
+    /// </summary>
+    public static class SampleData
     {
-        if (repository is null) throw new ArgumentNullException(nameof(repository));
+        public static void Seed(DBContext context, IClock clock)
+        {
+            if (context == null) throw new ArgumentNullException("context");
 
-        // ---- the residents -----------------------------------------------
+            IBarangayRepository repository = new SqlBarangayRepository(context);
+            Seed(repository, clock);
+        }
 
-        // He pays full price. I gave him no exemptions at all.
-        var juan = repository.AddResident(new ResidentDetails(
-            "Juan", "Perez", "Dela Cruz", "", new DateTime(1985, 4, 12),
-            Gender.Male, CivilStatus.Married, "Purok Tandang Sora",
-            "123 Rizal Street", "09171234567", "Tricycle Driver",
-            new DateTime(2010, 6, 1), true, ResidentClassification.None));
+        /// <summary>The same seeding for any store, which is what the
+        /// in-memory demo and the rule checks use.</summary>
+        public static void Seed(IBarangayRepository repository, IClock clock)
+        {
+            if (repository == null) throw new ArgumentNullException("repository");
+            if (clock == null) clock = new SystemClock();
 
-        // A senior citizen, so I can show the RA 9994 waiver.
-        var maria = repository.AddResident(new ResidentDetails(
-            "Maria", "Santos", "Reyes", "", new DateTime(1955, 9, 3),
-            Gender.Female, CivilStatus.Widowed, "Purok Orchids",
-            "45 Bonifacio Avenue", "09181234567", "Retired",
-            new DateTime(1998, 1, 15), true, ResidentClassification.SeniorCitizen));
+            DateTime now = clock.Now();
 
-        // 14 months resident, so he PASSES my RA 11261 six-month test.
-        var jose = repository.AddResident(new ResidentDetails(
-            "Jose", "Cruz", "Bautista", "Jr.", new DateTime(2004, 2, 20),
-            Gender.Male, CivilStatus.Single, "Purok Sampaguita",
-            "78 Mabini Street", "09191234567", "Fresh Graduate",
-            DateTime.Today.AddMonths(-14), true, ResidentClassification.None));
+            FeeSchedule fees = new FeeSchedule();
+            TimeWindowPolicy window = new TimeWindowPolicy();
 
-        // A solo parent who runs a business. I use her to prove that personal
-        // exemptions do not apply to a business clearance.
-        var ana = repository.AddResident(new ResidentDetails(
-            "Ana", "Lopez", "Villanueva", "", new DateTime(1992, 11, 8),
-            Gender.Female, CivilStatus.Single, "Purok Sunflower",
-            "12 Quezon Street", "09201234567", "Sari-sari Store Owner",
-            new DateTime(2015, 3, 20), true, ResidentClassification.SoloParent));
+            List<Resident> residents = BuildResidents(repository, now);
+            SeedSeries(repository, now);
+            SeedRequests(repository, residents, fees, window, now);
+            SeedActivity(repository, now);
+        }
 
-        // An indigent resident, so I can show that waiver too.
-        var pedro = repository.AddResident(new ResidentDetails(
-            "Pedro", "Ramos", "Mendoza", "", new DateTime(1978, 7, 25),
-            Gender.Male, CivilStatus.Married, "Purok Cristo Rey",
-            "90 Magsaysay Street", "09211234567", "Carpenter",
-            new DateTime(2005, 8, 10), false, ResidentClassification.Indigent));
+        // ==================================================================
+        //  Residents
+        // ==================================================================
 
-        // A hyphenated surname, and TWO classifications at once - the
-        // resident who proves the classification column must hold a set of
-        // flags and not a single value.
-        var liza = repository.AddResident(new ResidentDetails(
-            "Liza", "Garcia", "Santos-Reyes", "", new DateTime(1999, 5, 30),
-            Gender.Female, CivilStatus.Single, "Purok Orchids",
-            "56 Del Pilar Street", "09221234567", "Student",
-            new DateTime(2019, 6, 1), true,
-            ResidentClassification.Student | ResidentClassification.PWD));
+        private static List<Resident> BuildResidents(IBarangayRepository repository, DateTime now)
+        {
+            List<Resident> created = new List<Resident>();
 
-        // A surname with ñ, a DITO number, and only 2 months of residency, so
-        // he FAILS my RA 11261 test and the request is refused with a reason.
-        var carlo = repository.AddResident(new ResidentDetails(
-            "Carlo", "Diaz", "Peña", "", new DateTime(2003, 12, 5),
-            Gender.Male, CivilStatus.Single, "Purok Lapu-Lapu",
-            "34 Luna Street", "08951234567", "Unemployed",
-            DateTime.Today.AddMonths(-2), false, ResidentClassification.None));
+            // ---- one household per purok, with the dependents registered ----
+            AddResident(repository, created, now, "Marites", "Bautista", "Santos", "", "Purok Orchids",
+                new DateTime(1974, 3, 12), Gender.Female, CivilStatus.Married, "0917-220-1144",
+                "Sari-sari store owner", new DateTime(2009, 6, 1), true,
+                ResidentClassification.None, false, true, true,
+                ResidencyStatus.Permanent, now);
 
-        // ---- the requests ------------------------------------------------
-        // Each request that moves past Pending ends with SaveRequest, which
-        // is what writes the new status to MySQL. For the in-memory store
-        // that call does nothing, and that is fine.
+            AddResident(repository, created, now, "Rodolfo", "Aguilar", "Dizon", "Sr.", "Purok Talisay",
+                new DateTime(1958, 11, 2), Gender.Male, CivilStatus.Married, "0918-334-7781",
+                "Retired government employee", new DateTime(1998, 1, 15), true,
+                ResidentClassification.SeniorCitizen, false, false, true,
+                ResidencyStatus.Permanent, now);
 
-        // A clearance I took all the way through to release.
-        var r1 = repository.CreateRequest(juan, DocumentType.BarangayClearance,
-                                          "Employment Requirement");
-        r1.StartProcessing();
-        r1.MarkReadyForRelease();
-        r1.RecordPayment("OR-2026-00101");
-        r1.Release();
-        repository.SaveRequest(r1);
+            AddResident(repository, created, now, "Liza", "Mendoza", "Reyes", "", "Purok Sampaguita",
+                new DateTime(2004, 7, 19), Gender.Female, CivilStatus.Single, "0995-118-2267",
+                "College student", new DateTime(2018, 8, 1), false,
+                ResidentClassification.PWD, true, false, false,
+                ResidencyStatus.Permanent, now);
 
-        // A senior citizen, waived, and released with no payment at all. I
-        // include this row because it proves a free document does not get
-        // stuck waiting for a payment that is never going to come.
-        var r2 = repository.CreateRequest(maria, DocumentType.CertificateOfResidency,
-                                          "Pension Claim");
-        r2.StartProcessing();
-        r2.MarkReadyForRelease();
-        r2.Release();
-        repository.SaveRequest(r2);
+            AddResident(repository, created, now, "Joel", "Pascual", "Villanueva", "", "Purok Sunflower",
+                new DateTime(1985, 1, 27), Gender.Male, CivilStatus.Married, "0920-771-9093",
+                "Tricycle driver", new DateTime(2021, 2, 10), true,
+                ResidentClassification.Indigent | ResidentClassification.FourPsBeneficiary, false, false, true,
+                ResidencyStatus.Temporary, now);
 
-        // Free under RA 11261, and I left it still being processed.
-        var r3 = repository.CreateRequest(jose, DocumentType.FirstTimeJobseekerCertificate,
-                                          "NBI Clearance Application");
-        r3.StartProcessing();
-        repository.SaveRequest(r3);
+            AddResident(repository, created, now, "Analyn", "Cruz", "Marquez", "", "Purok Cristo Rey",
+                new DateTime(1990, 9, 5), Gender.Female, CivilStatus.Single, "0906-556-3320",
+                "Market vendor", new DateTime(2024, 11, 20), true,
+                ResidentClassification.SoloParent, false, true, true,
+                ResidencyStatus.Newcomer, now);
 
-        // Free, and I left it sitting ready to collect.
-        var r4 = repository.CreateRequest(pedro, DocumentType.CertificateOfIndigency,
-                                          "Medical Assistance at Davao Regional Medical Center");
-        r4.StartProcessing();
-        r4.MarkReadyForRelease();
-        repository.SaveRequest(r4);
+            AddResident(repository, created, now, "Eduardo", "Lim", "Tan", "Jr.", "Purok Arellano",
+                new DateTime(1979, 5, 30), Gender.Male, CivilStatus.Married, "0917-909-4412",
+                "Hardware owner", new DateTime(2012, 4, 3), true,
+                ResidentClassification.None, false, true, true,
+                ResidencyStatus.Permanent, now);
 
-        // ₱500 - the business clearance whose amount VARIES with the law
-        // violated, which is the whole reason the v3.1 fee schedule takes
-        // an assessed amount. I charge the full ₱500 despite her solo-parent
-        // tag, for the reason I gave above.
-        repository.CreateRequest(ana, DocumentType.BarangayBusinessClearance,
-            "Sari-sari Store Renewal",
-            new RequestInput(Amount: 500m,
-                Detail: "Barangay Ordinance No. 12-2024, operating beyond the approved business line"));
+            AddResident(repository, created, now, "Grace", "Alonzo", "Ferolino", "", "Purok Dagohoy",
+                new DateTime(1996, 12, 14), Gender.Female, CivilStatus.Married, "0935-221-7788",
+                "Public school teacher", new DateTime(2022, 6, 6), true,
+                ResidentClassification.None, false, false, true,
+                ResidencyStatus.Temporary, now);
 
-        // A PWD, so I waive it under RA 10754.
-        repository.CreateRequest(liza, DocumentType.CertificateOfGoodMoralCharacter,
-            "Scholarship Application");
+            AddResident(repository, created, now, "Nestor", "Ilagan", "Bucoy", "", "Purok Tindalo",
+                new DateTime(1967, 8, 21), Gender.Male, CivilStatus.Widowed, "0921-455-0087",
+                "Fisherman", new DateTime(2001, 3, 19), false,
+                ResidentClassification.SeniorCitizen | ResidentClassification.PWD, false, false, true,
+                ResidencyStatus.Permanent, now);
 
-        // ₱200, because this one is for work abroad - the charter's higher
-        // rate, and the reason I needed the scope field at all.
-        repository.CreateRequest(carlo, DocumentType.BarangayClearance,
-            "Overseas Employment Requirement",
-            new RequestInput(Scope: ClearanceScope.Abroad));
+            AddResident(repository, created, now, "Kimberly", "Ramos", "Otaza", "", "Purok Lapu-Lapu",
+                new DateTime(2007, 2, 9), Gender.Female, CivilStatus.Single, "0998-220-1176",
+                "Senior high school student", new DateTime(2015, 5, 25), false,
+                ResidentClassification.Indigent, true, false, false,
+                ResidencyStatus.Permanent, now);
 
-        // ---- the v3.1 variable-fee documents ------------------------------
+            AddResident(repository, created, now, "Danilo", "Bacani", "Eusebio", "", "Purok Calachuchi",
+                new DateTime(1971, 6, 3), Gender.Male, CivilStatus.Married, "0917-118-6623",
+                "Barangay health worker", new DateTime(1995, 7, 1), true,
+                ResidentClassification.FourPsBeneficiary, false, false, true,
+                ResidencyStatus.Permanent, now);
 
-        // The cedula: ₱5 basic + ₱150 additional on ₱150,000 of sworn gross
-        // income = ₱155. I paid it and released it, so the printed certificate
-        // shows a completed computation.
-        var r8 = repository.CreateRequest(juan, DocumentType.CommunityTaxCertificate,
-            "Annual community tax, CY " + DateTime.Now.Year,
-            new RequestInput(GrossAnnualIncome: 150_000m));
-        r8.StartProcessing();
-        r8.MarkReadyForRelease();
-        r8.RecordPayment("OR-2026-00102");
-        r8.Release();
-        repository.SaveRequest(r8);
+            return created;
+        }
 
-        // A Katarungang Pambarangay filing at the flat ₱150.
-        repository.CreateRequest(pedro, DocumentType.LuponCaseFiling,
-            "Boundary dispute with the adjacent lot owner");
+        private static void AddResident(IBarangayRepository repository, List<Resident> created, DateTime now,
+                                        string firstName, string middleName, string lastName, string suffix,
+                                        string purok, DateTime birth, Gender gender, CivilStatus civilStatus,
+                                        string contact, string occupation, DateTime residencyStart,
+                                        bool voter, ResidentClassification classification,
+                                        bool isStudent, bool isBusinessOwner, bool isHeadOfFamily,
+                                        ResidencyStatus residencyStatus, DateTime when)
+        {
+            Resident resident = new Resident();
+            resident.FirstName = firstName;
+            resident.MiddleName = middleName;
+            resident.LastName = lastName;
+            resident.Suffix = suffix;
+            resident.DateOfBirth = birth;
+            resident.Gender = gender;
+            resident.CivilStatus = civilStatus;
+            resident.Purok = purok;
+            resident.ContactNumber = contact;
+            resident.Occupation = occupation;
+            resident.DateOfResidency = residencyStart;
+            resident.IsRegisteredVoter = voter;
+            resident.Classification = classification;
+            resident.IsStudentFeeCategory = isStudent;
+            resident.IsBusinessOwner = isBusinessOwner;
+            resident.IsHeadOfFamily = isHeadOfFamily;
+            resident.ResidencyStatus = residencyStatus;
+            resident.CreatedOn = when.AddMonths(-10);
+            resident.CreatedBy = "sample";
 
-        // Barangay covered court at ₱200 per hour; two and a half hours is
-        // billed as three, so the fee is ₱600.
-        repository.CreateRequest(ana, DocumentType.BarangayFacilityRental,
-            "Barangay covered court - birthday program",
-            new RequestInput(Hours: 2.5m, Detail: "Barangay covered court"));
+            repository.InsertResident(resident);
+            created.Add(resident);
 
-        // An "other processing fee" the Barangay Taripa prices, assessed by
-        // the clerk at ₱50 for certified copies.
-        repository.CreateRequest(maria, DocumentType.OtherTarifaProcessingFee,
-            "Certified copies of a barangay resolution",
-            new RequestInput(Amount: 50m, Detail: "Certified true copies - 10 pages at ₱5.00"));
+            // The household: two or three dependents under the heads of family.
+            if (!isHeadOfFamily) return;
 
-        // A first-time jobseeker claiming RA 11261 on the CLEARANCE itself -
-        // the law covers both documents - left pending so the demo can walk
-        // it through.
-        repository.CreateRequest(jose, DocumentType.BarangayClearance,
-            "First local employment application",
-            new RequestInput(Scope: ClearanceScope.Local, ApplyJobseekerWaiver: true));
+            AddDependent(repository, resident, "Ramon " + lastName, DependentRelation.Spouse, birth.AddYears(1), false, when);
+            AddDependent(repository, resident, "Trisha " + lastName, DependentRelation.Daughter, now.AddYears(-9), true, when);
+            AddDependent(repository, resident, "Miguel " + lastName, DependentRelation.Son, now.AddYears(-15), true, when);
+        }
 
-        // An ordinary certification left ageing in the queue, so the RA 11032
-        // highlight in the request list has something to point at on demo
-        // day. This is the one place I file with a date in the past, which
-        // is why File exists alongside CreateRequest.
-        repository.File(liza, DocumentType.OtherCertification,
-            "Certification for a school requirement",
-            RequestInput.Default, DateTime.Today.AddDays(-6));
+        private static void AddDependent(IBarangayRepository repository, Resident head, string name,
+                                        DependentRelation relation, DateTime birth, bool studying, DateTime when)
+        {
+            Dependent dependent = new Dependent();
+            dependent.HeadResidentId = head.ResidentId;
+            dependent.FullName = name;
+            dependent.Relation = relation;
+            dependent.DateOfBirth = birth;
+            dependent.IsStudying = studying;
+            dependent.CreatedOn = when.AddMonths(-10);
+            dependent.CreatedBy = "sample";
+
+            repository.InsertDependent(dependent);
+            head.AddDependent(dependent);
+        }
+
+        // ==================================================================
+        //  Receipt booklets
+        // ==================================================================
+
+        private static void SeedSeries(IBarangayRepository repository, DateTime now)
+        {
+            if (repository.GetReceiptSeries(false).Count > 0) return;
+
+            ReceiptSeries series = new ReceiptSeries();
+            series.SeriesCode = "A";
+            series.ControlFrom = "0004501";
+            series.ControlTo = "0004700";
+            series.IssuedTo = "Barangay Treasurer";
+            series.IssuedOn = new DateTime(now.Year, 1, 5);
+            series.IsActive = true;
+            series.Remarks = "Sample booklet for the demonstration";
+
+            repository.InsertReceiptSeries(series);
+        }
+
+        // ==================================================================
+        //  Requests, in every state the queue can be in
+        // ==================================================================
+
+        private static void SeedRequests(IBarangayRepository repository, List<Resident> residents,
+                                         FeeSchedule fees, TimeWindowPolicy window, DateTime now)
+        {
+            if (residents.Count < 10) return;
+
+            // ---- released, paid, with a receipt ------------------------------
+            DocumentRequest clearance = Build(repository, residents[0], DocumentType.BarangayClearance,
+                "Local employment requirement", now.AddDays(-9).Date.AddHours(9.5),
+                false, window, fees, "sample");
+
+            clearance.RecordPayment(clearance.Fee, "OR-" + now.Year + "-000451", "0004501", "sample", now.AddDays(-9).AddHours(1));
+            clearance.Clear("Filed inside office hours, no validation needed", "sample", now.AddDays(-9).AddHours(9.6));
+            clearance.MarkReadyForRelease("sample", now.AddDays(-9).AddHours(11));
+            clearance.Release(residents[0].GetFullName(), "sample", now.AddDays(-9).AddHours(14));
+            repository.UpdateRequest(clearance);
+
+            OfficialReceipt first = BuildReceipt(clearance, "OR-" + now.Year + "-000451", "A", "0004501",
+                residents[0].GetFullName(), clearance.Fee, now.AddDays(-9), "sample");
+            repository.InsertReceipt(first);
+
+            // ---- free indigency certificate, released ------------------------
+            DocumentRequest indigency = Build(repository, residents[3], DocumentType.CertificateOfIndigency,
+                "Medical assistance at the provincial hospital", now.AddDays(-6).Date.AddHours(10),
+                false, window, fees, "sample");
+
+            indigency.Clear("Filed inside office hours, no validation needed", "sample", now.AddDays(-6).AddHours(10.1));
+            indigency.MarkReadyForRelease("sample", now.AddDays(-6).AddHours(11));
+            indigency.Release(residents[3].GetFullName(), "sample", now.AddDays(-6).AddHours(13));
+            repository.UpdateRequest(indigency);
+
+            // ---- senior clearance, waived, released --------------------------
+            DocumentRequest senior = Build(repository, residents[1], DocumentType.BarangayClearance,
+                "Senior citizen discount application", now.AddDays(-4).Date.AddHours(8.25),
+                false, window, fees, "sample");
+
+            senior.Clear("Filed inside office hours, no validation needed", "sample", now.AddDays(-4).AddHours(8.3));
+            senior.MarkReadyForRelease("sample", now.AddDays(-4).AddHours(9));
+            senior.Release(residents[1].GetFullName(), "sample", now.AddDays(-4).AddHours(10));
+            repository.UpdateRequest(senior);
+
+            // ---- business clearance, waiting for validation ------------------
+            DocumentRequest business = Build(repository, residents[0], DocumentType.BarangayBusinessClearance,
+                "Renewal of the sari-sari store permit", now.AddDays(-1).Date.AddHours(9),
+                true, window, fees, "sample");
+
+            // The business details hang off the request, not off the resident:
+            // the same person can open a second store next year and the first
+            // clearance must still show the first store's details.
+            BusinessDetails store = new BusinessDetails();
+            store.BusinessName = "Aling Marites Sari-Sari Store";
+            store.NatureOfBusiness = "Retail - food and household items";
+            store.Purok = residents[0].Purok;
+            store.LocationNote = "Beside the covered court, stall 4";
+            store.OwnershipType = "Sole Proprietor";
+            store.RegistrationNumber = "DTI-2024-118823";
+            store.EmployeeCount = 2;
+            store.IsRenewal = true;
+            business.Business = store;
+
+            business.SendToProcessing("Business clearances are inspected before the barangay signs", "sample",
+                now.AddDays(-1).AddHours(9.1));
+            repository.UpdateRequest(business);
+
+            // ---- filed after 4:00 PM, waiting for the next window ------------
+            DocumentRequest afterHours = Build(repository, residents[2], DocumentType.CertificateOfResidency,
+                "Bank account opening", now.Date.AddHours(16).AddMinutes(20),
+                false, window, fees, "sample");
+
+            repository.UpdateRequest(afterHours);
+
+            // ---- rejected, with the reason on the record ---------------------
+            DocumentRequest rejected = Build(repository, residents[4], DocumentType.FirstTimeJobseekerCertificate,
+                "First job application", now.AddDays(-3).Date.AddHours(11),
+                false, window, fees, "sample");
+            rejected.Reject("The resident has not yet completed six months in the barangay.", "sample",
+                now.AddDays(-3).AddHours(11.2));
+            repository.UpdateRequest(rejected);
+
+            // ---- today, still pending ---------------------------------------
+            DocumentRequest today = Build(repository, residents[9], DocumentType.CertificateOfGoodMoralCharacter,
+                "Scholarship application", now.Date.AddHours(9).AddMinutes(45),
+                false, window, fees, "sample");
+            repository.UpdateRequest(today);
+
+            // ---- a certificate issued free under the jobseeker law -----------
+            DocumentRequest jobseekerResident = residents[8];
+            DocumentRequest jobseeker = Build(repository, jobseekerResident, DocumentType.BarangayClearance,
+                "First time jobseeker requirement under RA 11261", now.AddDays(-20).Date.AddHours(10),
+                false, window, fees, "sample");
+
+            jobseeker.AddJobseekerWaiver("FREE - RA 11261 (First Time Jobseekers Assistance Act)", 100m);
+            jobseeker.SetAssessment(0m, "FREE - RA 11261 (First Time Jobseekers Assistance Act)");
+            jobseeker.Clear("Verified as a first-time jobseeker", "sample", now.AddDays(-20).AddHours(10.2));
+            jobseeker.MarkReadyForRelease("sample", now.AddDays(-20).AddHours(11));
+            jobseeker.Release(jobseekerResident.GetFullName(), "sample", now.AddDays(-20).AddHours(13));
+            jobseekerResident.HasAvailedFirstTimeJobseeker = true;
+            jobseeker.MarkJobseekerBenefitUsed();
+            repository.UpdateRequest(jobseeker);
+            repository.UpdateResident(jobseekerResident);
+
+            // ---- one yesterday, already paid and waiting on the counter ------
+            DocumentRequest ready = Build(repository, residents[5], DocumentType.CertificateOfResidency,
+                "Local employment", now.AddDays(-1).Date.AddHours(13),
+                false, window, fees, "sample");
+
+            ready.RecordPayment(ready.Fee, "OR-" + now.Year + "-000452", "0004502", "sample", now.AddDays(-1).AddHours(13.5));
+            ready.Clear("Filed inside office hours, no validation needed", "sample", now.AddDays(-1).AddHours(13.1));
+            ready.MarkReadyForRelease("sample", now.AddDays(-1).AddHours(14));
+            repository.UpdateRequest(ready);
+
+            OfficialReceipt second = BuildReceipt(ready, "OR-" + now.Year + "-000452", "A", "0004502",
+                residents[5].GetFullName(), ready.Fee, now.AddDays(-1), "sample");
+            repository.InsertReceipt(second);
+        }
+
+        /// <summary>
+        /// Files a request the way the real service does: the fee schedule
+        /// decides the price, and the clock decides whether it starts as
+        /// Cleared or Pending.
+        ///
+        /// I deliberately route the sample data through the same rules instead
+        /// of typing finished rows. If the 4:00 PM rule is ever changed, the
+        /// sample data changes with it, and the demo can never show a state the
+        /// real system would not produce.
+        /// </summary>
+        private static DocumentRequest Build(IBarangayRepository repository, Resident resident,
+                                            DocumentType type, string purpose, DateTime filedAt,
+                                            bool needsValidation, TimeWindowPolicy window,
+                                            FeeSchedule fees, string filedBy)
+        {
+            DocumentRequest request = new DocumentRequest();
+            request.ReferenceNumber = repository.NextReferenceNumber(filedAt);
+            request.ResidentId = resident.ResidentId;
+            request.ResidentName = resident.GetFullName();
+            request.DocumentType = type;
+            request.Purpose = purpose;
+            request.DateRequested = filedAt;
+            request.RequiresValidation = needsValidation;
+            request.FiledDuringOfficeWindow = window.IsInsideOfficeWindow(filedAt);
+            request.Scope = ClearanceScope.Local;
+
+            FeeAssessment assessment = fees.Assess(resident, request);
+            request.SetAssessment(assessment.FinalFee, assessment.Basis);
+
+            RequestStatus status = window.SuggestStartingStatus(request, false);
+            request.SetInitialStatus(status, window.ExplainStartingStatus(request, status), filedBy, filedAt);
+
+            repository.InsertRequest(request);
+            resident.AddRequest(request);
+            return request;
+        }
+
+        private static OfficialReceipt BuildReceipt(DocumentRequest request, string orNumber, string series,
+                                                    string control, string payer, decimal amount,
+                                                    DateTime when, string collector)
+        {
+            OfficialReceipt receipt = new OfficialReceipt();
+            receipt.OrNumber = orNumber;
+            receipt.SeriesCode = series;
+            receipt.ControlNumber = control;
+            receipt.OrDate = when.Date;
+            receipt.PayerName = payer;
+            receipt.Amount = amount;
+            receipt.Method = PaymentMethod.Cash;
+            receipt.RequestId = request.RequestId;
+            receipt.CollectedBy = collector;
+            receipt.CreatedOn = when;
+            return receipt;
+        }
+
+        private static void SeedActivity(IBarangayRepository repository, DateTime now)
+        {
+            repository.AppendActivityLog(ActivityLogEntry.Create("admin", UserRole.Administrator,
+                ActivityModule.Settings, "Prepared", "System", string.Empty,
+                "Loaded the sample barangay data so the screens are not empty", now.AddMinutes(-8), "sample"));
+        }
     }
 }
