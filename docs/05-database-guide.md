@@ -1,5 +1,11 @@
 # Database guide — for my group-mates
 
+> **Note (re-design):** this document describes the earlier build. The
+> re-designed system and the list of every request with the file that
+> implements it are in `docs/10-revamp-notes.md`; the current database
+> scripts are in `BarangayDocumentSystem/Database/Scripts/`.
+
+
 *Written by Clint Wood Gado. The persistence it describes is Frent Dhieniel
 Raborar's (`Fdraft`), extended for the v3.1 request model.*
 

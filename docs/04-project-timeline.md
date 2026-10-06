@@ -1,5 +1,11 @@
 # Project Timeline
 
+> **Note (re-design):** this document describes the earlier build. The
+> re-designed system and the list of every request with the file that
+> implements it are in `docs/10-revamp-notes.md`; the current database
+> scripts are in `BarangayDocumentSystem/Database/Scripts/`.
+
+
 **Barangay Resident and Document Request Management System**  
 September 22–27, 2026
 

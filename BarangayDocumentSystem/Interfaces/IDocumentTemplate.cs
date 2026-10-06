@@ -1,58 +1,66 @@
-// =====================================================================
-//  PART:    Interfaces - one document type knows how to render itself
-//  ORIGIN:  the group's shared design - first modelled in Draft - Jonathan F. Del Rosario,
-//           given this place in the tree by Fdraft - Frent Dhieniel Raborar;
-//           the code and comments in this file are my v3.1 rewrite (leader_draft - Clint Wood Gado)
-//  EDITS:   Clint Wood Gado - header only
-//  VOICE:   every comment in this file is mine (Clint), in the first person
-// =====================================================================
-using System;
+// ---------------------------------------------------------------------------
+//  IDocumentTemplate.cs - the wording of one document.
+//  Mine, in my own words.
+// ---------------------------------------------------------------------------
 using System.Collections.Generic;
-using System.Linq;
-using System.IO;
 using BarangayDocumentSystem.Models;
 
-namespace BarangayDocumentSystem.Interfaces;
-
-/// <summary>
-/// The layout contract for one kind of barangay document.
-///
-/// v3.1 splits the document text from the engine that draws it. A template
-/// knows WHAT a Certificate of Indigency says; the DocumentRenderer knows
-/// HOW a page is laid out - letterhead, margins, wrapping, the signature
-/// block, the print job. That way a new document type is one small class,
-/// and a change to the barangay letterhead is one edit for every document
-/// at once.
-///
-/// The contract is deliberately text-shaped: templates return logical
-/// lines (an empty string is a paragraph break) and stay free of any
-/// GDI+ dependency. The renderer measures and wraps them, on paper and in
-/// the plain-text rendering used by the rule checks.
-/// </summary>
-public interface IDocumentTemplate
+namespace BarangayDocumentSystem.Interfaces
 {
-    /// <summary>The document this template is for. One template instance per
-    /// value; the registry in DocumentRenderer maps them.</summary>
-    DocumentType Type { get; }
+    /// <summary>
+    /// Everything a template needs to write a document: the person, the
+    /// request, and the barangay's own details. I pass one object rather than
+    /// three arguments so that when I add something later (a signatory, say) I
+    /// only change this class and not every template.
+    /// </summary>
+    public class DocumentContext
+    {
+        public Resident Resident { get; set; }
+        public DocumentRequest Request { get; set; }
+        public BarangayProfile Profile { get; set; }
+        public IList<Dependent> Dependents { get; set; }
 
-    /// <summary>The title printed under the letterhead, for example
-    /// "CERTIFICATE OF INDIGENCY".</summary>
-    string Title { get; }
+        public DocumentContext()
+        {
+            Dependents = new List<Dependent>();
+        }
 
-    /// <summary>An optional line under the title, for example "For Local
-    /// Employment" on a clearance. It is per-request because two requests
-    /// for the same document type can differ in what the paper must say.
-    /// Null when there is none.</summary>
-    string? SubtitleFor(DocumentRequest request);
+        /// <summary>How many people are in this resident's household, printed
+        /// on the census-type certificates.</summary>
+        public int HouseholdSize
+        {
+            get { return 1 + (Dependents == null ? 0 : Dependents.Count); }
+        }
+    }
 
-    /// <summary>The body of the document as logical lines. An empty string
-    /// marks a paragraph break; the renderer does the wrapping.</summary>
-    IEnumerable<string> BodyLines(DocumentRequest request, BarangayProfile barangay);
+    /// <summary>
+    /// One document's wording.
+    ///
+    /// The renderer draws the letterhead, the margins, the signature block and
+    /// the footer, once, for every document. A template only writes the
+    /// sentences that belong to its own document. That split is why adding a
+    /// new document type is one small class and one line in the registry,
+    /// instead of another 400-line printer.
+    /// </summary>
+    public interface IDocumentTemplate
+    {
+        /// <summary>The document type this template writes.</summary>
+        DocumentType SupportedType { get; }
 
-    /// <summary>True when the document carries an oath the requester must
-    /// sign, as RA 11261 requires of the first-time jobseeker.</summary>
-    bool RequiresOath { get; }
+        /// <summary>The heading in the middle of the page, e.g.
+        /// "BARANGAY CLEARANCE".</summary>
+        string GetTitle(DocumentContext context);
 
-    /// <summary>The lines of that oath, when RequiresOath is true.</summary>
-    IEnumerable<string> OathLines(DocumentRequest request);
+        /// <summary>The body, one line at a time. Blank strings are line
+        /// breaks - the renderer keeps the spacing.</summary>
+        IList<string> BuildBody(DocumentContext context);
+
+        /// <summary>What goes above the signature: usually "Respectfully
+        /// yours" or a short note about the purpose of the paper.</summary>
+        string GetClosingLine(DocumentContext context);
+
+        /// <summary>True when this document is only issued to a business, so
+        /// the request form knows to ask for the business details.</summary>
+        bool RequiresBusinessDetails { get; }
+    }
 }
