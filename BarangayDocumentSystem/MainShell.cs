@@ -16,7 +16,6 @@ public class MainShell : Form
     private readonly Panel _content = new();
     private readonly Label _contentTitle = new();
     private readonly Label _contentSubtitle = new();
-    private readonly Label _statusLabel = new();
 
     private ViewBase? _current;
 
@@ -58,7 +57,7 @@ public class MainShell : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 3,
+            RowCount = 2,
             BackColor = AppTheme.Background,
             Margin = new Padding(0),
             Padding = new Padding(0)
@@ -66,11 +65,9 @@ public class MainShell : Form
         right.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         right.RowStyles.Add(new RowStyle(SizeType.Absolute, 96F));
         right.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        right.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
 
         right.Controls.Add(BuildHeader(), 0, 0);
         right.Controls.Add(BuildContentArea(), 0, 1);
-        right.Controls.Add(BuildStatusBar(), 0, 2);
 
         root.Controls.Add(right, 1, 0);
         Controls.Add(root);
@@ -136,35 +133,8 @@ public class MainShell : Form
         return _content;
     }
 
-    private Control BuildStatusBar()
-    {
-        var bar = new Panel
-        {
-            Dock = DockStyle.Fill,
-            BackColor = AppTheme.Surface,
-            Padding = new Padding(28, 0, 28, 0),
-            Margin = new Padding(0)
-        };
-
-        bar.Paint += (s, e) =>
-        {
-            using var pen = new Pen(AppTheme.Border);
-            e.Graphics.DrawLine(pen, 0, 0, bar.Width, 0);
-        };
-
-        _statusLabel.Dock = DockStyle.Fill;
-        _statusLabel.TextAlign = ContentAlignment.MiddleLeft;
-        _statusLabel.Font = AppTheme.SmallFont;
-        _statusLabel.ForeColor = AppTheme.TextSecondary;
-        _statusLabel.Text = "Ready";
-        _statusLabel.Margin = new Padding(0);
-        bar.Controls.Add(_statusLabel);
-        return bar;
-    }
-
     public void AddView(string key, string label, string glyph, ViewBase view)
     {
-        view.StatusChanged += (_, message) => SetStatus(message);
         view.NavigateRequested += (_, req) => NavigateTo(req.Key, req.Argument);
         _views[key] = view;
         _sidebar.AddItem(key, label, glyph);
@@ -203,9 +173,6 @@ public class MainShell : Form
     }
 
     public ViewBase? Current => _current;
-
-    public void SetStatus(string message) =>
-        _statusLabel.Text = $"{DateTime.Now:HH:mm:ss}   {message}";
 
     public void Start(string initialKey)
     {

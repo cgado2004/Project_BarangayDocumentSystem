@@ -22,7 +22,7 @@ certificate.
 
 ---
 
-> **v2 — refactored.** Layered folders for SOLID, duplication
+> Layered folders for SOLID, duplication
 > removed for DRY, and the TabControl replaced with a sidebar shell.
 > Full write-up: [`docs/04-refactor-notes.md`](docs/04-refactor-notes.md).
 
@@ -108,6 +108,21 @@ free of charge, and breakdowns by document type and purok.
 | First-Time Jobseeker Certificate | **FREE** | RA 11261 |
 | Certificate of Good Moral Character | ₱50 | |
 
+## Should be followed
+
+| Service | Fee the system charges | Where it lives in the code |
+|---|---|---|
+| Barangay Clearance — local employment | ₱100.00 | `FeeSchedule` (1) |
+| Barangay Clearance — work abroad | ₱200.00 | `FeeSchedule` (1) |
+| Certification (residency, good moral, other) | ₱100.00 | `FeeSchedule` (2) |
+| Other processing fee under the Barangay Taripa | assessed per Taripa item | `FeeSchedule.AssessTarifa` |
+| Certificate of Indigency | FREE | `FeeSchedule` (1) |
+| Certificate of Low Income | FREE | `FeeSchedule` (1) |
+| Business Clearance | **VARIES** with the law violated; ₱200 standard | `FeeSchedule.AssessBusiness` |
+| Cedula (community tax) | **VARIES** — computed from sworn income | `FeeSchedule.AssessCommunityTax` |
+| Filing a case (Katarungang Pambarangay) | ₱150.00 | `FeeSchedule.AssessLuponFiling` |
+| Barangay facilities | ₱200.00 per hour or part | `FeeSchedule.AssessFacility` |
+
 ---
 
 ## Statutory exemptions built in
@@ -133,7 +148,14 @@ Oath of Undertaking that receiving agencies (NBI, PSA, BIR) look for.
 | **RA 9994** | Senior citizen — document fees waived |
 | **RA 10754** | PWD — document fees waived |
 | **DILG MC 2019-177** | Certificate of indigency issued free |
-| **RA 11032** | Official receipt required for every collection |
+| **RA 11291** (Magna Carta of the Poor) | Fee relief for indigent residents; the anchor of waiver #3. |
+| **RA 11861** (Expanded Solo Parents Welfare Act) | The solo parent certification references it; the barangay certifies facts it knows first-hand, the LGU social-welfare office evaluates the benefit. Issued free as social-service documentation. |
+| **RA 8371** (IPRA) | Context for the IP scholarship certification; recognizes ICC/IP rights. |
+| **RA 11310** (4Ps Act) | Context for the 4Ps scholarship certification. |
+| **RA 9262** (Anti-VAWC Act) | Barangay Protection Orders are issued **free of charge**. *Outside this system's scope — noted so nobody reads the Taripa as applying to BPOs.* |
+| **RA 11032 / ARTA advisories** | Refusing a service without proper grounds is a violation; the rejection path always demands and records a reason. |
+| **RA 7160 Sec. 391–393** | The barangay secretary's records (the blotter) are the basis of the blotter-related certification; the certificate says it certifies the ENTRY, not the truth of the report. |
+
 
 > **Business clearance is deliberately excluded** from personal exemptions —
 > it is a regulatory fee on an enterprise, not a personal document. A senior

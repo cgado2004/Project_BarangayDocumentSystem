@@ -13,6 +13,16 @@ namespace BarangayDocumentSystem.Database;
 
 /// MySQL implementation of <see cref="IBarangayRepository"/>.
 ///
+/// HOW IT WORKS — "load once, write through"
+///   • On start (and on <see cref="Reload"/>) every resident and request is read
+///     into memory. The views read from that cache, so screens stay fast and
+///     the object graph (a Resident holding its Requests) works as before.
+///   • Every change is written to MySQL FIRST. Only when the database accepts
+///     it is the in-memory copy updated, so memory never runs ahead of the DB.
+///   • Workflow changes (StartProcessing, Release, RecordPayment, Reject) happen
+///     on the request object itself, so callers must then call
+///     <see cref="SaveRequest"/> to store them.
+///
 /// Every query is PARAMETERISED (@name) — user text is never pasted into SQL,
 /// which is what prevents SQL injection.
 ///
@@ -21,6 +31,7 @@ namespace BarangayDocumentSystem.Database;
 ///
 /// Limit of this design: it assumes ONE running copy of the app. Two clerks on
 /// two machines would not see each other's changes until Reload/restart.
+
 public class MySqlBarangayRepository : IBarangayRepository
 {
     // ---------------------------------------------------------------- SQL
@@ -71,7 +82,7 @@ public class MySqlBarangayRepository : IBarangayRepository
     private const string SqlUpdateJobseekerFlag =
         "UPDATE residents SET has_availed_jobseeker=@has_availed WHERE resident_id=@resident_id";
 
-    // state
+    // -------------------------------------------------------------- state
     private readonly string _connectionString;
     private readonly FeeSchedule _feeSchedule;
     private readonly List<Resident> _residents = new();
@@ -80,10 +91,10 @@ public class MySqlBarangayRepository : IBarangayRepository
     public IReadOnlyList<Resident> Residents => _residents.AsReadOnly();
     public IReadOnlyList<DocumentRequest> Requests => _requests.AsReadOnly();
 
-    
+    /// <summary>
     /// The tables must already exist — call
     /// <see cref="DatabaseInitializer.EnsureCreated"/> first.
-   
+    /// </summary>
     public MySqlBarangayRepository(string connectionString, FeeSchedule feeSchedule)
     {
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -94,7 +105,7 @@ public class MySqlBarangayRepository : IBarangayRepository
         Reload();
     }
 
-    // loading
+    // ----------------------------------------------------------- loading
     public void Reload()
     {
         var residents = new List<Resident>();
@@ -170,7 +181,7 @@ public class MySqlBarangayRepository : IBarangayRepository
             officialReceiptNo: GetString(r, "official_receipt_no"),
             remarks:           GetString(r, "remarks"));
 
-    // residents
+    // --------------------------------------------------------- residents
     public Resident AddResident(ResidentDetails d)
     {
         int id = Run(conn =>
@@ -236,7 +247,7 @@ public class MySqlBarangayRepository : IBarangayRepository
             .ThenBy(r => r.FirstName);
     }
 
-    /// Copies the editable fields onto the in-memory resident.
+    /// <summary>Copies the editable fields onto the in-memory resident.</summary>
     private static void Apply(Resident r, ResidentDetails d)
     {
         r.FirstName         = d.FirstName;
@@ -255,7 +266,7 @@ public class MySqlBarangayRepository : IBarangayRepository
         r.Classification    = d.Classification;
     }
 
-    /// Binds the fourteen editable fields — shared by INSERT and UPDATE.
+    /// <summary>Binds the fourteen editable fields — shared by INSERT and UPDATE.</summary>
     private static void BindResident(DbCommand cmd, ResidentDetails d)
     {
         AddParameter(cmd, "@first_name",          d.FirstName);
@@ -274,7 +285,7 @@ public class MySqlBarangayRepository : IBarangayRepository
         AddParameter(cmd, "@classification",      (int)d.Classification);
     }
 
-    // requests
+    // ---------------------------------------------------------- requests
     public DocumentRequest CreateRequest(Resident resident, DocumentType type, string purpose)
     {
         if (resident is null) throw new ArgumentNullException(nameof(resident));
@@ -353,7 +364,7 @@ public class MySqlBarangayRepository : IBarangayRepository
             ? _requests.OrderByDescending(r => r.DateRequested)
             : _requests.Where(r => r.Status == status).OrderByDescending(r => r.DateRequested);
 
-    // statistics
+    // -------------------------------------------------------- statistics
     public BarangayStatistics GetStatistics() => new(
         TotalResidents:   _residents.Count,
         RegisteredVoters: _residents.Count(r => r.IsRegisteredVoter),
@@ -371,9 +382,9 @@ public class MySqlBarangayRepository : IBarangayRepository
                                     .OrderBy(g => g.Key)
                                     .ToDictionary(g => g.Key, g => g.Count()));
 
-    // connection plumbing (ADO.NET)
+    // ------------------------------------------- connection plumbing (ADO.NET)
 
-    /// Opens a connection, runs the work, returns its result.
+    /// <summary>Opens a connection, runs the work, returns its result.</summary>
     private T Run<T>(Func<DbConnection, T> work)
     {
         try
@@ -388,11 +399,11 @@ public class MySqlBarangayRepository : IBarangayRepository
         }
     }
 
-    /// Same as <see cref="Run{T}"/> for work that returns nothing.
+    /// <summary>Same as <see cref="Run{T}"/> for work that returns nothing.</summary>
     private void RunNoResult(Action<DbConnection> work) =>
         Run<object?>(conn => { work(conn); return null; });
 
-    /// Turns a MySQL error into a sentence a clerk can act on.
+    /// <summary>Turns a MySQL error into a sentence a clerk can act on.</summary>
     private static string Describe(MySqlException ex) => ex.Number switch
     {
         1042 or 2002 or 2003 or 2013 =>
@@ -421,7 +432,7 @@ public class MySqlBarangayRepository : IBarangayRepository
         cmd.Parameters.Add(p);
     }
 
-    /// Id generated by the INSERT just run on THIS connection.
+    /// <summary>Id generated by the INSERT just run on THIS connection.</summary>
     private static int LastInsertId(DbConnection conn)
     {
         using var cmd = CreateCommand(conn, "SELECT LAST_INSERT_ID()");

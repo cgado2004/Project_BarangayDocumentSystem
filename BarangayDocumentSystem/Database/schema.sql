@@ -1,6 +1,10 @@
 -- ============================================================================
 --  Barangay Document System — MySQL schema
 --
+--  You normally do NOT need to run this by hand: the app runs it on every
+--  start (DatabaseInitializer). Every statement is "IF NOT EXISTS", so running
+--  it again changes nothing.
+--
 --  To run it manually (MySQL Workbench / phpMyAdmin / mysql CLI):
 --      CREATE DATABASE barangay_db CHARACTER SET utf8mb4;
 --      USE barangay_db;
@@ -49,7 +53,6 @@ CREATE TABLE IF NOT EXISTS document_requests (
     remarks               VARCHAR(500)  NOT NULL DEFAULT '',
     PRIMARY KEY (request_id),
     INDEX idx_requests_status (status),
-    
     -- Deleting a resident deletes their requests (same rule the app showed before).
     CONSTRAINT fk_requests_resident FOREIGN KEY (resident_id)
         REFERENCES residents (resident_id) ON DELETE CASCADE
