@@ -37,6 +37,11 @@ public partial class RequestForm : Form
     public RequestForm(Resident resident, FeeSchedule feeSchedule)
     {
         InitializeComponent();
+        AutoScroll = true;
+        AutoScrollMinSize = ClientSize;
+        if (Screen.PrimaryScreen is { } screen)
+            Size = new Size(Math.Min(Width, screen.WorkingArea.Width),
+                            Math.Min(Height, screen.WorkingArea.Height));
         _resident = resident ?? throw new ArgumentNullException(nameof(resident));
         _feeSchedule = feeSchedule ?? throw new ArgumentNullException(nameof(feeSchedule));
     }
@@ -142,18 +147,28 @@ public partial class RequestForm : Form
             return;
         }
 
-        DocumentType = _types[cmbDocument.SelectedIndex];
-        Purpose = cmbPurpose.Text.Trim();
+        DocumentType selectedType = _types[cmbDocument.SelectedIndex];
+        string selectedPurpose = cmbPurpose.Text.Trim();
 
-        // Re-check eligibility at submit time as well — belt and braces, in
-        // case the selection changed without firing the handler.
-        if (DocumentType == DocumentType.FirstTimeJobseekerCertificate &&
+        // Re-checks eligibility before filing.
+        if (selectedType == DocumentType.FirstTimeJobseekerCertificate &&
             !_feeSchedule.CanIssueJobseekerCertificate(_resident, out string reason))
         {
             Dialog.Warn(reason, "Cannot issue this certificate");
             return;
         }
 
+        FeeAssessment fee = _feeSchedule.Assess(_resident, selectedType);
+        string feeText = fee.FinalFee == 0 ? "FREE" : $"₱{fee.FinalFee:N2}";
+        if (MessageBox.Show(this,
+                $"File this request?\n\nResident: {_resident.GetFullName()}\n" +
+                $"Document: {cmbDocument.Text}\nPurpose: {selectedPurpose}\nFee: {feeText}",
+                "Confirm new request", MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) != DialogResult.Yes)
+            return;
+
+        DocumentType = selectedType;
+        Purpose = selectedPurpose;
         DialogResult = DialogResult.OK;
         Close();
     }

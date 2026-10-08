@@ -18,6 +18,11 @@ public partial class ResidentForm : Form
     public ResidentForm(Resident? existing)
     {
         InitializeComponent();
+        AutoScroll = true;
+        AutoScrollMinSize = ClientSize;
+        if (Screen.PrimaryScreen is { } screen)
+            Size = new System.Drawing.Size(Math.Min(Width, screen.WorkingArea.Width),
+                                           Math.Min(Height, screen.WorkingArea.Height));
         _editing = existing;
     }
 

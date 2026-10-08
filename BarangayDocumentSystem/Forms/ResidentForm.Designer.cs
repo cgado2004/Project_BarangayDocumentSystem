@@ -356,7 +356,6 @@ partial class ResidentForm
         this.Controls.Add(this.lblOccupation);
         this.Controls.Add(this.txtAddress);
         this.Controls.Add(this.lblAddress);
-        this.Controls.Add(this.radOther);
         this.Controls.Add(this.radFemale);
         this.Controls.Add(this.radMale);
         this.Controls.Add(this.lblGender);
@@ -407,7 +406,6 @@ partial class ResidentForm
     private System.Windows.Forms.Label lblGender;
     private System.Windows.Forms.RadioButton radMale;
     private System.Windows.Forms.RadioButton radFemale;
-    private System.Windows.Forms.RadioButton radOther;
     private System.Windows.Forms.Label lblCivilStatus;
     private System.Windows.Forms.ComboBox cmbCivilStatus;
     private System.Windows.Forms.Label lblPurok;

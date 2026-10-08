@@ -42,9 +42,9 @@ public class ResidentsView : ViewBase
             Padding = new Padding(0)
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 64F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 84F));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 56F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 88F));
 
         root.Controls.Add(BuildToolbar(), 0, 0);
         root.Controls.Add(BuildGrid(), 0, 1);
@@ -107,7 +107,7 @@ public class ResidentsView : ViewBase
         {
             Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.LeftToRight,
-            WrapContents = false,
+            WrapContents = true,
             BackColor = AppTheme.Background,
             Margin = new Padding(0),
             Padding = new Padding(0, 8, 0, 0)
@@ -122,7 +122,7 @@ public class ResidentsView : ViewBase
         var delete = UiFactory.DangerButton("Delete", 90);
         delete.Click += (_, _) => DeleteResident();
 
-        var request = UiFactory.PrimaryButton("New Document Request", 200);
+        var request = UiFactory.PrimaryButton("New Request", 150);
         request.Click += (_, _) => FileRequest();
 
         actions.Controls.Add(request);

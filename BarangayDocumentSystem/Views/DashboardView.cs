@@ -13,8 +13,10 @@ namespace BarangayDocumentSystem.Views;
 
 public class DashboardView : ViewBase
 {
+    private readonly TableLayoutPanel _root;
     private readonly TableLayoutPanel _cards = new();
     private readonly TableLayoutPanel _tables = new();
+    private bool _cardsAreStacked;
 
     public override string Title => "Dashboard";
     public override string Subtitle => "Operational overview of residents and document requests";
@@ -23,7 +25,7 @@ public class DashboardView : ViewBase
     {
         AutoScroll = true;
 
-        var root = new TableLayoutPanel
+        _root = new TableLayoutPanel
         {
             Dock = DockStyle.Top,
             Height = 540,
@@ -33,6 +35,7 @@ public class DashboardView : ViewBase
             Margin = new Padding(0),
             Padding = new Padding(0)
         };
+        var root = _root;
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 156F));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
@@ -60,6 +63,8 @@ public class DashboardView : ViewBase
         root.Controls.Add(_tables, 0, 2);
 
         Controls.Add(root);
+        root.SizeChanged += (_, _) => ArrangeCards();
+        ArrangeCards();
     }
 
     public override void RefreshData()
@@ -67,26 +72,58 @@ public class DashboardView : ViewBase
         var stats = Repository.GetStatistics();
 
         ClearHost(_cards);
-        _cards.Controls.Add(MetricCard("Pending Requests", stats.Pending.ToString(),
+        AddCard(MetricCard("Pending Requests", stats.Pending.ToString(),
             "Awaiting action", AppTheme.AmberTint, AppTheme.AmberInk, AppTheme.AmberDeep,
-            "requests", "Pending"), 0, 0);
-        _cards.Controls.Add(MetricCard("Ready for Release", stats.ReadyForRelease.ToString(),
+            "requests", "Pending"), 0);
+        AddCard(MetricCard("Ready for Release", stats.ReadyForRelease.ToString(),
             "Awaiting pickup", AppTheme.SkyTint, AppTheme.SkyInk, AppTheme.SkyDeep,
-            "requests", "ReadyForRelease"), 1, 0);
-        _cards.Controls.Add(MetricCard("Total Residents", stats.TotalResidents.ToString(),
+            "requests", "ReadyForRelease"), 1);
+        AddCard(MetricCard("Total Residents", stats.TotalResidents.ToString(),
             $"{stats.RegisteredVoters} registered voters",
             AppTheme.NavyTint, AppTheme.NavyInk, AppTheme.NavyDeep,
-            "residents", null), 2, 0);
-        _cards.Controls.Add(MetricCard("Revenue Collected", $"₱{stats.TotalCollected:N0}",
+            "residents", null), 2);
+        AddCard(MetricCard("Revenue Collected", $"₱{stats.TotalCollected:N0}",
             $"{stats.IssuedFreeOfCharge} issued free",
             AppTheme.GreenTint, AppTheme.GreenInk, AppTheme.GreenDeep,
-            "requests", "Released"), 3, 0);
+            "requests", "Released"), 3);
 
         ClearHost(_tables);
         _tables.Controls.Add(BreakdownCard("Requests by Document Type",
             stats.RequestsByDocumentType, new Padding(0, 0, 8, 0)), 0, 0);
         _tables.Controls.Add(BreakdownCard("Residents by Purok",
             stats.ResidentsByPurok, new Padding(8, 0, 0, 0)), 1, 0);
+    }
+
+    private void AddCard(Control card, int index) =>
+        _cards.Controls.Add(card, index % _cards.ColumnCount, index / _cards.ColumnCount);
+
+    private void ArrangeCards()
+    {
+        bool stacked = _root.ClientSize.Width < 700;
+        int columns = stacked ? 2 : 4;
+        if (_cardsAreStacked == stacked && _cards.ColumnCount == columns) return;
+
+        _cardsAreStacked = stacked;
+        var cards = _cards.Controls.Cast<Control>().ToArray();
+        _cards.SuspendLayout();
+        _cards.Controls.Clear();
+        _cards.ColumnStyles.Clear();
+        _cards.RowStyles.Clear();
+        _cards.ColumnCount = columns;
+        _cards.RowCount = stacked ? 2 : 1;
+        for (int i = 0; i < columns; i++)
+            _cards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F / columns));
+        for (int i = 0; i < _cards.RowCount; i++)
+            _cards.RowStyles.Add(new RowStyle(SizeType.Percent, 100F / _cards.RowCount));
+        for (int i = 0; i < cards.Length; i++)
+        {
+            cards[i].Margin = new Padding(0, 0, 14, stacked ? 14 : 0);
+            AddCard(cards[i], i);
+        }
+
+        _root.RowStyles[0].Height = stacked ? 312F : 156F;
+        _root.Height = stacked ? 696 : 540;
+        _cards.ResumeLayout();
     }
 
     private Control MetricCard(string caption, string value, string note,

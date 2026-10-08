@@ -25,7 +25,10 @@ public class MainShell : Form
         Text = "Barangay Resident & Document Management";
         StartPosition = FormStartPosition.CenterScreen;
         ClientSize = new Size(1366, 768);
-        MinimumSize = new Size(1180, 720);
+        MinimumSize = new Size(800, 560);
+        if (Screen.PrimaryScreen is { } screen)
+            Size = new Size(Math.Min(Width, screen.WorkingArea.Width),
+                            Math.Min(Height, screen.WorkingArea.Height));
         BackColor = AppTheme.Background;
         Font = AppTheme.BodyFont;
         DoubleBuffered = true;

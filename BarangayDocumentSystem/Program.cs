@@ -70,6 +70,7 @@ internal static class Program
         var residents = new ResidentsView(repository, feeSchedule);
         var requests  = new RequestsView(repository, renderer);
         var dashboard = new DashboardView(repository);
+        var settings  = new SettingsView(repository, profile);
 
         // Filing a request from the Residents page must update the other two.
         residents.RequestFiled += (_, _) =>
@@ -81,10 +82,9 @@ internal static class Program
         shell.AddView("dashboard", "Dashboard", "▦", dashboard);
         shell.AddView("residents", "Residents", "●", residents);
         shell.AddView("requests",  "Requests",  "▤", requests);
+        shell.AddView("settings",  "Settings",  "⚙", settings);
 
         shell.Start("dashboard");
-        shell.SetStatus($"Connected to MySQL — {repository.Residents.Count} resident(s), " +
-                        $"{repository.Requests.Count} request(s) loaded.");
 
         Application.Run(shell);
     }

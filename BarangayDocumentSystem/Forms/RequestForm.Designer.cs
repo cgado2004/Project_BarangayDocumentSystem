@@ -225,7 +225,7 @@ partial class RequestForm
         this.MinimizeBox = false;
         this.Name = "RequestForm";
         this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-        this.Text = "New Document Request";
+        this.Text = "New Request";
         this.Load += new System.EventHandler(this.RequestForm_Load);
         this.grpResident.ResumeLayout(false);
         this.grpResident.PerformLayout();
