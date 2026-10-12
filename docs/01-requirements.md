@@ -1,10 +1,10 @@
 # Software Requirements and Project Timeline — Docu v7
 
-> **Note (re-design):** this document describes the earlier build. The
-> re-designed system and the list of every request with the file that
-> implements it are in `docs/10-revamp-notes.md`; the current database
-> scripts are in `BarangayDocumentSystem/Database/Scripts/`.
-
+> **Note:** this document describes the earlier build and is kept as the
+> original requirements record. The re-designed system and the list of every
+> request with the file that implements it are in `docs/11-revamp-notes.md`;
+> the current database scripts are in
+> `BarangayDocumentSystem/Database/Scripts/`.
 
 **Barangay Resident and Document Request Management System**
 Barangay Magugpo Poblacion, City of Tagum, Davao del Norte
@@ -13,10 +13,9 @@ Barangay Magugpo Poblacion, City of Tagum, Davao del Norte
 Dagamac, Emmanuelle Philippe · Del Rosario, Jonathan F. · Gado, Clint Wood ·
 Raborar, Frent Dhieniel
 
-> Sections I–III follow `Docu v7.pdf` (27 September 2026), and the ERD and
-> UML diagrams (`02-erd.svg`, `03-uml.svg`) are redrawn from its pages V and
-> VI. Section IV, the Fee Schedule, is **not** part of the PDF: it is kept
-> as the barangay's posted Citizen's Charter rates, to be merged separately.
+> Sections I–III follow `Docu v7.pdf` (27 September 2026). Section IV, the
+> Fee Schedule, is **not** part of the PDF: it is kept as the barangay's
+> posted Citizen's Charter rates, to be merged separately.
 
 ---
 
