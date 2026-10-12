@@ -1,1 +1,0 @@
-This file moved to docs/11-revamp-notes.md during the docs renumbering.
