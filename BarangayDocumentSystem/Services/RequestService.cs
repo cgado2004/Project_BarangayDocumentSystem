@@ -4,6 +4,7 @@
 // ---------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BarangayDocumentSystem.Interfaces;
 using BarangayDocumentSystem.Models;
 using BarangayDocumentSystem.Security;
@@ -133,38 +134,35 @@ namespace BarangayDocumentSystem.Services
 
         /// <summary>
         /// Builds the whole picture of a request that has not been filed yet:
-        /// the resident, the document, the fee the schedule decided, and the
-        /// status the clock decided.
-        ///
-        /// The confirmation dialog simply shows this. Because the preview and
-        /// the real filing call the same two rules, the dialog can never
-        /// promise something the save will not do.
+        /// the resident, the document, the fee the schedule decides, the
+        /// starting status the clock decides, and the sentences that explain
+        /// both. The confirmation dialog shows this; the clerk says it back to
+        /// the resident; then File() saves exactly what was shown.
         /// </summary>
         public RequestPreview Preview(Resident resident, DocumentRequest request, bool forceValidation)
         {
             if (resident == null) throw new ArgumentNullException("resident");
             if (request == null) throw new ArgumentNullException("request");
 
-            request.ResidentId = resident.ResidentId;
-            request.ResidentName = resident.GetFullName();
-            request.DateRequested = request.DateRequested == default(DateTime) ? _clock.Now() : request.DateRequested;
-            request.RequiresValidation = forceValidation || request.RequiresValidation
-                || request.DocumentType == DocumentType.BarangayBusinessClearance;
-
-            request.FiledDuringOfficeWindow = _window.IsInsideOfficeWindow(request.DateRequested);
-
             FeeAssessment assessment = _fees.Assess(resident, request);
-            request.SetAssessment(assessment.FinalFee, assessment.Basis);
-
-            RequestStatus starting = _window.SuggestStartingStatus(request, forceValidation);
 
             RequestPreview preview = new RequestPreview();
             preview.Resident = resident;
             preview.Request = request;
             preview.Assessment = assessment;
-            preview.StartingStatus = starting;
-            preview.TimeExplanation = _window.DescribeShift(request.DateRequested, request.RequiresValidation);
-            preview.StatusExplanation = _window.ExplainStartingStatus(request, starting);
+            preview.StartingStatus = _window.StartingStatus(request, forceValidation);
+
+            if (preview.StartingStatus == RequestStatus.Processing)
+                preview.TimeExplanation = "Business clearances are inspected before the barangay signs, "
+                    + "so this one starts in Processing.";
+            else if (preview.StartingStatus == RequestStatus.Pending)
+                preview.TimeExplanation = "Filed after 4:00 PM, so it waits as Pending until the next "
+                    + "office window opens at 8:00 AM.";
+            else
+                preview.TimeExplanation = "Filed inside office hours with nothing to check, "
+                    + "so it is Cleared on the spot.";
+
+            preview.StatusExplanation = preview.TimeExplanation;
             return preview;
         }
 
@@ -172,17 +170,8 @@ namespace BarangayDocumentSystem.Services
         //  Filing
         // ==================================================================
 
-        /// <summary>
-        /// Saves a new request. This is the only way a request gets into the
-        /// system, so every rule that has to hold at filing time holds here.
-        /// </summary>
-        public OperationResult<DocumentRequest> FileRequest(Resident resident, DocumentRequest request,
-                                                            bool forceValidation)
+        public OperationResult<DocumentRequest> File(Resident resident, DocumentRequest request, bool forceValidation)
         {
-            string refusal;
-            if (!Allowed(Permission.FileRequests, out refusal))
-                return OperationResult<DocumentRequest>.Fail(refusal);
-
             if (resident == null)
                 return OperationResult<DocumentRequest>.Fail("Please choose the resident asking for the document.");
 
@@ -201,273 +190,137 @@ namespace BarangayDocumentSystem.Services
             {
                 string reason;
                 if (!_fees.IsJobseekerEligible(resident, out reason))
-                    return OperationResult<DocumentRequest>.Fail(reason);
-
-                if (!FeeSchedule.IsCoveredByJobseekerAct(request.DocumentType))
                     return OperationResult<DocumentRequest>.Fail(
-                        "The RA 11261 first-time jobseeker benefit does not cover "
-                        + request.GetDocumentName() + ".");
+                        "The first-time jobseeker waiver cannot be applied. " + reason);
             }
 
-            RequestPreview preview = Preview(resident, request, forceValidation);
+            FeeAssessment assessment = _fees.Assess(resident, request);
+            DateTime now = _clock.Now();
 
-            // The counter number comes from the store, inside a transaction, so
-            // two clerks on two machines cannot hand out the same number.
-            request.ReferenceNumber = _repository.NextReferenceNumber(request.DateRequested);
+            request.ReferenceNumber = _repository.NextReferenceNumber(now);
+            request.ResidentId = resident.ResidentId;
+            request.ResidentName = resident.GetFullName();
+            request.DateRequested = now;
+            request.Fee = assessment.FinalFee;
+            request.FeeBasis = assessment.Basis;
+            request.RequiresValidation = forceValidation
+                || request.DocumentType == DocumentType.BarangayBusinessClearance;
+            request.FiledDuringOfficeWindow = _window.IsInsideOfficeWindow(now);
 
-            request.SetInitialStatus(preview.StartingStatus, preview.StatusExplanation, _session.Username,
-                _clock.Now());
-            request.LastStatusChangeOn = _clock.Now();
-            request.LastStatusChangeBy = _session.Username;
-
-            if (request.ApplyJobseekerWaiver) request.MarkJobseekerBenefitUsed();
+            RequestStatus starting = _window.StartingStatus(request, forceValidation);
+            request.File(starting, _session.Username, now);
 
             _repository.InsertRequest(request);
-            resident.AddRequest(request);
 
-            string details = "Filed " + request.ReferenceNumber + " (" + request.GetDocumentName() + ") for "
-                    + resident.GetFullName() + ". Fee "
-                    + (preview.Assessment.IsFree
-                        ? "free - " + preview.Assessment.Basis
-                        : "P" + preview.Assessment.FinalFee.ToString("#,##0.00") + " - " + preview.Assessment.Basis)
-                    + " Starting status " + EnumText.Of(preview.StartingStatus) + ".";
-
-            _log.Record(ActivityModule.Requests, "Filed", "Document request", request.ReferenceNumber, details);
-
-            // A request that starts as Cleared has two history lines: the
-            // status, and the reason it was allowed to skip the queue. I write
-            // the second one too, because "cleared at 9:14 AM" on its own does
-            // not explain itself a year later.
-            AppendLatestHistory(request);
+            _log.Record(ActivityModule.Requests, "Filed " + request.ReferenceNumber, "Document request",
+                request.ReferenceNumber,
+                resident.GetFullName() + " filed a " + request.GetDocumentName()
+                + " (" + request.Purpose + "). Fee " + request.GetFeeText()
+                + ", starts as " + EnumText.Of(starting) + ".");
 
             return OperationResult<DocumentRequest>.Ok(request,
-                "Request " + request.ReferenceNumber + " is filed as " + request.GetStatusText() + ".");
+                request.ReferenceNumber + " is filed as " + EnumText.Of(starting) + ".");
         }
 
         // ==================================================================
-        //  Moving a request along
+        //  The moves
         // ==================================================================
 
         public OperationResult SendToProcessing(DocumentRequest request, string reason)
         {
-            string refusal;
-            if (!Allowed(Permission.ValidateRequests, out refusal)) return OperationResult.Fail(refusal);
-
-            return Move(request, delegate (DateTime when)
-            {
-                request.SendToProcessing(reason, _session.Username, when);
-            }, reason);
+            return Move(request, "Sent to processing",
+                delegate { request.SendToProcessing(reason, _session.Username, _clock.Now()); });
         }
 
-        /// <summary>Clears a request. This is the validator's approval, and it
-        /// is also what the 8:00 AM to 4:00 PM rule does by itself.</summary>
         public OperationResult Clear(DocumentRequest request, string reason)
         {
-            string refusal;
-            if (!Allowed(Permission.ValidateRequests, out refusal)) return OperationResult.Fail(refusal);
-
-            if (string.IsNullOrWhiteSpace(reason))
-                reason = _window.DescribeShift(request == null ? _clock.Now() : request.DateRequested, false);
-
-            return Move(request, delegate (DateTime when)
-            {
-                request.Clear(reason, _session.Username, when);
-            }, reason);
+            return Move(request, "Cleared",
+                delegate { request.Clear(reason, _session.Username, _clock.Now()); });
         }
 
-        /// <summary>Marks the document printed and waiting on the counter. The
-        /// fee is checked by the model, so a fee-bearing document cannot get
-        /// here before the receipt exists.</summary>
         public OperationResult MarkReadyForRelease(DocumentRequest request)
         {
-            string refusal;
-            if (!Allowed(Permission.ReleaseDocuments, out refusal)) return OperationResult.Fail(refusal);
-
-            return Move(request, delegate (DateTime when)
-            {
-                request.MarkReadyForRelease(_session.Username, when);
-            }, string.Empty);
+            return Move(request, "Ready for release",
+                delegate { request.MarkReadyForRelease(_session.Username, _clock.Now()); });
         }
 
-        /// <summary>Hands the document over. I also write the resident's
-        /// acknowledgement name, because that is what the barangay's paper
-        /// record has always had on it.</summary>
         public OperationResult Release(DocumentRequest request, string receivedBy)
         {
-            string refusal;
-            if (!Allowed(Permission.ReleaseDocuments, out refusal)) return OperationResult.Fail(refusal);
-
-            if (request == null) return OperationResult.Fail("Please choose a request first.");
-
-            string missing;
-            if (!request.CanRelease(out missing)) return OperationResult.Fail(missing);
-
-            if (string.IsNullOrWhiteSpace(receivedBy))
-                return OperationResult.Fail("Please write who received the document.");
-
-            OperationResult result = Move(request, delegate (DateTime when)
-            {
-                request.Release(receivedBy, _session.Username, when);
-            }, "Released to " + receivedBy);
-
-            // The once-only RA 11261 benefit is spent at release time, not at
-            // filing time: a request that is rejected must not consume it.
-            if (result.Succeeded && request.AvailedUnderJobseekerAct)
-            {
-                request.MarkJobseekerBenefitUsed();
-                Resident resident = _repository.GetResident(request.ResidentId);
-                if (resident != null)
-                {
-                    resident.HasAvailedFirstTimeJobseeker = true;
-                    _repository.UpdateResident(resident);
-
-                    _log.Record(ActivityModule.Requests, "Jobseeker benefit used", "Resident",
-                        resident.ResidentId.ToString(),
-                        resident.GetFullName() + " used the once-only RA 11261 benefit on "
-                        + request.ReferenceNumber + ".");
-                }
-            }
-
-            return result;
+            return Move(request, "Released",
+                delegate { request.Release(receivedBy, _session.Username, _clock.Now()); });
         }
 
         public OperationResult Reject(DocumentRequest request, string reason)
         {
-            string refusal;
-            if (!Allowed(Permission.ValidateRequests, out refusal)) return OperationResult.Fail(refusal);
-
-            if (string.IsNullOrWhiteSpace(reason))
-                return OperationResult.Fail("Please write the reason for the rejection. It goes on the record.");
-
-            return Move(request, delegate (DateTime when)
-            {
-                request.Reject(reason, _session.Username, when);
-            }, reason);
+            return Move(request, "Rejected",
+                delegate { request.Reject(reason, _session.Username, _clock.Now()); });
         }
 
-        /// <summary>Puts a rejected request back in the queue, for the case
-        /// that always happens: the reason turned out to be wrong.</summary>
         public OperationResult Reopen(DocumentRequest request, string reason)
         {
-            if (_session == null || !_session.Has(Permission.ValidateRequests))
-                return OperationResult.Fail(_session == null ? "Please sign in first."
-                    : _session.RefusalFor(Permission.ValidateRequests));
-
-            return Move(request, delegate (DateTime when)
-            {
-                request.ReopenFromRejection(reason, _session.Username, when);
-            }, reason);
+            return Move(request, "Reopened",
+                delegate { request.ReopenFromRejection(reason, _session.Username, _clock.Now()); });
         }
 
-        // ==================================================================
-        //  The rule that empties the overnight queue
-        // ==================================================================
-
-        /// <summary>
-        /// Clears the requests that were filed outside office hours, now that
-        /// the window has opened again.
-        ///
-        /// The program runs this when it starts, which is what makes the queue
-        /// honest on a Monday morning: everything filed after 4:00 PM on Friday
-        /// is still Pending when the office opens, and this sweeps it to
-        /// Cleared in one pass. I return the count so the status bar can say
-        /// what happened instead of changing rows silently.
-        /// </summary>
-        public int ClearWaitingRequests()
-        {
-            DateTime now = _clock.Now();
-            int cleared = 0;
-
-            foreach (DocumentRequest request in _repository.GetRequestsWaitingForWindow())
-            {
-                if (!_window.ShouldClearNow(request, now)) continue;
-
-                RequestStatus previous = request.Status;
-                request.Clear("Cleared automatically when the " + _window.GetWindowText()
-                            + " window opened, because this document needs no validation.",
-                              "system", now);
-
-                _repository.UpdateRequest(request);
-                AppendLatestHistory(request);
-
-                _log.RecordAs("system", UserRole.Administrator, ActivityModule.Requests, "Cleared",
-                    "Document request", request.ReferenceNumber,
-                    "Moved " + request.ReferenceNumber + " from " + EnumText.Of(previous)
-                    + " to Cleared when the office window opened.");
-
-                cleared++;
-            }
-
-            return cleared;
-        }
-
-        // ==================================================================
-        //  Internals
-        // ==================================================================
-
-        /// <summary>
-        /// The one place a status change is saved, logged and explained. Every
-        /// public method above funnels through here, which is why the guard in
-        /// the model cannot be forgotten by a future screen.
-        /// </summary>
-        private OperationResult Move(DocumentRequest request, Action<DateTime> change, string reason)
+        private OperationResult Move(DocumentRequest request, string action, Action change)
         {
             if (request == null) return OperationResult.Fail("Please choose a request first.");
 
-            RequestStatus previous = request.Status;
-
             try
             {
-                change(_clock.Now());
+                change();
             }
             catch (InvalidOperationException error)
             {
-                // The model refused. That is a normal answer, not a crash: the
-                // clerk reads the sentence and tries something else.
                 return OperationResult.Fail(error.Message);
             }
 
             _repository.UpdateRequest(request);
-            AppendLatestHistory(request);
-            _log.RecordStatusChange(request, previous, reason);
 
-            string message = request.ReferenceNumber + " is now " + request.GetStatusText() + ".";
+            _log.Record(ActivityModule.Requests, action + " " + request.ReferenceNumber,
+                "Document request", request.ReferenceNumber,
+                request.GetDocumentName() + " for " + request.ResidentName
+                + " is now " + EnumText.Of(request.Status) + ".");
 
-            if (request.Status == RequestStatus.ReadyForRelease)
-                message += " Print it and hand it over when the resident comes back.";
-
-            if (request.Status == RequestStatus.Released && request.AvailedUnderJobseekerAct)
-                message += " The RA 11261 benefit is now marked as used for this resident.";
-
-            return OperationResult.Ok(message);
+            return OperationResult.Ok(request.ReferenceNumber + " is now "
+                + EnumText.Of(request.Status) + ".");
         }
 
-        /// <summary>Writes the newest history line of the request into the
-        /// store, for databases that keep the history in their own table.</summary>
-        private void AppendLatestHistory(DocumentRequest request)
+        // ==================================================================
+        //  The automatic next-morning clearances
+        // ==================================================================
+
+        /// <summary>
+        /// Moves every after-hours request from Pending to Cleared, once the
+        /// office window has opened again.
+        ///
+        /// This runs on startup so the queue is honest on a Monday morning.
+        /// The stored procedure does the same work inside the database; this
+        /// method is the in-memory fallback and the one the rule checks use.
+        /// </summary>
+        public int ClearWaitingRequests()
         {
-            if (request.History.Count == 0) return;
+            DateTime now = _clock.Now();
+            if (!_window.IsInsideOfficeWindow(now)) return 0;
 
-            RequestStatusChange latest = request.History[request.History.Count - 1];
-            _repository.AppendStatusHistory(request.RequestId, latest);
-        }
-
-        private bool Allowed(Permission permission, out string refusal)
-        {
-            refusal = string.Empty;
-
-            if (_session == null || !_session.IsSignedIn)
+            int cleared = 0;
+            foreach (DocumentRequest request in _repository.GetRequests(null))
             {
-                refusal = "Please sign in first.";
-                return false;
+                if (request.WaitsForNextWindow)
+                {
+                    request.Clear("Automatically cleared when the next office window opened.",
+                        "system", now);
+                    _repository.UpdateRequest(request);
+                    cleared++;
+                }
             }
 
-            if (_session.Has(permission)) return true;
+            if (cleared > 0)
+                _log.Record(ActivityModule.Requests, "Cleared " + cleared + " waiting request(s)",
+                    "Document request", string.Empty,
+                    "The office window opened and " + cleared + " request(s) filed outside hours were cleared.");
 
-            refusal = _session.RefusalFor(permission);
-            _log.Record(ActivityModule.Requests, "Refused", "Document request", string.Empty,
-                _session.DescribeForLog(permission));
-            return false;
+            return cleared;
         }
     }
 }
