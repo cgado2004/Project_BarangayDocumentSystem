@@ -288,6 +288,11 @@ namespace BarangayDocumentSystem.Services.Reports
             if (result == null || result.Table == null) return string.Empty;
             if (string.IsNullOrWhiteSpace(folder)) folder = AppConfig.ApplicationFolder;
 
+            // The folder may not exist yet on a fresh install (the exports
+            // folder under the program's own directory), so I make it rather
+            // than fail the export.
+            if (!System.IO.Directory.Exists(folder)) System.IO.Directory.CreateDirectory(folder);
+
             string fileName = result.Key + "-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".csv";
             string path = System.IO.Path.Combine(folder, fileName);
 

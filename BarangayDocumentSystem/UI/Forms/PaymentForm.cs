@@ -364,8 +364,8 @@ namespace BarangayDocumentSystem.UI.Forms
                 }
                 else
                 {
-                    OperationResult<OfficialReceipt> issued = _receipts.Collect(_request, amount,
-                        seriesCode, orNumber, controlNumber, paymentMethod, remarks);
+                    OperationResult<OfficialReceipt> issued = _receipts.Collect(_request,
+                        orNumber, controlNumber, seriesCode, amount, paymentMethod, remarks);
 
                     if (!issued.Succeeded) { Dialog.Refused(this, issued.Message); return; }
 

@@ -150,7 +150,7 @@ namespace BarangayDocumentSystem.Services
             preview.Resident = resident;
             preview.Request = request;
             preview.Assessment = assessment;
-            preview.StartingStatus = _window.StartingStatus(request, forceValidation);
+            preview.StartingStatus = StartingStatusFor(request, forceValidation);
 
             if (preview.StartingStatus == RequestStatus.Processing)
                 preview.TimeExplanation = "Business clearances are inspected before the barangay signs, "
@@ -170,7 +170,7 @@ namespace BarangayDocumentSystem.Services
         //  Filing
         // ==================================================================
 
-        public OperationResult<DocumentRequest> File(Resident resident, DocumentRequest request, bool forceValidation)
+        public OperationResult<DocumentRequest> FileRequest(Resident resident, DocumentRequest request, bool forceValidation)
         {
             if (resident == null)
                 return OperationResult<DocumentRequest>.Fail("Please choose the resident asking for the document.");
@@ -200,15 +200,15 @@ namespace BarangayDocumentSystem.Services
             request.ReferenceNumber = _repository.NextReferenceNumber(now);
             request.ResidentId = resident.ResidentId;
             request.ResidentName = resident.GetFullName();
-            request.DateRequested = now;
+            if (request.DateRequested == DateTime.MinValue) request.DateRequested = now;
             request.Fee = assessment.FinalFee;
             request.FeeBasis = assessment.Basis;
             request.RequiresValidation = forceValidation
                 || request.DocumentType == DocumentType.BarangayBusinessClearance;
-            request.FiledDuringOfficeWindow = _window.IsInsideOfficeWindow(now);
 
-            RequestStatus starting = _window.StartingStatus(request, forceValidation);
-            request.File(starting, _session.Username, now);
+            RequestStatus starting = StartingStatusFor(request, forceValidation);
+            request.SetInitialStatus(starting, _window.ExplainStartingStatus(request, starting),
+                _session.Username, now);
 
             _repository.InsertRequest(request);
 
@@ -220,6 +220,23 @@ namespace BarangayDocumentSystem.Services
 
             return OperationResult<DocumentRequest>.Ok(request,
                 request.ReferenceNumber + " is filed as " + EnumText.Of(starting) + ".");
+        }
+
+        /// <summary>
+        /// Works out the starting status from the moment the request carries
+        /// as its filing time - the confirmation step asks about a request the
+        /// clerk has already dated, and the filing step dates it from the
+        /// clock when nobody has. The window flag is written back onto the
+        /// request so the history and the queue agree with the status.
+        /// </summary>
+        private RequestStatus StartingStatusFor(DocumentRequest request, bool forceValidation)
+        {
+            DateTime moment = request.DateRequested == DateTime.MinValue
+                ? _clock.Now()
+                : request.DateRequested;
+
+            request.FiledDuringOfficeWindow = _window.IsInsideOfficeWindow(moment);
+            return _window.SuggestStartingStatus(request, forceValidation);
         }
 
         // ==================================================================

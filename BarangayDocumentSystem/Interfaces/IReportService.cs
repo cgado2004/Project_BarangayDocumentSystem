@@ -133,5 +133,9 @@ namespace BarangayDocumentSystem.Interfaces
 
         /// <summary>True when the .rpt template for that report can be found.</summary>
         bool HasCrystalTemplate(string reportKey);
+
+        /// <summary>Writes the rows of a finished report to a .csv file and
+        /// hands back the path, for the treasurer's own copies.</summary>
+        string ExportCsv(ReportResult result, string folder);
     }
 }

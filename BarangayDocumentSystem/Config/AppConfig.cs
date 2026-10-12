@@ -255,18 +255,57 @@ namespace BarangayDocumentSystem.Config
                 string fromEnvironment = Environment.GetEnvironmentVariable(
                     IsSqlServer ? "BARANGAY_DB_CONNECTION_SQLSERVER" : "BARANGAY_DB_CONNECTION");
                 if (!string.IsNullOrWhiteSpace(fromEnvironment))
-                    return fromEnvironment;
+                    return WithDatabaseName(fromEnvironment);
 
                 string raw = ReadConnectionString(name);
 
                 if (ProtectConnectionString && !string.IsNullOrWhiteSpace(raw))
                 {
                     Security.ConnectionStringProtector protector = new Security.ConnectionStringProtector();
-                    if (protector.IsProtected(raw)) return protector.Unprotect(raw);
+                    if (protector.IsProtected(raw)) return WithDatabaseName(protector.Unprotect(raw));
                 }
 
-                return raw;
+                return WithDatabaseName(raw);
             }
+        }
+
+        /// <summary>
+        /// Makes sure a connection string names the database it talks to.
+        ///
+        /// A deployment that replaces the shipped connection string with a
+        /// bare one ("server, user, password") used to dead-end on the first
+        /// run: the initializer could not create a database nobody had named.
+        /// So when the string carries no Database= (or Initial Catalog=) I
+        /// add the name from the Storage.Database key, or the provider's own
+        /// default, and the first run creates exactly that database.
+        /// </summary>
+        public static string WithDatabaseName(string raw)
+        {
+            if (IsMemory) return raw ?? string.Empty;
+            if (HasDatabaseKey(raw)) return raw;
+
+            string fallback = ReadString("Storage.Database",
+                IsSqlServer ? "BarangayDocumentSystem" : "barangay_document_system");
+            if (string.IsNullOrWhiteSpace(fallback)) return raw ?? string.Empty;
+
+            string trimmed = (raw ?? string.Empty).Trim();
+            if (trimmed.Length == 0) return "Database=" + fallback.Trim() + ";";
+            return trimmed + (trimmed.EndsWith(";") ? string.Empty : ";")
+                 + "Database=" + fallback.Trim() + ";";
+        }
+
+        private static bool HasDatabaseKey(string connectionString)
+        {
+            foreach (string piece in (connectionString ?? string.Empty).Split(';'))
+            {
+                string[] pair = piece.Split('=');
+                if (pair.Length != 2) continue;
+                string key = pair[0].Trim();
+                if (string.Equals(key, "Database", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(key, "Initial Catalog", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
         }
 
         /// <summary>True when I am talking to SQL Server instead of MySQL.</summary>

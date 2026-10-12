@@ -70,8 +70,8 @@ namespace BarangayDocumentSystem.Services
             if (resident == null) return ResidencyStatus.Newcomer;
 
             int months = resident.GetMonthsOfResidency();
-            if (months < AppConfig.ResidencyNewcomerMonths) return ResidencyStatus.Newcomer;
-            if (months < AppConfig.ResidencyPermanentYears * 12) return ResidencyStatus.Temporary;
+            if (months < AppConfig.NewcomerMonths) return ResidencyStatus.Newcomer;
+            if (months < AppConfig.PermanentResidencyYears * 12) return ResidencyStatus.Temporary;
             return ResidencyStatus.Permanent;
         }
 
@@ -177,7 +177,7 @@ namespace BarangayDocumentSystem.Services
                 return OperationResult.Fail("That record is already " + EnumText.Of(newState) + ".");
 
             RecordState previous = resident.RecordState;
-            resident.ChangeState(newState, reason.Trim(), _session.Username, _clock.Now());
+            resident.SetRecordState(newState, reason.Trim(), _session.Username, _clock.Now());
             _repository.UpdateResident(resident);
 
             _log.Record(ActivityModule.Residents,
@@ -193,18 +193,18 @@ namespace BarangayDocumentSystem.Services
         //  Household
         // ==================================================================
 
-        public OperationResult AddDependent(Resident head, Dependent dependent)
+        public OperationResult<Dependent> AddDependent(Resident head, Dependent dependent)
         {
             string refusal;
             if (!Allowed(Permission.ManageResidents, out refusal))
-                return OperationResult.Fail(refusal);
+                return OperationResult<Dependent>.Fail(refusal);
 
-            if (head == null) return OperationResult.Fail("Please choose the head of the family first.");
-            if (dependent == null) return OperationResult.Fail("There is no dependent to save.");
+            if (head == null) return OperationResult<Dependent>.Fail("Please choose the head of the family first.");
+            if (dependent == null) return OperationResult<Dependent>.Fail("There is no dependent to save.");
 
             var problems = InputValidator.ValidateDependent(dependent);
             if (problems.Count > 0)
-                return OperationResult.Fail(string.Join(Environment.NewLine, problems.ToArray()));
+                return OperationResult<Dependent>.Fail(string.Join(Environment.NewLine, problems.ToArray()));
 
             dependent.HeadResidentId = head.ResidentId;
             dependent.CreatedOn = _clock.Now();
@@ -215,7 +215,8 @@ namespace BarangayDocumentSystem.Services
             _log.Record(ActivityModule.Residents, "Dependent added", "Resident", head.ResidentId.ToString(),
                 dependent.FullName + " (" + dependent.Relation + ") added to " + head.GetFullName() + "'s household.");
 
-            return OperationResult.Ok(dependent.FullName + " is registered under " + head.GetFullName() + ".");
+            return OperationResult<Dependent>.Ok(dependent,
+                dependent.FullName + " is registered under " + head.GetFullName() + ".");
         }
 
         public OperationResult RemoveDependent(Resident head, Dependent dependent)
@@ -235,6 +236,38 @@ namespace BarangayDocumentSystem.Services
             return OperationResult.Ok(dependent.FullName + " is removed from the household.");
         }
 
+        /// <summary>The household of a head of family, for the screens that
+        /// list the members under the resident.</summary>
+        public IList<Dependent> GetDependents(int headResidentId)
+        {
+            return _repository.GetDependents(headResidentId);
+        }
+
+        /// <summary>Saves changes to a household member. The dependent is
+        /// validated the same way as a new one, because a badly typed birthday
+        /// is just as bad the second time it is typed.</summary>
+        public OperationResult UpdateDependent(Resident head, Dependent dependent)
+        {
+            string refusal;
+            if (!Allowed(Permission.ManageResidents, out refusal))
+                return OperationResult.Fail(refusal);
+
+            if (head == null) return OperationResult.Fail("Please choose the head of the family first.");
+            if (dependent == null) return OperationResult.Fail("Please choose a dependent first.");
+
+            var problems = InputValidator.ValidateDependent(dependent);
+            if (problems.Count > 0)
+                return OperationResult.Fail(string.Join(Environment.NewLine, problems.ToArray()));
+
+            dependent.HeadResidentId = head.ResidentId;
+            _repository.UpdateDependent(dependent);
+
+            _log.Record(ActivityModule.Residents, "Dependent updated", "Resident", head.ResidentId.ToString(),
+                dependent.FullName + " (" + dependent.Relation + ") updated in " + head.GetFullName() + "'s household.");
+
+            return OperationResult.Ok(dependent.FullName + " is saved.");
+        }
+
         // ==================================================================
         //  Small helpers
         // ==================================================================
@@ -242,13 +275,13 @@ namespace BarangayDocumentSystem.Services
         private bool Allowed(Permission permission, out string refusal)
         {
             refusal = string.Empty;
-            if (_session == null || _session.CurrentUser == null)
+            if (_session == null || _session.User == null)
             {
                 refusal = "Please sign in first.";
                 return false;
             }
 
-            if (!Permissions.Has(_session.CurrentUser.Role, permission))
+            if (!PermissionSet.Allows(_session.User.Role, permission))
             {
                 refusal = "Your account is not allowed to change resident records. "
                         + "Ask the administrator if you need this.";

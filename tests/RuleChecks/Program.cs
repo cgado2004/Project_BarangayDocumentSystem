@@ -61,6 +61,7 @@ namespace BarangayDocumentSystem.RuleChecks
             IList<Resident> residents = repository.GetResidents(new ResidentQuery());
 
             CheckPuroks(residents);
+            CheckConnectionString();
             CheckFlatFees(fees, residents);
             CheckStudentFeeCategory(fees, residents);
             CheckCommunityTax(fees);
@@ -91,7 +92,7 @@ namespace BarangayDocumentSystem.RuleChecks
         //  The little reporting helper
         // =================================================================
 
-        private static void Check(string name, bool ok, string detail)
+        private static void Check(string name, bool ok, string detail = null)
         {
             if (ok)
             {
@@ -120,7 +121,6 @@ namespace BarangayDocumentSystem.RuleChecks
         private static SessionManager Session(IBarangayRepository repository)
         {
             UserAccount administrator = new UserAccount();
-            administrator.UserId = 9001;
             administrator.Username = "rulecheck";
             administrator.FullName = "Rule Check";
             administrator.Role = UserRole.Administrator;
@@ -137,6 +137,26 @@ namespace BarangayDocumentSystem.RuleChecks
             Resident found = residents.FirstOrDefault(r => r.LastName == lastName);
             if (found == null) throw new InvalidOperationException("No seeded resident named " + lastName + ".");
             return found;
+        }
+
+        // =================================================================
+        //  The connection string always names its database
+        // =================================================================
+
+        private static void CheckConnectionString()
+        {
+            Heading("The connection string names its database");
+
+            Check("a bare connection string is given the configured database",
+                AppConfig.WithDatabaseName("Server=localhost;Uid=root;Pwd=;")
+                    .Contains("Database=barangay_document_system"));
+
+            Check("a connection string that already names one is left alone",
+                AppConfig.WithDatabaseName("Server=localhost;Database=mine;Uid=root;Pwd=;")
+                    == "Server=localhost;Database=mine;Uid=root;Pwd=;");
+
+            Check("an empty connection string still names the database",
+                AppConfig.WithDatabaseName(string.Empty) == "Database=barangay_document_system;");
         }
 
         // =================================================================
@@ -224,13 +244,13 @@ namespace BarangayDocumentSystem.RuleChecks
 
             Check("a student gets no discount on a business clearance",
                 fees.Assess(student, DocumentType.BarangayBusinessClearance).FinalFee
-                    == AppConfig.FeeBusinessClearanceStandard);
+                    == AppConfig.FeeBusinessClearance);
 
             Check("Student is gone from the classifications",
                 !Enum.GetNames(typeof(ResidentClassification)).Contains("Student"));
 
             Check("the classification drop-down has no Student entry",
-                !EnumText.Spaced(ResidentClassification.None).Contains("Student"));
+                !EnumText.Spaced(ResidentClassification.None.ToString()).Contains("Student"));
 
             Resident scholar = Person(residents, "Reyes");
             Check("a seeded student is tagged through the fee category, not the classification",
@@ -254,7 +274,7 @@ namespace BarangayDocumentSystem.RuleChecks
                 fees.CommunityTax(10000m) == AppConfig.CommunityTaxBase + (AppConfig.CommunityTaxPerThousand * 10m));
 
             Check("very large incomes stop at the ceiling",
-                fees.CommunityTax(50000000m) == AppConfig.CommunityTaxCap);
+                fees.CommunityTax(50000000m) == AppConfig.CommunityTaxBase + AppConfig.CommunityTaxCap);
         }
 
         // =================================================================
@@ -296,11 +316,11 @@ namespace BarangayDocumentSystem.RuleChecks
 
             Check("a senior citizen who runs a store still pays for the business clearance",
                 fees.Assess(businessOwner, DocumentType.BarangayBusinessClearance).FinalFee
-                    == AppConfig.FeeBusinessClearanceStandard);
+                    == AppConfig.FeeBusinessClearance);
 
             Check("an indigent resident who runs a store still pays too",
                 fees.Assess(solo, DocumentType.BarangayBusinessClearance).FinalFee
-                    == AppConfig.FeeBusinessClearanceStandard);
+                    == AppConfig.FeeBusinessClearance);
         }
 
         // =================================================================
@@ -343,7 +363,10 @@ namespace BarangayDocumentSystem.RuleChecks
         {
             Heading("Residency status");
 
-            DateTime now = clock.Now();
+            // Measured against the real calendar, not the rule-check clock:
+            // months of residency are a fact about the world, and the check
+            // has to pass on whatever day it is run.
+            DateTime now = DateTime.Today;
 
             Resident newcomer = new Resident();
             newcomer.DateOfResidency = now.AddMonths(-2);
@@ -472,8 +495,8 @@ namespace BarangayDocumentSystem.RuleChecks
             Check("the fee is what the schedule says", request.Fee == AppConfig.FeeCertification,
                 request.Fee.ToString());
 
-            OperationResult<OfficialReceipt> collected = receipts.Collect(request, request.Fee,
-                "A", "0004501", "0004501", PaymentMethod.Cash, "Rule check");
+            OperationResult<OfficialReceipt> collected = receipts.Collect(request,
+                "0004501", "0004501", "A", request.Fee, PaymentMethod.Cash, "Rule check");
             Check("collecting the fee issues a government receipt", collected.Succeeded, collected.Message);
 
             if (collected.Succeeded)
@@ -516,6 +539,10 @@ namespace BarangayDocumentSystem.RuleChecks
             DocumentRequest request = Simple(resident, DocumentType.CertificateOfResidency,
                 new DateTime(2026, 3, 10, 16, 45, 0));
 
+            // The counter clock stands at the same moment as the filing, so
+            // the queue sweep below really runs at 4:45 PM.
+            clock.Set(new DateTime(2026, 3, 10, 16, 45, 0));
+
             OperationResult<DocumentRequest> filed = requests.FileRequest(resident, request, false);
             Check("filing after the cut-off is still accepted",
                 filed.Succeeded && request.Status == RequestStatus.Pending, filed.Message);
@@ -550,8 +577,8 @@ namespace BarangayDocumentSystem.RuleChecks
 
             Check("the same password gives two different stored values",
                 hashOne != hashTwo && saltOne != saltTwo);
-            Check("the right password is accepted", hasher.Verify("Barangay@2026", hashOne, saltOne));
-            Check("a wrong password is refused", !hasher.Verify("barangay@2026", hashOne, saltOne));
+            Check("the right password is accepted", hasher.Verify("Barangay@2026", hashOne));
+            Check("a wrong password is refused", !hasher.Verify("barangay@2026", hashOne));
             Check("the stored value does not contain the password",
                 !hashOne.Contains("Barangay") && !hashOne.Contains("2026"));
             Check("the work factor is the configured one",

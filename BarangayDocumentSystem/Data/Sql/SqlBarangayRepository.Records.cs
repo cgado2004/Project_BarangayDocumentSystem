@@ -367,6 +367,17 @@ namespace BarangayDocumentSystem.Data.Sql
             return _db.QueryList("loading the activity log", sql, arguments, MapActivity);
         }
 
+        /// <summary>How each engine caps the rows of this fallback query:
+        /// MySQL spells it LIMIT, SQL Server needs the OFFSET ... FETCH
+        /// pair (the ORDER BY above is what makes that legal).</summary>
+        private string LimitClause(int maximumRows)
+        {
+            string rows = maximumRows.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            return string.Equals(_engine, "SqlServer", StringComparison.OrdinalIgnoreCase)
+                ? "OFFSET 0 ROWS FETCH NEXT " + rows + " ROWS ONLY"
+                : "LIMIT " + rows;
+        }
+
         public int CountActivityForDay(DateTime day)
         {
             object value = _db.ExecuteScalar("counting today's activity",

@@ -77,7 +77,7 @@ namespace BarangayDocumentSystem.Database
             AddResident(repository, created, now, "Liza", "Mendoza", "Reyes", "", "Purok Sampaguita",
                 new DateTime(2004, 7, 19), Gender.Female, CivilStatus.Single, "0995-118-2267",
                 "College student", new DateTime(2018, 8, 1), false,
-                ResidentClassification.PWD, true, false, false,
+                ResidentClassification.None, true, false, false,
                 ResidencyStatus.Permanent, now);
 
             AddResident(repository, created, now, "Joel", "Pascual", "Villanueva", "", "Purok Sunflower",
@@ -86,9 +86,9 @@ namespace BarangayDocumentSystem.Database
                 ResidentClassification.Indigent | ResidentClassification.FourPsBeneficiary, false, false, true,
                 ResidencyStatus.Temporary, now);
 
-            AddResident(repository, created, now, "Analyn", "Cruz", "Marquez", "", "Purok Cristo Rey",
+            AddResident(repository, created, now, "Analyn", "Cruz", "Peña", "", "Purok Cristo Rey",
                 new DateTime(1990, 9, 5), Gender.Female, CivilStatus.Single, "0906-556-3320",
-                "Market vendor", new DateTime(2024, 11, 20), true,
+                "Market vendor", DateTime.Today.AddMonths(-4), true,
                 ResidentClassification.SoloParent, false, true, true,
                 ResidencyStatus.Newcomer, now);
 
@@ -168,7 +168,7 @@ namespace BarangayDocumentSystem.Database
             Dependent dependent = new Dependent();
             dependent.HeadResidentId = head.ResidentId;
             dependent.FullName = name;
-            dependent.Relation = relation;
+            dependent.Relation = (DependentRelation)Enum.Parse(typeof(DependentRelation), relation);
             dependent.DateOfBirth = dateOfBirth;
             dependent.IsStudying = isStudying;
             dependent.Remarks = remarks;
@@ -210,7 +210,6 @@ namespace BarangayDocumentSystem.Database
                 false, window, fees, "sample");
 
             clearance.RecordPayment(clearance.Fee, "OR-" + now.Year + "-000451", "0004501", "sample", now.AddDays(-9).AddHours(1));
-            clearance.Clear("Filed inside office hours, no validation needed", "sample", now.AddDays(-9).AddHours(9.6));
             clearance.MarkReadyForRelease("sample", now.AddDays(-9).AddHours(11));
             clearance.Release(residents[0].GetFullName(), "sample", now.AddDays(-9).AddHours(14));
             repository.UpdateRequest(clearance);
@@ -225,7 +224,6 @@ namespace BarangayDocumentSystem.Database
                 "Medical assistance at the provincial hospital", now.AddDays(-6).Date.AddHours(10),
                 false, window, fees, "sample");
 
-            indigency.Clear("Filed inside office hours, no validation needed", "sample", now.AddDays(-6).AddHours(10.1));
             indigency.MarkReadyForRelease("sample", now.AddDays(-6).AddHours(11));
             indigency.Release(residents[3].GetFullName(), "sample", now.AddDays(-6).AddHours(13));
             repository.UpdateRequest(indigency);
@@ -235,7 +233,6 @@ namespace BarangayDocumentSystem.Database
                 "Senior citizen discount application", now.AddDays(-4).Date.AddHours(8.25),
                 false, window, fees, "sample");
 
-            senior.Clear("Filed inside office hours, no validation needed", "sample", now.AddDays(-4).AddHours(8.3));
             senior.MarkReadyForRelease("sample", now.AddDays(-4).AddHours(9));
             senior.Release(residents[1].GetFullName(), "sample", now.AddDays(-4).AddHours(10));
             repository.UpdateRequest(senior);
@@ -280,15 +277,15 @@ namespace BarangayDocumentSystem.Database
 
             // ---- today, still pending ---------------------------------------
             DocumentRequest today = Build(repository, residents[9], DocumentType.CertificateOfGoodMoralCharacter,
-                "Scholarship application", now.Date.AddHours(9).AddMinutes(45),
+                "Scholarship application", now.Date.AddHours(7).AddMinutes(45),
                 false, window, fees, "sample");
             repository.UpdateRequest(today);
 
             // ---- a certificate issued free under the jobseeker law -----------
-            DocumentRequest jobseekerResident = residents[8];
+            Resident jobseekerResident = residents[8];
             DocumentRequest jobseeker = Build(repository, jobseekerResident, DocumentType.BarangayClearance,
                 "First time jobseeker requirement under RA 11261", now.AddDays(-20).Date.AddHours(10),
-                false, window, fees, "sample");
+                true, window, fees, "sample");
 
             jobseeker.AddJobseekerWaiver("FREE - RA 11261 (First Time Jobseekers Assistance Act)", 100m);
             jobseeker.SetAssessment(0m, "FREE - RA 11261 (First Time Jobseekers Assistance Act)");
@@ -306,7 +303,6 @@ namespace BarangayDocumentSystem.Database
                 false, window, fees, "sample");
 
             ready.RecordPayment(ready.Fee, "OR-" + now.Year + "-000452", "0004502", "sample", now.AddDays(-1).AddHours(13.5));
-            ready.Clear("Filed inside office hours, no validation needed", "sample", now.AddDays(-1).AddHours(13.1));
             ready.MarkReadyForRelease("sample", now.AddDays(-1).AddHours(14));
             repository.UpdateRequest(ready);
 

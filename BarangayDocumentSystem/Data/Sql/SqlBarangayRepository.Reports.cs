@@ -370,12 +370,5 @@ namespace BarangayDocumentSystem.Data.Sql
                 .Add("@to", to.Date.AddDays(1).AddSeconds(-1)));
         }
 
-        private object CountActivityForDay(DateTime day)
-        {
-            string sql = "SELECT COUNT(*) FROM activity_log WHERE occurred_on >= @from AND occurred_on <= @to";
-            return _db.ExecuteScalar("counting activity", sql, new SqlArguments()
-                .Add("@from", day.Date)
-                .Add("@to", day.Date.AddDays(1).AddSeconds(-1)));
-        }
     }
 }

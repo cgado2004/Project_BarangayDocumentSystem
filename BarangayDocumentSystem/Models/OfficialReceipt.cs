@@ -84,14 +84,27 @@ namespace BarangayDocumentSystem.Models
         public static bool IsWellFormedOrNumber(string orNumber)
         {
             if (string.IsNullOrWhiteSpace(orNumber)) return false;
-            if (orNumber.Trim().Length > 30) return false;
-            return orNumber.Trim().Length >= 4;
+            string text = orNumber.Trim();
+            if (text.Length < 4 || text.Length > 30) return false;
+
+            // The printed number always carries at least four digits; a typo
+            // like "OR-1" does not, and it is better refused at the counter
+            // than found in an audit.
+            int digits = 0;
+            foreach (char c in text) if (char.IsDigit(c)) digits++;
+            return digits >= 4;
         }
 
         public static bool IsWellFormedControlNumber(string controlNumber)
         {
             if (string.IsNullOrWhiteSpace(controlNumber)) return false;
-            return controlNumber.Trim().Length <= 30;
+            string text = controlNumber.Trim();
+            if (text.Length < 4 || text.Length > 30) return false;
+
+            // A booklet control number is purely numeric; that is also what
+            // makes the "is this inside the booklet" comparison honest.
+            foreach (char c in text) if (!char.IsDigit(c)) return false;
+            return true;
         }
 
         public string GetMethodText()

@@ -146,7 +146,10 @@ namespace BarangayDocumentSystem.Data
             string databaseName = AppConfig.DatabaseName;
             if (string.IsNullOrEmpty(databaseName))
             {
-                message = "The connection string does not name a database, so I cannot create one.";
+                message = "The connection string names no database, so I cannot create one. "
+                        + "Add Database=<the database name> to the connection string in the "
+                        + "settings file (or the Storage.Database key), or set Storage to "
+                        + "Memory to run without a database.";
                 return false;
             }
 

@@ -46,13 +46,21 @@ namespace BarangayDocumentSystem.UI.Dialogs
 
             Label words = UiFactory.Caption(question);
             words.Location = new Point(AppTheme.PageMargin, AppTheme.Gap4 + 40);
-            words.Size = new Size(500, multiline ? 60 : 48);
+            words.AutoSize = true;
+            words.MaximumSize = new Size(500, 0);
+
+            // A question that wraps onto more lines than the old fixed box
+            // allowed (for instance one carrying an example line) pushes the
+            // answer box down instead of being clipped.
+            int answerTop = AppTheme.Gap4 + 40 + words.PreferredHeight + 8;
+            int growth = words.PreferredHeight - (multiline ? 60 : 48);
+            if (growth > 0) ClientSize = new Size(ClientSize.Width, ClientSize.Height + growth);
 
             _answer = multiline
                 ? (TextBox)UiFactory.TextBox(string.Empty, 500)
                 : UiFactory.TextBox(string.Empty, 200);
 
-            _answer.Location = new Point(AppTheme.PageMargin, AppTheme.Gap4 + 96);
+            _answer.Location = new Point(AppTheme.PageMargin, answerTop);
             _answer.Width = 500;
 
             if (multiline)
@@ -68,7 +76,7 @@ namespace BarangayDocumentSystem.UI.Dialogs
             Label required = UiFactory.Hint(mustBeFilledIn
                 ? "This cannot be left blank."
                 : "You can leave this blank if there is nothing to say.");
-            required.Location = new Point(AppTheme.PageMargin, AppTheme.Gap4 + 96 + (multiline ? 148 : 34));
+            required.Location = new Point(AppTheme.PageMargin, answerTop + (multiline ? 148 : 34));
             required.Width = 500;
             required.ForeColor = mustBeFilledIn ? AppTheme.Danger : AppTheme.MutedSoft;
 
@@ -132,6 +140,22 @@ namespace BarangayDocumentSystem.UI.Dialogs
         public static string Ask(IWin32Window owner, string title, string question)
         {
             return Ask(owner, title, question, string.Empty, false, true);
+        }
+
+        /// <summary>
+        /// Asks with an example line under the question, for the moments when
+        /// a clerk stares at an empty box wondering what kind of sentence the
+        /// barangay wants. The example is shown as part of the question and
+        /// the box still starts from the initial text.
+        /// </summary>
+        public static string Ask(IWin32Window owner, string title, string question,
+                                 string example, string initial, bool multiline)
+        {
+            string full = string.IsNullOrWhiteSpace(example)
+                ? question
+                : question + Environment.NewLine + example;
+
+            return Ask(owner, title, full, initial, multiline, true);
         }
     }
 }

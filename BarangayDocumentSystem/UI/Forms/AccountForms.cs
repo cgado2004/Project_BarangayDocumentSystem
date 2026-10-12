@@ -57,7 +57,7 @@ namespace BarangayDocumentSystem.UI.Forms
             _isNew = account == null;
 
             BuildWindow();
-            Load();
+            LoadAccount();
         }
 
         private void BuildWindow()
@@ -199,7 +199,7 @@ namespace BarangayDocumentSystem.UI.Forms
             return names.ToArray();
         }
 
-        private void Load()
+        private void LoadAccount()
         {
             _role.SelectedIndex = 0;
 
@@ -535,9 +535,9 @@ namespace BarangayDocumentSystem.UI.Forms
             Place(booklet, "Last control number", _to, AppTheme.Gap3 + 374, 30, 150);
             Place(booklet, "Issued to", _issuedTo, AppTheme.Gap3, 84, 472);
 
-            _series.TextChanged += delegate (object sender, EventArgs e) { Refresh(); };
-            _from.TextChanged += delegate (object sender, EventArgs e) { Refresh(); };
-            _to.TextChanged += delegate (object sender, EventArgs e) { Refresh(); };
+            _series.TextChanged += delegate (object sender, EventArgs e) { RefreshPreview(); };
+            _from.TextChanged += delegate (object sender, EventArgs e) { RefreshPreview(); };
+            _to.TextChanged += delegate (object sender, EventArgs e) { RefreshPreview(); };
 
             _preview = UiFactory.Hint(string.Empty);
             _preview.Location = new Point(AppTheme.Gap3, 138);
@@ -569,7 +569,7 @@ namespace BarangayDocumentSystem.UI.Forms
             AcceptButton = _save;
             CancelButton = _cancel;
 
-            Refresh();
+            RefreshPreview();
             Shown += delegate (object sender, EventArgs e) { _series.Focus(); };
         }
 
@@ -586,7 +586,7 @@ namespace BarangayDocumentSystem.UI.Forms
             parent.Controls.Add(control);
         }
 
-        private void Refresh()
+        private void RefreshPreview()
         {
             if (string.IsNullOrWhiteSpace(_series.Text))
             {

@@ -196,7 +196,7 @@ namespace BarangayDocumentSystem
 
         private static void Report(IBarangayRepository repository, string message)
         {
-            string storage = repository == null ? AppConfig.StorageProvider : repository.Description;
+            string storage = repository == null ? AppConfig.StorageProvider : repository.Describe();
 
             MessageBox.Show(
                 message + Environment.NewLine + Environment.NewLine

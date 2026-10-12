@@ -143,6 +143,21 @@ namespace BarangayDocumentSystem.Services
                 return assessment;
             }
 
+            // Assistance and social-service papers: the requirements doc lists
+            // them as free for everybody - medical, financial, burial, 4Ps, IP,
+            // solo parent, GAD, CSO and blotter papers. The barangay certifies
+            // a hardship or a benefit here; charging for the paper would charge
+            // for the hardship itself.
+            if (IsAssistanceDocument(request.DocumentType))
+            {
+                assessment.FinalFee = 0m;
+                assessment.IsExempt = true;
+                assessment.Category = "Free by law";
+                assessment.Basis = "FREE - assistance and social-service documentation is issued "
+                                 + "without charge under the barangay's Citizen's Charter.";
+                return assessment;
+            }
+
             // ---- 3. Personal waivers --------------------------------------
             string waiverReason = PersonalWaiverReason(resident, request.DocumentType);
             if (waiverReason != null)
@@ -225,7 +240,7 @@ namespace BarangayDocumentSystem.Services
                 case DocumentType.AcceptanceCertificate:
                 case DocumentType.SoloParentCertification:
                 case DocumentType.MedicalAssistanceCertification:
-                case DocumentType.[REDACTED_SECRET]:
+                case DocumentType.FinancialAssistanceCertification:
                 case DocumentType.BurialAssistanceCertification:
                 case DocumentType.IpScholarshipCertification:
                 case DocumentType.FourPsScholarshipCertification:
@@ -371,6 +386,63 @@ namespace BarangayDocumentSystem.Services
                     return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Whether RA 11261 can waive the fee of that document at all.
+        ///
+        /// The Act covers the papers a first-time jobseeker is asked for: the
+        /// barangay clearance and the barangay's own certifications. Documents
+        /// with their own tariff - the community tax certificate, a facility
+        /// rental, a lupon filing - are not touched by it, so the waiver
+        /// tick box simply does nothing on those.
+        /// </summary>
+        /// <summary>The assistance and social-service papers, free to
+        /// everybody: see the note in Assess where they are waived.</summary>
+        private static bool IsAssistanceDocument(DocumentType type)
+        {
+            switch (type)
+            {
+                case DocumentType.MedicalAssistanceCertification:
+                case DocumentType.FinancialAssistanceCertification:
+                case DocumentType.BurialAssistanceCertification:
+                case DocumentType.FourPsScholarshipCertification:
+                case DocumentType.IpScholarshipCertification:
+                case DocumentType.SoloParentCertification:
+                case DocumentType.GadRelatedDocumentation:
+                case DocumentType.CsoDocumentation:
+                case DocumentType.BlotterRelatedIncident:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool IsCoveredByJobseekerAct(DocumentType type)
+        {
+            if (type == DocumentType.BarangayClearance
+                || type == DocumentType.FirstTimeJobseekerCertificate)
+                return true;
+
+            switch (type)
+            {
+                case DocumentType.CertificateOfResidency:
+                case DocumentType.CertificateOfGoodMoralCharacter:
+                case DocumentType.EmploymentCertification:
+                case DocumentType.AcceptanceCertificate:
+                case DocumentType.SoloParentCertification:
+                case DocumentType.MedicalAssistanceCertification:
+                case DocumentType.FinancialAssistanceCertification:
+                case DocumentType.BurialAssistanceCertification:
+                case DocumentType.IpScholarshipCertification:
+                case DocumentType.FourPsScholarshipCertification:
+                case DocumentType.GadRelatedDocumentation:
+                case DocumentType.CsoDocumentation:
+                case DocumentType.OtherCertification:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         /// <summary>

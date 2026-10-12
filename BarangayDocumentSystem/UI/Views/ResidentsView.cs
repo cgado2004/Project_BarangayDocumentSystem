@@ -192,7 +192,7 @@ namespace BarangayDocumentSystem.UI.Views
                 default: break;
             }
 
-            IList<Resident> residents = Residents.Search(query);
+            IList<Resident> residents = Residents.GetResidents(query);
 
             DataTable table = new DataTable("residents");
             table.Columns.Add("resident_id", typeof(int));
@@ -252,7 +252,7 @@ namespace BarangayDocumentSystem.UI.Views
             object id = _grid.CurrentRow.Cells["resident_id"].Value;
             if (id == null || id == DBNull.Value) return null;
 
-            return Residents.Get(Convert.ToInt32(id));
+            return Residents.GetResident(Convert.ToInt32(id));
         }
 
         // ==================================================================
