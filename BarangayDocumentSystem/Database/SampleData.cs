@@ -110,99 +110,93 @@ namespace BarangayDocumentSystem.Database
                 ResidentClassification.SeniorCitizen | ResidentClassification.PWD, false, false, true,
                 ResidencyStatus.Permanent, now);
 
-            AddResident(repository, created, now, "Kimberly", "Ramos", "Otaza", "", "Purok Lapu-Lapu",
-                new DateTime(2007, 2, 9), Gender.Female, CivilStatus.Single, "0998-220-1176",
-                "Senior high school student", new DateTime(2015, 5, 25), false,
-                ResidentClassification.Indigent, true, false, false,
+            AddResident(repository, created, now, "Ramon", "Santiago", "Corpuz", "", "Purok Lapu-Lapu",
+                new DateTime(1988, 4, 17), Gender.Male, CivilStatus.Single, "0917-882-3345",
+                "Fresh graduate - first time jobseeker", new DateTime(2010, 7, 1), true,
+                ResidentClassification.None, false, false, true,
                 ResidencyStatus.Permanent, now);
 
-            AddResident(repository, created, now, "Danilo", "Bacani", "Eusebio", "", "Purok Calachuchi",
-                new DateTime(1971, 6, 3), Gender.Male, CivilStatus.Married, "0917-118-6623",
-                "Barangay health worker", new DateTime(1995, 7, 1), true,
-                ResidentClassification.FourPsBeneficiary, false, false, true,
+            AddResident(repository, created, now, "Teresita", "Domingo", "Pineda", "", "Purok Marilag 2",
+                new DateTime(1962, 2, 28), Gender.Female, CivilStatus.Widowed, "0929-334-1190",
+                "Barangay health worker", new DateTime(1995, 5, 12), true,
+                ResidentClassification.SeniorCitizen, false, false, true,
                 ResidencyStatus.Permanent, now);
 
             return created;
         }
 
-        private static void AddResident(IBarangayRepository repository, List<Resident> created, DateTime now,
-                                        string firstName, string middleName, string lastName, string suffix,
-                                        string purok, DateTime birth, Gender gender, CivilStatus civilStatus,
-                                        string contact, string occupation, DateTime residencyStart,
-                                        bool voter, ResidentClassification classification,
-                                        bool isStudent, bool isBusinessOwner, bool isHeadOfFamily,
-                                        ResidencyStatus residencyStatus, DateTime when)
+        private static void AddResident(IBarangayRepository repository, List<Resident> created,
+            DateTime now, string firstName, string middleName, string lastName, string suffix,
+            string purok, DateTime dateOfBirth, Gender gender, CivilStatus civilStatus,
+            string contactNumber, string occupation, DateTime dateOfResidency, bool isRegisteredVoter,
+            ResidentClassification classification, bool isStudentFeeCategory,
+            bool isBusinessOwner, bool isHeadOfFamily, ResidencyStatus residencyStatus, DateTime createdOn)
         {
             Resident resident = new Resident();
             resident.FirstName = firstName;
             resident.MiddleName = middleName;
             resident.LastName = lastName;
             resident.Suffix = suffix;
-            resident.DateOfBirth = birth;
+            resident.DateOfBirth = dateOfBirth;
             resident.Gender = gender;
             resident.CivilStatus = civilStatus;
             resident.Purok = purok;
-            resident.ContactNumber = contact;
+            resident.ContactNumber = contactNumber;
             resident.Occupation = occupation;
-            resident.DateOfResidency = residencyStart;
-            resident.IsRegisteredVoter = voter;
+            resident.DateOfResidency = dateOfResidency;
+            resident.IsRegisteredVoter = isRegisteredVoter;
             resident.Classification = classification;
-            resident.IsStudentFeeCategory = isStudent;
+            resident.IsStudentFeeCategory = isStudentFeeCategory;
             resident.IsBusinessOwner = isBusinessOwner;
             resident.IsHeadOfFamily = isHeadOfFamily;
             resident.ResidencyStatus = residencyStatus;
-            resident.CreatedOn = when.AddMonths(-10);
-            resident.CreatedBy = "sample";
+            resident.CreatedOn = createdOn;
 
             repository.InsertResident(resident);
             created.Add(resident);
 
-            // The household: two or three dependents under the heads of family.
-            if (!isHeadOfFamily) return;
-
-            AddDependent(repository, resident, "Ramon " + lastName, DependentRelation.Spouse, birth.AddYears(1), false, when);
-            AddDependent(repository, resident, "Trisha " + lastName, DependentRelation.Daughter, now.AddYears(-9), true, when);
-            AddDependent(repository, resident, "Miguel " + lastName, DependentRelation.Son, now.AddYears(-15), true, when);
+            if (isHeadOfFamily)
+            {
+                AddDependent(repository, resident, "Juan", "Son", new DateTime(2005, 6, 15), true, "Studying");
+                AddDependent(repository, resident, "Maria", "Daughter", new DateTime(2008, 9, 22), true, "Studying");
+            }
         }
 
         private static void AddDependent(IBarangayRepository repository, Resident head, string name,
-                                        DependentRelation relation, DateTime birth, bool studying, DateTime when)
+            string relation, DateTime dateOfBirth, bool isStudying, string remarks)
         {
             Dependent dependent = new Dependent();
             dependent.HeadResidentId = head.ResidentId;
             dependent.FullName = name;
             dependent.Relation = relation;
-            dependent.DateOfBirth = birth;
-            dependent.IsStudying = studying;
-            dependent.CreatedOn = when.AddMonths(-10);
-            dependent.CreatedBy = "sample";
+            dependent.DateOfBirth = dateOfBirth;
+            dependent.IsStudying = isStudying;
+            dependent.Remarks = remarks;
+            dependent.CreatedOn = DateTime.Now;
 
             repository.InsertDependent(dependent);
-            head.AddDependent(dependent);
         }
 
         // ==================================================================
-        //  Receipt booklets
+        //  Receipt series (booklets)
         // ==================================================================
 
         private static void SeedSeries(IBarangayRepository repository, DateTime now)
         {
-            if (repository.GetReceiptSeries(false).Count > 0) return;
-
             ReceiptSeries series = new ReceiptSeries();
             series.SeriesCode = "A";
             series.ControlFrom = "0004501";
-            series.ControlTo = "0004700";
-            series.IssuedTo = "Barangay Treasurer";
-            series.IssuedOn = new DateTime(now.Year, 1, 5);
+            series.ControlTo = "0005000";
+            series.IssuedTo = "Barangay Clerk";
+            series.IssuedOn = now.Date.AddDays(-30);
             series.IsActive = true;
-            series.Remarks = "Sample booklet for the demonstration";
+            series.Remarks = "Sample booklet";
 
             repository.InsertReceiptSeries(series);
         }
 
         // ==================================================================
-        //  Requests, in every state the queue can be in
+        //  Requests
         // ==================================================================
 
         private static void SeedRequests(IBarangayRepository repository, List<Resident> residents,
@@ -223,6 +217,7 @@ namespace BarangayDocumentSystem.Database
 
             OfficialReceipt first = BuildReceipt(clearance, "OR-" + now.Year + "-000451", "A", "0004501",
                 residents[0].GetFullName(), clearance.Fee, now.AddDays(-9), "sample");
+
             repository.InsertReceipt(first);
 
             // ---- free indigency certificate, released ------------------------
