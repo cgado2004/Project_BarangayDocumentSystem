@@ -176,8 +176,16 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT TOP (500) occurred_on, username, role, module, action, target_type,
-           target_reference, details
+    -- Keep searches bounded, while still respecting the requested row count.
+    SET @max_rows = CASE
+        WHEN @max_rows IS NULL THEN 500
+        WHEN @max_rows < 1 THEN 1
+        WHEN @max_rows > 500 THEN 500
+        ELSE @max_rows
+    END;
+
+    SELECT TOP (@max_rows) occurred_on, username, role, module, action,
+           target_type, target_reference, details
       FROM dbo.activity_log
      WHERE occurred_on >= @from AND occurred_on <= @to
        AND (@username = '' OR username = @username)
@@ -203,7 +211,7 @@ BEGIN
         (SELECT COUNT(*) FROM dbo.document_requests WHERE status = 'Pending')                         AS waiting,
         (SELECT COUNT(*) FROM dbo.document_requests WHERE status = 'Processing')                      AS processing,
         (SELECT COUNT(*) FROM dbo.document_requests WHERE status = 'Cleared')                         AS cleared,
-        (SELECT COUNT(*) FROM dbo.document_requests WHERE status = 'ReadyForRelease')                 AS ready,
+        (SELECT COUNT(*) FROM dbo.document_requests WHERE status = 'ReadyForRelease')                  AS ready,
         (SELECT COUNT(*) FROM dbo.document_requests WHERE date_released >= @from AND date_released <= @to) AS released_in_period,
         (SELECT COALESCE(SUM(amount), 0) FROM dbo.official_receipts
           WHERE is_void = 0 AND or_date >= @from AND or_date <= @to)                                  AS collected_in_period,
@@ -219,10 +227,21 @@ CREATE OR ALTER PROCEDURE dbo.sp_clear_waiting_requests
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
-    -- The 8:00 AM to 4:00 PM rule as one statement: a request filed outside
-    -- office hours that needs no validation becomes Cleared once the window
-    -- opens again.
+    BEGIN TRANSACTION;
+
+    -- Save a history row before changing each request, so automatic changes
+    -- are visible just like changes made by a staff member.
+    INSERT INTO dbo.request_status_history (request_id, status, changed_on, changed_by, reason)
+    SELECT request_id, 'Cleared', @now, @changed_by,
+           'Automatically cleared when the next office window opened.'
+      FROM dbo.document_requests
+     WHERE status = 'Pending'
+       AND requires_validation = 0
+       AND filed_during_office_window = 0
+       AND date_requested < @now;
+
     UPDATE dbo.document_requests
        SET status = 'Cleared',
            last_status_on = @now,
@@ -231,5 +250,7 @@ BEGIN
        AND requires_validation = 0
        AND filed_during_office_window = 0
        AND date_requested < @now;
+
+    COMMIT TRANSACTION;
 END
 GO
