@@ -273,7 +273,7 @@ namespace BarangayDocumentSystem.Data.Sql
             if (!_context.TryConnect(out message))
                 throw new RepositoryException("connecting to the database", message);
 
-            return _context.Describe() + " - ready.";
+            return _context.Description + " - ready.";
         }
 
         public void HealthCheck()
@@ -323,102 +323,59 @@ namespace BarangayDocumentSystem.Data.Sql
 
         private bool ProcedureLooksInstalled(string procedureName)
         {
-            bool known;
-            if (_procedureCache.TryGetValue(procedureName, out known)) return known;
+            bool installed;
+            if (_procedureCache.TryGetValue(procedureName, out installed)) return installed;
 
-            bool installed = false;
-            try
-            {
-                string sql = _engine == "SqlServer"
-                    ? "SELECT COUNT(*) FROM sys.objects WHERE type = 'P' AND name = @name"
-                    : "SELECT COUNT(*) FROM information_schema.routines WHERE routine_schema = DATABASE() " +
-                      "AND routine_type = 'PROCEDURE' AND routine_name = @name";
-
-                object value = _db.ExecuteScalar("checking for the stored procedure", sql,
-                    new SqlArguments().Add("@name", procedureName));
-
-                installed = value != null && Convert.ToInt32(value) > 0;
-            }
-            catch (RepositoryException)
-            {
-                installed = false;
-            }
-
+            installed = _context.GetInstalledProcedures().Contains(procedureName);
             _procedureCache[procedureName] = installed;
             return installed;
         }
 
-        private void AddMetric(DataTable table, string metric, decimal value)
+        private void AddMetric(DataTable table, string label, object value)
         {
             DataRow row = table.NewRow();
-            row["metric"] = metric;
-            row["value"] = value;
+            row["metric"] = label;
+            row["value"] = value ?? 0m;
             table.Rows.Add(row);
         }
 
-        private decimal Count(string tableName, string whereClause)
+        private object Count(string tableName, string where)
         {
             string sql = "SELECT COUNT(*) FROM " + tableName;
-            if (!string.IsNullOrEmpty(whereClause)) sql += " WHERE " + whereClause;
-
-            object value = _db.ExecuteScalar("counting records", sql, null);
-            return value == null ? 0m : Convert.ToDecimal(value);
+            if (!string.IsNullOrEmpty(where)) sql += " WHERE " + where;
+            return _db.ExecuteScalar("counting " + tableName, sql, null);
         }
 
-        private decimal CountRange(string columnName, DateTime from, DateTime to)
+        private object CountRange(string column, DateTime from, DateTime to)
         {
-            string sql = "SELECT COUNT(*) FROM document_requests WHERE " + columnName +
-                         " >= @from AND " + columnName + " <= @to";
-
-            object value = _db.ExecuteScalar("counting records", sql, new SqlArguments()
+            string sql = "SELECT COUNT(*) FROM document_requests WHERE " + column + " >= @from AND " + column + " <= @to";
+            return _db.ExecuteScalar("counting " + column, sql, new SqlArguments()
                 .Add("@from", from.Date)
                 .Add("@to", to.Date.AddDays(1).AddSeconds(-1)));
-
-            return value == null ? 0m : Convert.ToDecimal(value);
         }
 
-        private decimal Money(string columnName, DateTime from, DateTime to)
+        private object Money(string column, DateTime from, DateTime to)
         {
-            string sql = "SELECT COALESCE(SUM(" + columnName + "), 0) FROM official_receipts " +
-                         "WHERE is_void = 0 AND or_date >= @from AND or_date <= @to";
-
-            // COALESCE is one of the few functions both engines spell the same
-            // way, which is why I use it instead of IFNULL or ISNULL.
-            object value;
-            try
-            {
-                value = _db.ExecuteScalar("adding up the collections", sql, new SqlArguments()
-                    .Add("@from", from.Date)
-                    .Add("@to", to.Date));
-            }
-            catch (RepositoryException)
-            {
-                value = _db.ExecuteScalar("adding up the collections",
-                    "SELECT SUM(" + columnName + ") FROM official_receipts " +
-                    "WHERE is_void = 0 AND or_date >= @from AND or_date <= @to",
-                    new SqlArguments().Add("@from", from.Date).Add("@to", to.Date));
-            }
-
-            return value == null || value == DBNull.Value ? 0m : Convert.ToDecimal(value);
+            string sql = "SELECT COALESCE(SUM(" + column + "), 0) FROM official_receipts WHERE is_void = 0 AND or_date >= @from AND or_date <= @to";
+            return _db.ExecuteScalar("summing " + column, sql, new SqlArguments()
+                .Add("@from", from.Date)
+                .Add("@to", to.Date));
         }
 
-        private decimal CountFreeIssued(DateTime from, DateTime to)
+        private object CountFreeIssued(DateTime from, DateTime to)
         {
-            string sql = "SELECT COUNT(*) FROM document_requests WHERE fee = 0 AND status = 'Released' " +
-                         "AND date_released >= @from AND date_released <= @to";
-
-            object value = _db.ExecuteScalar("counting the free documents", sql, new SqlArguments()
+            string sql = "SELECT COUNT(*) FROM document_requests WHERE fee = 0 AND status = 'Released' AND date_released >= @from AND date_released <= @to";
+            return _db.ExecuteScalar("counting free issued", sql, new SqlArguments()
                 .Add("@from", from.Date)
                 .Add("@to", to.Date.AddDays(1).AddSeconds(-1)));
-
-            return value == null ? 0m : Convert.ToDecimal(value);
         }
 
-        private string LimitClause(int rows)
+        private object CountActivityForDay(DateTime day)
         {
-            return _engine == "SqlServer"
-                ? "OFFSET 0 ROWS FETCH NEXT " + rows + " ROWS ONLY"
-                : "LIMIT " + rows;
+            string sql = "SELECT COUNT(*) FROM activity_log WHERE occurred_on >= @from AND occurred_on <= @to";
+            return _db.ExecuteScalar("counting activity", sql, new SqlArguments()
+                .Add("@from", day.Date)
+                .Add("@to", day.Date.AddDays(1).AddSeconds(-1)));
         }
     }
 }
