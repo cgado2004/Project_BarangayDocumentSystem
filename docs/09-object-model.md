@@ -1,1 +1,0 @@
-This file moved to docs/10-object-model.md during the docs renumbering.
