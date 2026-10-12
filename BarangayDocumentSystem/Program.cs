@@ -8,6 +8,7 @@ using System.Configuration;
 using System.Windows.Forms;
 using BarangayDocumentSystem.Config;
 using BarangayDocumentSystem.Data;
+using BarangayDocumentSystem.Data.Sql;
 using BarangayDocumentSystem.Database;
 using BarangayDocumentSystem.Interfaces;
 using BarangayDocumentSystem.Models;
