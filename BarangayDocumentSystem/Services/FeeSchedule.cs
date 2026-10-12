@@ -138,52 +138,52 @@ namespace BarangayDocumentSystem.Services
                 assessment.FinalFee = 0m;
                 assessment.IsExempt = true;
                 assessment.Category = "Free by law";
-                assessment.Basis = "FREE - Certificate of Low Income is issued without charge, "
-                                 + "as with the certificate of indigency. DILG MC 2019-177.";
+                assessment.Basis = "FREE - Certificate of Low Income is issued without charge. "
+                                 + "DILG Memorandum Circular 2019-177.";
                 return assessment;
             }
 
             // ---- 3. Personal waivers --------------------------------------
-            string waiver = PersonalWaiverReason(resident, request.DocumentType);
-            if (waiver != null)
+            string waiverReason = PersonalWaiverReason(resident, request.DocumentType);
+            if (waiverReason != null)
             {
                 assessment.FinalFee = 0m;
                 assessment.IsExempt = true;
                 assessment.Category = "Free by law";
-                assessment.Basis = "FREE - " + waiver;
+                assessment.Basis = waiverReason;
                 return assessment;
             }
 
-            // ---- 4. The once-only jobseeker waiver ------------------------
-            string jobseekerReason;
-            if (request.ApplyJobseekerWaiver
-                && IsJobseekerEligible(resident, out jobseekerReason)
-                && IsCoveredByJobseekerAct(request.DocumentType))
+            // ---- 4. RA 11261 first-time jobseeker -------------------------
+            if (request.ApplyJobseekerWaiver && IsCoveredByJobseekerAct(request.DocumentType))
             {
+                string jobseekerReason;
+                if (!IsJobseekerEligible(resident, out jobseekerReason))
+                {
+                    assessment.FinalFee = baseFee;
+                    assessment.IsExempt = false;
+                    assessment.Category = "Regular";
+                    assessment.Basis = "Standard rate - " + jobseekerReason;
+                    return assessment;
+                }
+
                 assessment.FinalFee = 0m;
                 assessment.IsExempt = true;
                 assessment.Category = "Free by law";
-                assessment.Basis = "FREE - RA 11261 (First Time Jobseekers Assistance Act), "
-                                 + "first availment and at least "
-                                 + AppConfig.JobseekerResidencyMonths + " months of residency.";
+                assessment.Basis = "FREE - RA 11261 (First Time Jobseekers Assistance Act) - "
+                                 + "document fees are waived for a first-time jobseeker.";
                 return assessment;
             }
 
-            // ---- 5. The student fee category ------------------------------
-            if (resident.IsStudentFeeCategory
-                && AppConfig.StudentDiscountEnabled
-                && IsStudentDocument(request.DocumentType)
-                && baseFee > 0m)
+            // ---- 5. Student fee category (a discount, not a waiver) --------
+            if (resident.IsStudentFeeCategory && IsStudentDocument(request.DocumentType))
             {
-                int percent = Clamp(AppConfig.StudentDiscountPercent, 0, 100);
-                decimal discounted = Round(baseFee - (baseFee * percent / 100m));
-
-                assessment.FinalFee = discounted;
+                decimal discount = baseFee * (AppConfig.StudentDiscountPercent / 100m);
+                assessment.FinalFee = baseFee - discount;
                 assessment.StudentDiscountApplied = true;
                 assessment.Category = "Student";
-                assessment.Basis = "Student fee category - " + percent + "% off the "
-                                 + Display(StandardRateName(request)) + " of P"
-                                 + baseFee.ToString("#,##0.00") + " (barangay ordinance). "
+                assessment.Basis = "Standard rate of P" + baseFee.ToString("#,##0.00")
+                                 + " less " + AppConfig.StudentDiscountPercent + "% student discount (barangay ordinance). "
                                  + "Being a student is a fee category in this system, not a "
                                  + "classification, so it only ever changes the price.";
                 return assessment;
@@ -191,7 +191,7 @@ namespace BarangayDocumentSystem.Services
 
             // ---- nothing special: the standard rate ------------------------
             assessment.Category = "Regular";
-            assessment.Basis = Display(StandardRateName(request)) + " of P"
+            assessment.Basis = StandardRateName(request) + " of P"
                              + baseFee.ToString("#,##0.00") + " under the barangay's Citizen's Charter.";
             return assessment;
         }
@@ -225,7 +225,7 @@ namespace BarangayDocumentSystem.Services
                 case DocumentType.AcceptanceCertificate:
                 case DocumentType.SoloParentCertification:
                 case DocumentType.MedicalAssistanceCertification:
-                case DocumentType.FinancialAssistanceCertification:
+                case DocumentType.[REDACTED_SECRET]:
                 case DocumentType.BurialAssistanceCertification:
                 case DocumentType.IpScholarshipCertification:
                 case DocumentType.FourPsScholarshipCertification:
@@ -364,30 +364,13 @@ namespace BarangayDocumentSystem.Services
             string list = AppConfig.StudentDiscountDocuments;
             if (string.IsNullOrWhiteSpace(list)) return false;
 
-            foreach (string piece in list.Split(','))
-                if (string.Equals(piece.Trim(), type.ToString(), StringComparison.OrdinalIgnoreCase))
-                    return true;
-
-            return false;
-        }
-
-        /// <summary>The documents RA 11261 can cover. The law is about the
-        /// clearances and certifications a first-time jobseeker needs to get
-        /// hired, so the business clearance and the money documents are out.</summary>
-        public static bool IsCoveredByJobseekerAct(DocumentType type)
-        {
-            switch (type)
+            string[] names = list.Split(',');
+            for (int i = 0; i < names.Length; i++)
             {
-                case DocumentType.BarangayClearance:
-                case DocumentType.CertificateOfResidency:
-                case DocumentType.CertificateOfGoodMoralCharacter:
-                case DocumentType.FirstTimeJobseekerCertificate:
-                case DocumentType.EmploymentCertification:
+                if (string.Equals(names[i].Trim(), type.ToString(), StringComparison.OrdinalIgnoreCase))
                     return true;
-
-                default:
-                    return false;
             }
+            return false;
         }
 
         /// <summary>
