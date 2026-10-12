@@ -1,1 +1,0 @@
-This file moved to docs/09-integration-notes.md during the docs renumbering.
