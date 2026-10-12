@@ -4,6 +4,7 @@
 // ---------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BarangayDocumentSystem.Interfaces;
 using BarangayDocumentSystem.Models;
 using BarangayDocumentSystem.Security;
@@ -139,29 +140,24 @@ namespace BarangayDocumentSystem.Services
         /// I keep both halves together on purpose. If the receipt were written
         /// but the request left unpaid, the release would be blocked forever
         /// and the clerk would call me; if the request were marked paid without
-        /// a receipt, the barangay would have money with nothing behind it.
+        /// the receipt, the money would be untraceable. Together or not at all.
         /// </summary>
-        public OperationResult<OfficialReceipt> Collect(DocumentRequest request, decimal amount,
-                                                       string seriesCode, string orNumber, string controlNumber,
-                                                       PaymentMethod method, string remarks)
+        public OperationResult<OfficialReceipt> Collect(DocumentRequest request,
+            string orNumber, string controlNumber, string seriesCode,
+            decimal amountTendered, PaymentMethod method, string remarks)
         {
-            string refusal;
-            if (!Allowed(Permission.CollectPayments, out refusal))
-                return OperationResult<OfficialReceipt>.Fail(refusal);
+            if (request == null) return OperationResult<OfficialReceipt>.Fail("There is no request to collect for.");
 
-            if (request == null) return OperationResult<OfficialReceipt>.Fail("Please choose a request first.");
+            if (request.Fee <= 0m)
+                return OperationResult<OfficialReceipt>.Fail(
+                    "This document is free, so there is nothing to collect. Release it directly.");
 
             if (request.IsPaid)
                 return OperationResult<OfficialReceipt>.Fail(
-                    "That request was already paid against OR " + request.OfficialReceiptNumber + ".");
+                    "The fee for " + request.ReferenceNumber + " was already collected against OR "
+                    + request.OfficialReceiptNumber + ".");
 
-            if (request.Status == RequestStatus.Rejected)
-                return OperationResult<OfficialReceipt>.Fail("That request was rejected, so no fee is due on it.");
-
-            ReceiptSeries series = FindSeriesForControlNumber(controlNumber);
-
-            var problems = InputValidator.ValidatePayment(amount, orNumber, controlNumber,
-                request.Fee, seriesCode, series);
+            var problems = InputValidator.ValidateReceipt(orNumber, controlNumber, amountTendered, request.Fee);
             if (problems.Count > 0)
                 return OperationResult<OfficialReceipt>.Fail(string.Join(Environment.NewLine, problems.ToArray()));
 
@@ -177,205 +173,87 @@ namespace BarangayDocumentSystem.Services
             receipt.SeriesCode = seriesCode.Trim();
             receipt.ControlNumber = controlNumber.Trim();
             receipt.OrDate = now.Date;
-            receipt.PayerName = request.ResidentName;
-            receipt.Amount = amount;
+            receipt.PayerName = request.ResidentName ?? string.Empty;
+            receipt.Amount = amountTendered;
             receipt.Method = method;
             receipt.RequestId = request.RequestId;
             receipt.CollectedBy = _session.Username;
-            receipt.Remarks = remarks == null ? string.Empty : remarks.Trim();
+            receipt.Remarks = remarks ?? string.Empty;
             receipt.CreatedOn = now;
 
-            _repository.InsertReceipt(receipt);
+            int receiptId = _repository.InsertReceipt(receipt);
 
-            request.RecordPayment(amount, receipt.OrNumber, receipt.ControlNumber, _session.Username, now);
+            request.RecordPayment(orNumber.Trim(), controlNumber.Trim(), now, _session.Username);
             _repository.UpdateRequest(request);
 
-            _log.RecordCollection(receipt, request.ResidentName);
-
-            string message = "Collected P" + amount.ToString("#,##0.00") + " against OR " + receipt.OrNumber
-                           + " (control " + receipt.ControlNumber + ").";
-
-            if (request.Status == RequestStatus.Cleared)
-                message += " The request can be prepared for release now.";
-
-            return OperationResult<OfficialReceipt>.Ok(receipt, message);
-        }
-
-        /// <summary>
-        /// Collects for something that has no request behind it - a cedula at
-        /// the counter, a facility rental paid in cash on the day. The receipt
-        /// is the same kind of receipt; only the link to a request is empty.
-        /// </summary>
-        public OperationResult<OfficialReceipt> CollectStandalone(string payerName, decimal amount,
-                                                                 string seriesCode, string orNumber,
-                                                                 string controlNumber, PaymentMethod method,
-                                                                 string remarks)
-        {
-            string refusal;
-            if (!Allowed(Permission.CollectPayments, out refusal))
-                return OperationResult<OfficialReceipt>.Fail(refusal);
-
-            ReceiptSeries series = FindSeriesForControlNumber(controlNumber);
-
-            var problems = InputValidator.ValidatePayment(amount, orNumber, controlNumber, amount, seriesCode, series);
-            if (problems.Count > 0)
-                return OperationResult<OfficialReceipt>.Fail(string.Join(Environment.NewLine, problems.ToArray()));
-
-            if (_repository.ReceiptNumberExists(seriesCode, orNumber, 0))
-                return OperationResult<OfficialReceipt>.Fail(
-                    "OR " + orNumber.Trim() + " in series " + seriesCode.Trim() + " is already recorded.");
-
-            DateTime now = _clock.Now();
-
-            OfficialReceipt receipt = new OfficialReceipt();
-            receipt.OrNumber = orNumber.Trim();
-            receipt.SeriesCode = seriesCode.Trim();
-            receipt.ControlNumber = controlNumber.Trim();
-            receipt.OrDate = now.Date;
-            receipt.PayerName = payerName == null ? string.Empty : payerName.Trim();
-            receipt.Amount = amount;
-            receipt.Method = method;
-            receipt.CollectedBy = _session.Username;
-            receipt.Remarks = remarks == null ? string.Empty : remarks.Trim();
-            receipt.CreatedOn = now;
-
-            _repository.InsertReceipt(receipt);
-            _log.RecordCollection(receipt, payerName);
+            _log.Record(ActivityModule.Collections, "Collected " + amountTendered.ToString("#,##0.00"),
+                "Document request", request.ReferenceNumber,
+                "OR " + orNumber.Trim() + " (series " + seriesCode.Trim()
+                + ", control " + controlNumber.Trim() + ") for " + request.GetDocumentName()
+                + ". Tendered by " + request.ResidentName + ".");
 
             return OperationResult<OfficialReceipt>.Ok(receipt,
-                "Collected P" + amount.ToString("#,##0.00") + " against OR " + receipt.OrNumber + ".");
+                "Collected " + amountTendered.ToString("#,##0.00") + " against OR " + orNumber.Trim() + ".");
         }
 
+        // ==================================================================
+        //  Voiding
+        // ==================================================================
+
         /// <summary>
-        /// Corrects a mistake. Voiding keeps the receipt and its number in the
-        /// register, marked as void with the reason - which is what a real
-        /// collection register does, and what stops a number from quietly
-        /// disappearing from the booklet.
+        /// Cancels a receipt that was written wrong, with the reason kept on
+        /// the register.
+        ///
+        /// A voided receipt is not deleted and it is not edited - it stays
+        /// exactly as it was written, marked void, with the reason and who
+        /// voided it. That is what an audit trail means: the mistake and the
+        /// correction are both visible.
         /// </summary>
         public OperationResult Void(OfficialReceipt receipt, string reason)
         {
-            string refusal;
-            if (!Allowed(Permission.VoidReceipts, out refusal)) return OperationResult.Fail(refusal);
+            if (receipt == null) return OperationResult.Fail("There is no receipt to void.");
 
-            if (receipt == null) return OperationResult.Fail("Please choose a receipt first.");
+            if (receipt.IsVoid)
+                return OperationResult.Fail("OR " + receipt.OrNumber + " is already void.");
 
-            try
-            {
-                receipt.Void(reason, _session.Username, _clock.Now());
-            }
-            catch (InvalidOperationException error)
-            {
-                return OperationResult.Fail(error.Message);
-            }
+            if (string.IsNullOrWhiteSpace(reason))
+                return OperationResult.Fail("I need a reason before I can void a receipt.");
 
+            DateTime now = _clock.Now();
+            receipt.Void(reason.Trim(), _session.Username, now);
             _repository.UpdateReceipt(receipt);
 
-            // If the receipt was for a request, the request goes back to
-            // unpaid. Otherwise the release guard would be satisfied by a
-            // receipt that no longer stands.
-            if (receipt.RequestId.HasValue)
+            // If the receipt paid for a request, the request goes back to
+            // unpaid so it cannot be released against a dead receipt.
+            if (receipt.RequestId > 0)
             {
-                DocumentRequest request = _repository.GetRequest(receipt.RequestId.Value);
-                if (request != null && string.Equals(request.OfficialReceiptNumber, receipt.OrNumber,
-                        StringComparison.OrdinalIgnoreCase))
+                DocumentRequest request = _repository.GetRequest(receipt.RequestId);
+                if (request != null && request.IsPaid
+                    && string.Equals(request.OfficialReceiptNumber, receipt.OrNumber, StringComparison.OrdinalIgnoreCase))
                 {
-                    request.ClearPaymentForVoidedReceipt(_session.Username, _clock.Now());
+                    request.ReversePayment(_session.Username, now);
                     _repository.UpdateRequest(request);
                 }
             }
 
-            _log.Record(ActivityModule.Payments, "Voided", "Official receipt", receipt.OrNumber,
-                "Voided OR " + receipt.OrNumber + " (control " + receipt.ControlNumber + ") for P"
-                + receipt.Amount.ToString("#,##0.00") + ". Reason: " + reason);
+            _log.Record(ActivityModule.Collections, "Voided OR " + receipt.OrNumber,
+                "Official receipt", receipt.OrNumber,
+                "Voided because: " + reason.Trim() + ".");
 
-            return OperationResult.Ok("OR " + receipt.OrNumber + " is void. The number stays in the register.");
+            return OperationResult.Ok("OR " + receipt.OrNumber + " is void.");
         }
 
         // ==================================================================
-        //  Booklets
+        //  Small helpers
         // ==================================================================
-
-        public OperationResult<ReceiptSeries> AddSeries(string seriesCode, string controlFrom, string controlTo,
-                                                       string issuedTo)
-        {
-            string refusal;
-            if (!Allowed(Permission.ManageReceiptSeries, out refusal))
-                return OperationResult<ReceiptSeries>.Fail(refusal);
-
-            if (string.IsNullOrWhiteSpace(seriesCode))
-                return OperationResult<ReceiptSeries>.Fail("The booklet needs a series code, like A or B.");
-
-            if (string.IsNullOrWhiteSpace(controlFrom) || string.IsNullOrWhiteSpace(controlTo))
-                return OperationResult<ReceiptSeries>.Fail(
-                    "Please write the first and last control number printed in the booklet.");
-
-            foreach (ReceiptSeries existing in _repository.GetReceiptSeries(false))
-                if (string.Equals(existing.SeriesCode, seriesCode.Trim(), StringComparison.OrdinalIgnoreCase))
-                    return OperationResult<ReceiptSeries>.Fail("Series " + seriesCode.Trim() + " is already recorded.");
-
-            ReceiptSeries series = new ReceiptSeries();
-            series.SeriesCode = seriesCode.Trim();
-            series.ControlFrom = controlFrom.Trim();
-            series.ControlTo = controlTo.Trim();
-            series.IssuedTo = issuedTo == null ? string.Empty : issuedTo.Trim();
-            series.IssuedOn = _clock.Now().Date;
-            series.IsActive = true;
-
-            _repository.InsertReceiptSeries(series);
-
-            _log.Record(ActivityModule.Payments, "Recorded booklet", "Receipt series", series.SeriesCode,
-                "Recorded receipt booklet " + series.SeriesCode + " covering control numbers "
-                + series.RangeText() + (string.IsNullOrWhiteSpace(series.IssuedTo)
-                    ? "." : ", issued to " + series.IssuedTo + "."));
-
-            return OperationResult<ReceiptSeries>.Ok(series,
-                "Booklet " + series.SeriesCode + " is recorded. Collections can now be written against it.");
-        }
-
-        public OperationResult CloseSeries(ReceiptSeries series)
-        {
-            string refusal;
-            if (!Allowed(Permission.ManageReceiptSeries, out refusal)) return OperationResult.Fail(refusal);
-            if (series == null) return OperationResult.Fail("Please choose a booklet first.");
-
-            series.IsActive = false;
-            _repository.UpdateReceiptSeries(series);
-
-            _log.Record(ActivityModule.Payments, "Closed booklet", "Receipt series", series.SeriesCode,
-                "Closed receipt booklet " + series.SeriesCode + " (" + series.RangeText() + ").");
-
-            return OperationResult.Ok("Booklet " + series.SeriesCode + " is closed. Its receipts stay in the register.");
-        }
-
-        // ==================================================================
-        //  Internals
-        // ==================================================================
-
-        private bool Allowed(Permission permission, out string refusal)
-        {
-            refusal = string.Empty;
-
-            if (_session == null || !_session.IsSignedIn)
-            {
-                refusal = "Please sign in first.";
-                return false;
-            }
-
-            if (_session.Has(permission)) return true;
-
-            refusal = _session.RefusalFor(permission);
-            _log.Record(ActivityModule.Payments, "Refused", "Official receipt", string.Empty,
-                _session.DescribeForLog(permission));
-            return false;
-        }
 
         private static string DigitsOf(string text)
         {
             if (string.IsNullOrEmpty(text)) return string.Empty;
 
-            System.Text.StringBuilder digits = new System.Text.StringBuilder();
-            foreach (char c in text) if (char.IsDigit(c)) digits.Append(c);
-            return digits.ToString();
+            int start = text.Length;
+            while (start > 0 && char.IsDigit(text[start - 1])) start--;
+            return text.Substring(start);
         }
     }
 }
