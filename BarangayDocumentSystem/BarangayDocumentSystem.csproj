@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{9077BDF9-C14F-4BC1-A068-2BF52A9FA8CB}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>BarangayDocumentSystem</RootNamespace>
+    <AssemblyName>BarangayDocumentSystem</AssemblyName>
+    <!-- The revamped system still targets .NET Framework, as the barangay
+         asked: 4.8 (it also runs on 4.7.2 - nothing here needs anything
+         newer). LangVersion 10 is the C# version that ships with Visual
+         Studio 2022, which is the version the barangay hall has. -->
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <LangVersion>10.0</LangVersion>
+    <Deterministic>true</Deterministic>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <RestorePackages>true</RestorePackages>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <DefineConstants>TRACE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+    <!-- System.Configuration is what lets AppConfig read App.config. -->
+    <Reference Include="System.Configuration" />
+    <!-- System.Security carries the Windows data-protection class used when
+         the connection string is sealed instead of written in plain text. -->
+    <Reference Include="System.Security" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The MySQL driver. Visual Studio restores it (and its own
+         dependencies) the first time the project builds, so nothing has to
+         be installed by hand before opening the solution. -->
+    <PackageReference Include="MySql.Data" Version="26.7.0" />
+    <PackageReference Include="MySql.Data.EntityFramework">
+      <Version>26.7.0</Version>
+    </PackageReference>
+    <PackageReference Include="MySqlConnector">
+      <Version>2.6.2</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Config\AppConfig.cs" />
+    <Compile Include="Config\AppLog.cs" />
+    <Compile Include="Data\DBContext.cs" />
+    <Compile Include="Data\DBHelper.cs" />
+    <Compile Include="Data\DbProviders.cs" />
+    <Compile Include="Data\InMemoryBarangayRepository.cs" />
+    <Compile Include="Data\RepositoryBase.cs" />
+    <Compile Include="Data\SqlArguments.cs" />
+    <Compile Include="Data\StoredProcedures.cs" />
+    <Compile Include="Database\DatabaseInitializer.cs" />
+    <Compile Include="Database\SampleData.cs" />
+    <Compile Include="Interfaces\IDbProvider.cs" />
+    <Compile Include="Interfaces\IDocumentTemplate.cs" />
+    <Compile Include="Interfaces\IReportService.cs" />
+    <Compile Include="Interfaces\Repositories.cs" />
+    <Compile Include="Interfaces\RepositoryException.cs" />
+    <Compile Include="Models\ActivityLogEntry.cs" />
+    <Compile Include="Models\BarangayProfile.cs" />
+    <Compile Include="Models\BusinessDetails.cs" />
+    <Compile Include="Models\Dependent.cs" />
+    <Compile Include="Models\DocumentRequest.cs" />
+    <Compile Include="Models\Enums.cs" />
+    <Compile Include="Models\OfficialReceipt.cs" />
+    <Compile Include="Models\OperationResult.cs" />
+    <Compile Include="Models\Resident.cs" />
+    <Compile Include="Models\UserAccount.cs" />
+    <Compile Include="Security\ConnectionStringProtector.cs" />
+    <Compile Include="Security\PasswordHasher.cs" />
+    <Compile Include="Security\Permissions.cs" />
+    <Compile Include="Security\SessionManager.cs" />
+    <Compile Include="Services\ActivityLogService.cs" />
+    <Compile Include="Services\AuthenticationService.cs" />
+    <Compile Include="Services\CensusService.cs" />
+    <Compile Include="Services\FeeSchedule.cs" />
+    <Compile Include="Services\InputValidator.cs" />
+    <Compile Include="Services\ReceiptService.cs" />
+    <Compile Include="Services\RequestService.cs" />
+    <Compile Include="Services\ResidentService.cs" />
+    <Compile Include="Services\TimeWindowPolicy.cs" />
+    <Compile Include="Services\UserService.cs" />
+    <Compile Include="UI\AppTheme.cs" />
+    <Compile Include="UI\Dialog.cs" />
+    <Compile Include="UI\UiFactory.cs" />
+    <Compile Include="Data\Sql\SqlBarangayRepository.cs" />
+    <Compile Include="Data\Sql\SqlBarangayRepository.Records.cs" />
+    <Compile Include="Data\Sql\SqlBarangayRepository.Reports.cs" />
+    <Compile Include="Data\Sql\SqlText.cs" />
+    <Compile Include="Services\Documents\BusinessAndMoneyTemplates.cs" />
+    <Compile Include="Services\Documents\ClearanceAndResidencyTemplates.cs" />
+    <Compile Include="Services\Documents\DocumentRenderer.cs" />
+    <Compile Include="Services\Documents\DocumentTemplateBase.cs" />
+    <Compile Include="Services\Documents\DocumentTemplateRegistry.cs" />
+    <Compile Include="Services\Documents\EmploymentAndAssistanceTemplates.cs" />
+    <Compile Include="Services\Reports\CrystalReportGateway.cs" />
+    <Compile Include="Services\Reports\ReportDefinitions.cs" />
+    <Compile Include="Services\Reports\ReportPrinter.cs" />
+    <Compile Include="Services\Reports\ReportService.cs" />
+    <Compile Include="UI\Controls\GroupBoxes.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UI\Controls\Primitives.cs" />
+    <Compile Include="UI\Dialogs\TextPromptForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Forms\AccountForms.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Forms\DependentForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Forms\DocumentPreviewForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Forms\LoginForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Forms\PaymentForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Forms\RequestForms.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Forms\RequestWorkflowForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Forms\ResidentForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Forms\ResidentPickerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Forms\ResidentStateForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Forms\ShellForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Forms\UserAccountForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Views\AdminViews.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\Views\CensusView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\Views\DashboardView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\Views\ReportsView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\Views\RequestsView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\Views\ResidentsView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\Views\ViewBase.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The database scripts travel inside the program as embedded
+         resources. There is one copy of each, the program always installs
+         the schema that matches its own code, and nobody can lose a .sql
+         file from a USB stick. -->
+    <EmbeddedResource Include="Database\Scripts\MySql\01-schema.sql" />
+    <EmbeddedResource Include="Database\Scripts\MySql\02-procedures.sql" />
+    <EmbeddedResource Include="Database\Scripts\SqlServer\01-schema.sql" />
+    <EmbeddedResource Include="Database\Scripts\SqlServer\02-procedures.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The seal. It is copied next to the .exe so the documents and the
+         login card can draw it. This file is NOT edited - only drawn. -->
+    <None Include="Assets\barangay-logo.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <!-- Crystal Reports layouts, when the barangay has Crystal installed.
+         They are read at run time, never compiled in. -->
+    <None Include="Reports\CrystalReports\*.rpt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
