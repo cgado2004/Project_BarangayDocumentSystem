@@ -108,11 +108,9 @@ namespace BarangayDocumentSystem.Security
 
         private static byte[] Derive(string password, byte[] salt, int iterations)
         {
-            using (Rfc2898DeriveBytes pbkdf2 = new Rfc2898DeriveBytes(password, salt, iterations))
+            using (Rfc2898DeriveBytes pbkdf2 = new Rfc2898DeriveBytes(
+                password, salt, iterations, HashAlgorithmName.SHA256))
             {
-                // SHA-256 rather than the old default (SHA-1). The framework
-                // has supported this since 4.7.2, which is what we target.
-                pbkdf2.HashAlgorithm = new HMACSHA256();
                 return pbkdf2.GetBytes(HashBytes);
             }
         }
