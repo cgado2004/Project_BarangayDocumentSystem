@@ -31,7 +31,13 @@ jobs:
       - name: Run the rule checks
         shell: cmd
         run: |
-          if not exist tests\RuleChecks\bin\Debug\RuleChecks.exe (dir /s /b tests\*.exe & exit /b 2)
+          if not exist tests\RuleChecks\bin\Debug\RuleChecks.exe (
+            echo ::error title=RuleChecks::RuleChecks.exe is not at tests\RuleChecks\bin\Debug - everything under tests\RuleChecks\bin:
+            for /f "delims=" %%L in ('dir /s /b tests\RuleChecks\bin 2^>nul') do echo ::error title=RuleChecks::%%L
+            echo ::error title=RuleChecks::- and every exe in the repo:
+            for /f "delims=" %%L in ('dir /s /b *.exe 2^>nul') do echo ::error title=RuleChecks::%%L
+            exit /b 2
+          )
           tests\RuleChecks\bin\Debug\RuleChecks.exe > rulechecks.out 2> rulechecks.err
           set RC=%ERRORLEVEL%
           type rulechecks.out
