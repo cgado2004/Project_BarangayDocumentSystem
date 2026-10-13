@@ -260,7 +260,8 @@ namespace BarangayDocumentSystem.RuleChecks
                 fees.CommunityTax(10000m) == AppConfig.CommunityTaxBase + (AppConfig.CommunityTaxPerThousand * 10m));
 
             Check("very large incomes stop at the ceiling",
-                fees.CommunityTax(50000000m) == AppConfig.CommunityTaxCap);
+                fees.CommunityTax(50000000m) == AppConfig.CommunityTaxBase + AppConfig.CommunityTaxCap,
+                fees.CommunityTax(50000000m).ToString());
         }
 
         // =================================================================

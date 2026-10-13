@@ -77,7 +77,7 @@ namespace BarangayDocumentSystem.Database
             AddResident(repository, created, now, "Liza", "Mendoza", "Reyes", "", "Purok Sampaguita",
                 new DateTime(2004, 7, 19), Gender.Female, CivilStatus.Single, "0995-118-2267",
                 "College student", new DateTime(2018, 8, 1), false,
-                ResidentClassification.PWD, true, false, false,
+                ResidentClassification.None, true, false, false,
                 ResidencyStatus.Permanent, now);
 
             AddResident(repository, created, now, "Joel", "Pascual", "Villanueva", "", "Purok Sunflower",
@@ -121,6 +121,13 @@ namespace BarangayDocumentSystem.Database
                 "Barangay health worker", new DateTime(1995, 5, 12), true,
                 ResidentClassification.SeniorCitizen, false, false, true,
                 ResidencyStatus.Permanent, now);
+
+            // ---- a newcomer, with the ñ the registry has to keep ---------
+            AddResident(repository, created, now, "Andrea", "Salazar", "Peña", "", "Purok Orchids",
+                new DateTime(2001, 10, 9), Gender.Female, CivilStatus.Single, "0977-512-8834",
+                "Recently moved in - looking for work", now.AddMonths(-3), false,
+                ResidentClassification.None, false, false, false,
+                ResidencyStatus.Newcomer, now);
 
             return created;
         }
