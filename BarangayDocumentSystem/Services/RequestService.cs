@@ -146,6 +146,12 @@ namespace BarangayDocumentSystem.Services
 
             FeeAssessment assessment = _fees.Assess(resident, request);
 
+            // The preview answers for the moment on the request, the same
+            // moment File() will honour when the clerk confirms: a request
+            // dated 4:20 PM must preview as Pending even if the clerk only
+            // reads the preview at 4:31.
+            request.FiledDuringOfficeWindow = _window.IsInsideOfficeWindow(request.DateRequested);
+
             RequestPreview preview = new RequestPreview();
             preview.Resident = resident;
             preview.Request = request;
@@ -197,19 +203,26 @@ namespace BarangayDocumentSystem.Services
             FeeAssessment assessment = _fees.Assess(resident, request);
             DateTime now = _clock.Now();
 
-            request.ReferenceNumber = _repository.NextReferenceNumber(now);
+            // The filing moment is the one on the request - the clerk files
+            // for the resident standing at the counter, and the history must
+            // say 4:20 PM when the request says 4:20 PM, not whenever the
+            // button was clicked. The clock is only the fallback for a
+            // request that carries no moment of its own.
+            DateTime filedAt = request.DateRequested == default(DateTime) ? now : request.DateRequested;
+
+            request.ReferenceNumber = _repository.NextReferenceNumber(filedAt);
             request.ResidentId = resident.ResidentId;
             request.ResidentName = resident.GetFullName();
-            request.DateRequested = now;
+            request.DateRequested = filedAt;
             request.Fee = assessment.FinalFee;
             request.FeeBasis = assessment.Basis;
             request.RequiresValidation = forceValidation
                 || request.DocumentType == DocumentType.BarangayBusinessClearance;
-            request.FiledDuringOfficeWindow = _window.IsInsideOfficeWindow(now);
+            request.FiledDuringOfficeWindow = _window.IsInsideOfficeWindow(filedAt);
 
             RequestStatus starting = _window.SuggestStartingStatus(request, forceValidation);
             request.SetInitialStatus(starting,
-                _window.ExplainStartingStatus(request, starting), _session.Username, now);
+                _window.ExplainStartingStatus(request, starting), _session.Username, filedAt);
 
             _repository.InsertRequest(request);
 

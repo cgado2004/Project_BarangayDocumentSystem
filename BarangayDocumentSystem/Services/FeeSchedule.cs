@@ -390,14 +390,17 @@ namespace BarangayDocumentSystem.Services
         /// Whether this resident can still use RA 11261, and if not, why not.
         ///
         /// Two conditions: at least six months in the barangay, and the benefit
-        /// <summary>The two documents RA 11261 covers: the First-Time Jobseeker
-        /// Certificate itself, and a barangay clearance issued to a first-time
-        /// jobseeker. Any other document asked for under the waiver pays its
-        /// ordinary rate.</summary>
+        /// <summary>The documents RA 11261 covers: the First-Time Jobseeker
+        /// Certificate itself, the barangay clearance, and the residency
+        /// certificate a first-time jobseeker files with an employer - the
+        /// law's "barangay clearance and certification" for a first-time
+        /// jobseeker, free once. Any other document asked for under the
+        /// waiver pays its ordinary rate.</summary>
         private static bool IsCoveredByJobseekerAct(DocumentType type)
         {
             return type == DocumentType.FirstTimeJobseekerCertificate
-                || type == DocumentType.BarangayClearance;
+                || type == DocumentType.BarangayClearance
+                || type == DocumentType.CertificateOfResidency;
         }
 
         /// <summary>The assistance and social-service papers the barangay

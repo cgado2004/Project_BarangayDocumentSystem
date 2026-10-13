@@ -190,7 +190,8 @@ namespace BarangayDocumentSystem.Services
                              + " is short of the assessed fee of P" + fee.ToString("#,##0.00") + ".");
 
             if (!OfficialReceipt.IsWellFormedOrNumber(orNumber))
-                problems.Add("Please enter the official receipt number exactly as it is printed (at least 4 characters).");
+                problems.Add("Please enter the official receipt number exactly as it is printed - "
+                             + "at least four characters with at least three digits (e.g. 0004501).");
 
             if (!OfficialReceipt.IsWellFormedControlNumber(controlNumber))
                 problems.Add("Please enter the control number of the receipt booklet.");

@@ -288,6 +288,10 @@ namespace BarangayDocumentSystem.Services.Reports
             if (result == null || result.Table == null) return string.Empty;
             if (string.IsNullOrWhiteSpace(folder)) folder = AppConfig.ApplicationFolder;
 
+            // The folder is created when it is missing: an export should never
+            // fail because the barangay chose a folder that does not exist yet.
+            if (!System.IO.Directory.Exists(folder)) System.IO.Directory.CreateDirectory(folder);
+
             string fileName = result.Key + "-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".csv";
             string path = System.IO.Path.Combine(folder, fileName);
 

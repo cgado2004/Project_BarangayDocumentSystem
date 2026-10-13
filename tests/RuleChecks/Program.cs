@@ -350,22 +350,25 @@ namespace BarangayDocumentSystem.RuleChecks
         {
             Heading("Residency status");
 
-            DateTime now = clock.Now();
+            // The model measures residency against the real calendar
+            // (DateTime.Today), so the sample residents here are dated from
+            // today too - not from the fixed office-window clock.
+            DateTime today = DateTime.Today;
 
             Resident newcomer = new Resident();
-            newcomer.DateOfResidency = now.AddMonths(-2);
+            newcomer.DateOfResidency = today.AddMonths(-2);
             Check("under six months here is a newcomer",
                 newcomer.SuggestResidencyStatus(AppConfig.NewcomerMonths, AppConfig.PermanentResidencyYears)
                     == ResidencyStatus.Newcomer);
 
             Resident temporary = new Resident();
-            temporary.DateOfResidency = now.AddMonths(-18);
+            temporary.DateOfResidency = today.AddMonths(-18);
             Check("after the newcomer months the record says temporary",
                 temporary.SuggestResidencyStatus(AppConfig.NewcomerMonths, AppConfig.PermanentResidencyYears)
                     == ResidencyStatus.Temporary);
 
             Resident permanent = new Resident();
-            permanent.DateOfResidency = now.AddYears(-7);
+            permanent.DateOfResidency = today.AddYears(-7);
             Check("years of residency makes it permanent",
                 permanent.SuggestResidencyStatus(AppConfig.NewcomerMonths, AppConfig.PermanentResidencyYears)
                     == ResidencyStatus.Permanent);
@@ -518,6 +521,10 @@ namespace BarangayDocumentSystem.RuleChecks
 
             SessionManager session = Session(repository);
             RequestService requests = new RequestService(repository, log, session, clock, fees, window);
+
+            // The counter at 4:45 in the afternoon: the window is shut, so
+            // anything filed now waits for tomorrow.
+            clock.Set(new DateTime(2026, 3, 10, 16, 45, 0));
 
             Resident resident = Person(residents, "Santos");
             DocumentRequest request = Simple(resident, DocumentType.CertificateOfResidency,

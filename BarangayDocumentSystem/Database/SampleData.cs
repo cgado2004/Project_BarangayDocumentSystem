@@ -123,9 +123,12 @@ namespace BarangayDocumentSystem.Database
                 ResidencyStatus.Permanent, now);
 
             // ---- a newcomer, with the ñ the registry has to keep ---------
+            // Dated from the real calendar, not the seed clock: the residency
+            // math in the model measures against DateTime.Today, so the
+            // newcomer stays a newcomer whenever the seed runs.
             AddResident(repository, created, now, "Andrea", "Salazar", "Peña", "", "Purok Orchids",
                 new DateTime(2001, 10, 9), Gender.Female, CivilStatus.Single, "0977-512-8834",
-                "Recently moved in - looking for work", now.AddMonths(-3), false,
+                "Recently moved in - looking for work", DateTime.Today.AddMonths(-3), false,
                 ResidentClassification.None, false, false, false,
                 ResidencyStatus.Newcomer, now);
 
