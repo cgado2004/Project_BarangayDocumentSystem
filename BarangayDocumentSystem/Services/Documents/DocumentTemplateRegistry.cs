@@ -117,8 +117,10 @@ namespace BarangayDocumentSystem.Services.Documents
         }
 
         /// <summary>The template that says it needs the business details, so
-        /// the request form knows when to show that section.</summary>
-        public bool RequiresBusinessDetails(DocumentType type)
+        /// the request form knows when to show that section. Named
+        /// NeedsBusinessDetails because the static gateway on this same class
+        /// is the one the screens call.</summary>
+        public bool NeedsBusinessDetails(DocumentType type)
         {
             IDocumentTemplate template = Find(type);
             return template != null && template.RequiresBusinessDetails;
