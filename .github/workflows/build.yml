@@ -31,16 +31,20 @@ jobs:
       - name: Run the rule checks
         shell: pwsh
         run: |
-          $output = & tests\RuleChecks\bin\Debug\RuleChecks.exe 2>&1 | Out-String
-          Write-Host $output
-          $code = $LASTEXITCODE
-          if ($code -ne 0) {
-            foreach ($line in ($output -split "`r?`n")) {
-              if ($line -match 'FAIL|Exception|Unhandled|inner exception|at BarangayDocumentSystem') {
-                Write-Host "::error title=RuleChecks::$($line.Trim())"
+          $exe = "tests\RuleChecks\bin\Debug\RuleChecks.exe"
+          $p = Start-Process -FilePath $exe -NoNewWindow -Wait -PassThru `
+               -RedirectStandardOutput "rulechecks.out" -RedirectStandardError "rulechecks.err"
+          $lines = @()
+          if (Test-Path rulechecks.out) { $lines += Get-Content rulechecks.out }
+          if (Test-Path rulechecks.err) { $lines += Get-Content rulechecks.err }
+          Write-Host ($lines -join "`n")
+          if ($p.ExitCode -ne 0) {
+            foreach ($line in $lines) {
+              if ($line -match 'FAIL|Exception|Unhandled|inner exception|BarangayDocumentSystem\.') {
+                Write-Host ("::error title=RuleChecks::" + $line.Trim())
               }
             }
-            exit $code
+            exit $p.ExitCode
           }
 
       - name: Static structure checks
