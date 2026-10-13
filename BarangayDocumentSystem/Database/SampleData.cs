@@ -285,7 +285,7 @@ namespace BarangayDocumentSystem.Database
             repository.UpdateRequest(today);
 
             // ---- a certificate issued free under the jobseeker law -----------
-            DocumentRequest jobseekerResident = residents[8];
+            Resident jobseekerResident = residents[8];
             DocumentRequest jobseeker = Build(repository, jobseekerResident, DocumentType.BarangayClearance,
                 "First time jobseeker requirement under RA 11261", now.AddDays(-20).Date.AddHours(10),
                 false, window, fees, "sample");

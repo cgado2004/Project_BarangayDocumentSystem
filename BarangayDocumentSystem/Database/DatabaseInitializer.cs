@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Reflection;
 using BarangayDocumentSystem.Config;
 using BarangayDocumentSystem.Data;
@@ -137,7 +138,7 @@ namespace BarangayDocumentSystem.Database
             administrator.IsActive = true;
             ApplyPassword(administrator, AppConfig.InitialAdminPassword, hasher);
 
-            using (DBCommand insert = _context.Helper.BuildOn(null,
+            using (DbCommand insert = _context.Helper.BuildOn(null,
                 "INSERT INTO user_accounts (username, full_name, role, position, password_hash, password_salt, " +
                 "hash_iterations, must_change_password, is_active, failed_attempts, locked_until, last_login_on, " +
                 "last_login_machine, created_on, created_by) VALUES (@username, @full_name, @role, @position, " +
@@ -172,7 +173,7 @@ namespace BarangayDocumentSystem.Database
             clerk.IsActive = true;
             ApplyPassword(clerk, AppConfig.InitialClerkPassword, hasher);
 
-            using (DBCommand insert = _context.Helper.BuildOn(null,
+            using (DbCommand insert = _context.Helper.BuildOn(null,
                 "INSERT INTO user_accounts (username, full_name, role, position, password_hash, password_salt, " +
                 "hash_iterations, must_change_password, is_active, failed_attempts, locked_until, last_login_on, " +
                 "last_login_machine, created_on, created_by) VALUES (@username, @full_name, @role, @position, " +
