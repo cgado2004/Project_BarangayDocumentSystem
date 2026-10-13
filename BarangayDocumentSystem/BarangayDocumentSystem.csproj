@@ -148,8 +148,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <!-- Crystal Reports layouts, when the barangay has Crystal installed.
-         They are read at run time, never compiled in. -->
-    <None Include="Reports\CrystalReports\**.rpt">
+         They are read at run time, never compiled in. The pattern is a real
+         MSBuild glob: it matches nothing until the barangay saves .rpt files
+         into Reports\CrystalReports, and then the build copies them next to
+         the .exe. ('**.rpt' is not a legal pattern - MSBuild would treat it
+         as a literal file name and the copy step would fail.) -->
+    <None Include="Reports\CrystalReports\**\*.rpt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
