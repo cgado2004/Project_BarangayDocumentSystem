@@ -528,6 +528,22 @@ namespace BarangayDocumentSystem.Data.Sql
             }
         }
 
+        /// <summary>
+        /// How each engine caps the rows of a query that already has an
+        /// ORDER BY. MySQL appends LIMIT at the end; SQL Server has no LIMIT,
+        /// so the same cap is written as OFFSET/FETCH, which is only legal
+        /// after an ORDER BY - and every query that uses this has one.
+        /// </summary>
+        private string LimitClause(int maximumRows)
+        {
+            if (maximumRows <= 0) return string.Empty;
+
+            if (string.Equals(_engine, "SqlServer", StringComparison.OrdinalIgnoreCase))
+                return " OFFSET 0 ROWS FETCH NEXT " + maximumRows + " ROWS ONLY";
+
+            return " LIMIT " + maximumRows;
+        }
+
         private static SqlArguments ResidentArguments(Resident resident, bool isInsert)
         {
             SqlArguments arguments = new SqlArguments();

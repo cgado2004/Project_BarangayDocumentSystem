@@ -201,18 +201,18 @@ namespace BarangayDocumentSystem.Services
         //  Household
         // ==================================================================
 
-        public OperationResult AddDependent(Resident head, Dependent dependent)
+        public OperationResult<Dependent> AddDependent(Resident head, Dependent dependent)
         {
             string refusal;
             if (!Allowed(Permission.ManageResidents, out refusal))
-                return OperationResult.Fail(refusal);
+                return OperationResult<Dependent>.Fail(refusal);
 
-            if (head == null) return OperationResult.Fail("Please choose the head of the family first.");
-            if (dependent == null) return OperationResult.Fail("There is no dependent to save.");
+            if (head == null) return OperationResult<Dependent>.Fail("Please choose the head of the family first.");
+            if (dependent == null) return OperationResult<Dependent>.Fail("There is no dependent to save.");
 
             var problems = InputValidator.ValidateDependent(dependent);
             if (problems.Count > 0)
-                return OperationResult.Fail(string.Join(Environment.NewLine, problems.ToArray()));
+                return OperationResult<Dependent>.Fail(string.Join(Environment.NewLine, problems.ToArray()));
 
             dependent.HeadResidentId = head.ResidentId;
             dependent.CreatedOn = _clock.Now();
@@ -223,7 +223,35 @@ namespace BarangayDocumentSystem.Services
             _log.Record(ActivityModule.Residents, "Dependent added", "Resident", head.ResidentId.ToString(),
                 dependent.FullName + " (" + dependent.Relation + ") added to " + head.GetFullName() + "'s household.");
 
-            return OperationResult.Ok(dependent.FullName + " is registered under " + head.GetFullName() + ".");
+            return OperationResult<Dependent>.Ok(dependent,
+                dependent.FullName + " is registered under " + head.GetFullName() + ".");
+        }
+
+        /// <summary>Saves the changes to one person of the household. The
+        /// dependent has to belong to that household - a change may never
+        /// quietly move somebody into another family's record.</summary>
+        public OperationResult UpdateDependent(Resident head, Dependent dependent)
+        {
+            string refusal;
+            if (!Allowed(Permission.ManageResidents, out refusal))
+                return OperationResult.Fail(refusal);
+
+            if (head == null) return OperationResult.Fail("Please choose the head of the family first.");
+            if (dependent == null) return OperationResult.Fail("Please choose a dependent first.");
+            if (dependent.DependentId <= 0 || dependent.HeadResidentId != head.ResidentId)
+                return OperationResult.Fail(dependent.FullName + " is not part of "
+                    + head.GetFullName() + "'s household, so the change cannot be saved here.");
+
+            var problems = InputValidator.ValidateDependent(dependent);
+            if (problems.Count > 0)
+                return OperationResult.Fail(string.Join(Environment.NewLine, problems.ToArray()));
+
+            _repository.UpdateDependent(dependent);
+
+            _log.Record(ActivityModule.Residents, "Dependent updated", "Resident", head.ResidentId.ToString(),
+                dependent.FullName + " (" + dependent.Relation + ") in " + head.GetFullName() + "'s household was edited.");
+
+            return OperationResult.Ok(dependent.FullName + "'s record is saved.");
         }
 
         public OperationResult RemoveDependent(Resident head, Dependent dependent)

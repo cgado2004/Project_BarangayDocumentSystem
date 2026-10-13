@@ -127,7 +127,7 @@ namespace BarangayDocumentSystem.UI.Forms
             query.Keyword = _keyword.Text;
             query.IncludeInactive = false;      // only active residents; see the note above
 
-            IList<Resident> residents = _residents.Search(query);
+            IList<Resident> residents = _residents.GetResidents(query);
 
             DataTable table = new DataTable("residents");
             table.Columns.Add("resident_id", typeof(int));
@@ -168,7 +168,7 @@ namespace BarangayDocumentSystem.UI.Forms
             }
 
             int id = Convert.ToInt32(_grid.CurrentRow.Cells["resident_id"].Value);
-            Selected = _residents.Get(id);
+            Selected = _residents.GetResident(id);
 
             if (Selected == null)
             {
