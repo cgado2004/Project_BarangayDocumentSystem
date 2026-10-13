@@ -106,6 +106,12 @@ namespace BarangayDocumentSystem.RuleChecks
             }
         }
 
+        /// <summary>Most rules have no number to show, only a yes or a no.</summary>
+        private static void Check(string name, bool ok)
+        {
+            Check(name, ok, string.Empty);
+        }
+
         private static void Heading(string text)
         {
             Console.WriteLine();
@@ -120,7 +126,6 @@ namespace BarangayDocumentSystem.RuleChecks
         private static SessionManager Session(IBarangayRepository repository)
         {
             UserAccount administrator = new UserAccount();
-            administrator.UserId = 9001;
             administrator.Username = "rulecheck";
             administrator.FullName = "Rule Check";
             administrator.Role = UserRole.Administrator;
@@ -224,7 +229,7 @@ namespace BarangayDocumentSystem.RuleChecks
 
             Check("a student gets no discount on a business clearance",
                 fees.Assess(student, DocumentType.BarangayBusinessClearance).FinalFee
-                    == AppConfig.FeeBusinessClearanceStandard);
+                    == AppConfig.FeeBusinessClearance);
 
             Check("Student is gone from the classifications",
                 !Enum.GetNames(typeof(ResidentClassification)).Contains("Student"));
@@ -296,11 +301,11 @@ namespace BarangayDocumentSystem.RuleChecks
 
             Check("a senior citizen who runs a store still pays for the business clearance",
                 fees.Assess(businessOwner, DocumentType.BarangayBusinessClearance).FinalFee
-                    == AppConfig.FeeBusinessClearanceStandard);
+                    == AppConfig.FeeBusinessClearance);
 
             Check("an indigent resident who runs a store still pays too",
                 fees.Assess(solo, DocumentType.BarangayBusinessClearance).FinalFee
-                    == AppConfig.FeeBusinessClearanceStandard);
+                    == AppConfig.FeeBusinessClearance);
         }
 
         // =================================================================
