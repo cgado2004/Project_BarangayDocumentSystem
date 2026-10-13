@@ -133,5 +133,10 @@ namespace BarangayDocumentSystem.Interfaces
 
         /// <summary>True when the .rpt template for that report can be found.</summary>
         bool HasCrystalTemplate(string reportKey);
+
+        /// <summary>Writes one finished report to a CSV file in that folder
+        /// and returns the full path of the file it wrote, so the screens can
+        /// offer the same export no matter which reporter drew the rows.</summary>
+        string ExportCsv(ReportResult result, string folder);
     }
 }

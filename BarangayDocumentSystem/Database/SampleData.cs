@@ -157,13 +157,13 @@ namespace BarangayDocumentSystem.Database
 
             if (isHeadOfFamily)
             {
-                AddDependent(repository, resident, "Juan", "Son", new DateTime(2005, 6, 15), true, "Studying");
-                AddDependent(repository, resident, "Maria", "Daughter", new DateTime(2008, 9, 22), true, "Studying");
+                AddDependent(repository, resident, "Juan", DependentRelation.Son, new DateTime(2005, 6, 15), true, "Studying");
+                AddDependent(repository, resident, "Maria", DependentRelation.Daughter, new DateTime(2008, 9, 22), true, "Studying");
             }
         }
 
         private static void AddDependent(IBarangayRepository repository, Resident head, string name,
-            string relation, DateTime dateOfBirth, bool isStudying, string remarks)
+            DependentRelation relation, DateTime dateOfBirth, bool isStudying, string remarks)
         {
             Dependent dependent = new Dependent();
             dependent.HeadResidentId = head.ResidentId;

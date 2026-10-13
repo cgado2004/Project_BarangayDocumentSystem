@@ -130,6 +130,74 @@ namespace BarangayDocumentSystem.Services
         }
 
         // ==================================================================
+        //  Booklets
+        // ==================================================================
+
+        /// <summary>
+        /// Records a new booklet of official receipts when the treasurer hands
+        /// it over, so every collection can be traced back to a booklet.
+        ///
+        /// The series code has to be new: two booklets with the same code
+        /// would make a receipt number ambiguous, and an audit cannot have
+        /// that. The control numbers are copied exactly as printed on the
+        /// cover, because the paper is the authority.
+        /// </summary>
+        public OperationResult<ReceiptSeries> AddSeries(string seriesCode, string controlFrom,
+                                                        string controlTo, string issuedTo)
+        {
+            if (string.IsNullOrWhiteSpace(seriesCode))
+                return OperationResult<ReceiptSeries>.Fail("The series code of the booklet is required.");
+            if (string.IsNullOrWhiteSpace(controlFrom) || string.IsNullOrWhiteSpace(controlTo))
+                return OperationResult<ReceiptSeries>.Fail("Both control numbers on the cover are required.");
+
+            string code = seriesCode.Trim();
+
+            if (FindSeries(code) != null)
+                return OperationResult<ReceiptSeries>.Fail("There is already a booklet with the series code "
+                    + code + ". A series code can only be used once.");
+
+            ReceiptSeries series = new ReceiptSeries();
+            series.SeriesCode = code;
+            series.ControlFrom = controlFrom.Trim();
+            series.ControlTo = controlTo.Trim();
+            series.IssuedTo = (issuedTo ?? string.Empty).Trim();
+            series.IssuedOn = _clock.Now().Date;
+            series.IsActive = true;
+            series.SeriesId = _repository.InsertReceiptSeries(series);
+
+            _log.Record(ActivityModule.Payments, "Recorded booklet " + code,
+                "Receipt series", code,
+                "Covers control numbers " + series.ControlFrom + " to " + series.ControlTo
+                + ", issued to " + (series.IssuedTo.Length == 0 ? "the barangay" : series.IssuedTo) + ".");
+
+            return OperationResult<ReceiptSeries>.Ok(series,
+                "Booklet " + code + " is recorded. It covers control numbers "
+                + series.ControlFrom + " to " + series.ControlTo + ".");
+        }
+
+        /// <summary>
+        /// Closes a booklet so it takes no more collections. Nothing already
+        /// written against it is touched - a closed booklet stays in the
+        /// register exactly as it is, because the receipts point back at it.
+        /// </summary>
+        public OperationResult CloseSeries(ReceiptSeries series)
+        {
+            if (series == null)
+                return OperationResult.Fail("Please choose a booklet from the list first.");
+            if (!series.IsActive)
+                return OperationResult.Fail("Booklet " + series.SeriesCode + " is already closed.");
+
+            series.IsActive = false;
+            _repository.UpdateReceiptSeries(series);
+
+            _log.Record(ActivityModule.Payments, "Closed booklet " + series.SeriesCode,
+                "Receipt series", series.SeriesCode,
+                "The booklet (" + series.RangeText() + ") takes no more collections.");
+
+            return OperationResult.Ok("Booklet " + series.SeriesCode + " is closed. It takes no more collections.");
+        }
+
+        // ==================================================================
         //  Collecting
         // ==================================================================
 
@@ -186,7 +254,7 @@ namespace BarangayDocumentSystem.Services
             request.RecordPayment(orNumber.Trim(), controlNumber.Trim(), now, _session.Username);
             _repository.UpdateRequest(request);
 
-            _log.Record(ActivityModule.Collections, "Collected " + amountTendered.ToString("#,##0.00"),
+            _log.Record(ActivityModule.Payments, "Collected " + amountTendered.ToString("#,##0.00"),
                 "Document request", request.ReferenceNumber,
                 "OR " + orNumber.Trim() + " (series " + seriesCode.Trim()
                 + ", control " + controlNumber.Trim() + ") for " + request.GetDocumentName()
@@ -236,7 +304,7 @@ namespace BarangayDocumentSystem.Services
                 }
             }
 
-            _log.Record(ActivityModule.Collections, "Voided OR " + receipt.OrNumber,
+            _log.Record(ActivityModule.Payments, "Voided OR " + receipt.OrNumber,
                 "Official receipt", receipt.OrNumber,
                 "Voided because: " + reason.Trim() + ".");
 
