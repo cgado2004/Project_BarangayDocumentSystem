@@ -349,9 +349,9 @@ namespace BarangayDocumentSystem.Services
 
             // If the receipt paid for a request, the request goes back to
             // unpaid so it cannot be released against a dead receipt.
-            if (receipt.RequestId > 0)
+            if (receipt.RequestId.GetValueOrDefault() > 0)
             {
-                DocumentRequest request = _repository.GetRequest(receipt.RequestId);
+                DocumentRequest request = _repository.GetRequest(receipt.RequestId.GetValueOrDefault());
                 if (request != null && request.IsPaid
                     && string.Equals(request.OfficialReceiptNumber, receipt.OrNumber, StringComparison.OrdinalIgnoreCase))
                 {

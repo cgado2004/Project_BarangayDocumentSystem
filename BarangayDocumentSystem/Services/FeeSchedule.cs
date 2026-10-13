@@ -377,6 +377,19 @@ namespace BarangayDocumentSystem.Services
         /// Whether this resident can still use RA 11261, and if not, why not.
         ///
         /// Two conditions: at least six months in the barangay, and the benefit
+        /// <summary>The two documents RA 11261 covers: the First-Time Jobseeker
+        /// Certificate itself, and a barangay clearance issued to a first-time
+        /// jobseeker. Any other document asked for under the waiver pays its
+        /// ordinary rate.</summary>
+        private static bool IsCoveredByJobseekerAct(DocumentType type)
+        {
+            return type == DocumentType.FirstTimeJobseekerCertificate
+                || type == DocumentType.BarangayClearance;
+        }
+
+        /// <summary>
+        /// Whether this resident may still claim the once-only RA 11261
+        /// benefit: the residency months required by the law, and that it was
         /// never used before. Both come from App.config and from the resident's
         /// own record. I return the reason as text because the dialog shows it
         /// to the clerk instead of just greying out a button.
