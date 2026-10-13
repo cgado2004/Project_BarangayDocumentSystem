@@ -256,6 +256,31 @@ namespace BarangayDocumentSystem.Models
         //  Moving the request
         // ==================================================================
 
+        /// <summary>
+        /// Files the request: the one change that starts its history. Only
+        /// the three starting statuses are allowed - Pending (filed outside
+        /// the office window), Processing (needs inspection) or Cleared
+        /// (filed inside the window with nothing to check) - and only while
+        /// the request has no history yet, because a request is filed
+        /// exactly once.
+        /// </summary>
+        public void File(RequestStatus startingStatus, string filedBy, DateTime when)
+        {
+            Require(_history.Count == 0, "This request was already filed.");
+            Require(startingStatus == RequestStatus.Pending
+                 || startingStatus == RequestStatus.Processing
+                 || startingStatus == RequestStatus.Cleared,
+                "A new request can only start as Pending, Processing or Cleared.");
+
+            string reason = startingStatus == RequestStatus.Processing
+                ? "Needs inspection before it can be cleared."
+                : (startingStatus == RequestStatus.Cleared
+                    ? "Filed inside the office window with nothing to check."
+                    : "Filed outside the office window, so it waits for the next one.");
+
+            Move(startingStatus, reason, filedBy, when);
+        }
+
         /// <summary>Send the request to validation. Business clearances always
         /// come through here, because a business has to be inspected and its
         /// papers checked before the barangay signs.</summary>

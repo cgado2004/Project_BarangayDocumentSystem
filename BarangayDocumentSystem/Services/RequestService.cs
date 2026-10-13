@@ -150,7 +150,7 @@ namespace BarangayDocumentSystem.Services
             preview.Resident = resident;
             preview.Request = request;
             preview.Assessment = assessment;
-            preview.StartingStatus = _window.StartingStatus(request, forceValidation);
+            preview.StartingStatus = _window.SuggestStartingStatus(request, forceValidation);
 
             if (preview.StartingStatus == RequestStatus.Processing)
                 preview.TimeExplanation = "Business clearances are inspected before the barangay signs, "
@@ -207,7 +207,7 @@ namespace BarangayDocumentSystem.Services
                 || request.DocumentType == DocumentType.BarangayBusinessClearance;
             request.FiledDuringOfficeWindow = _window.IsInsideOfficeWindow(now);
 
-            RequestStatus starting = _window.StartingStatus(request, forceValidation);
+            RequestStatus starting = _window.SuggestStartingStatus(request, forceValidation);
             request.File(starting, _session.Username, now);
 
             _repository.InsertRequest(request);

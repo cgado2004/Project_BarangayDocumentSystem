@@ -459,7 +459,7 @@ namespace BarangayDocumentSystem.RuleChecks
             DocumentRequest request = Simple(resident, DocumentType.CertificateOfResidency,
                 new DateTime(2026, 3, 10, 10, 0, 0));
 
-            OperationResult<DocumentRequest> filed = requests.FileRequest(resident, request, false);
+            OperationResult<DocumentRequest> filed = requests.File(resident, request, false);
             Check("a request filed on the counter is saved", filed.Succeeded, filed.Message);
             Check("and it gets a reference number", !string.IsNullOrWhiteSpace(request.ReferenceNumber),
                 request.ReferenceNumber);
@@ -491,7 +491,7 @@ namespace BarangayDocumentSystem.RuleChecks
             // ---- rejection and reopening -----------------------------------
             DocumentRequest second = Simple(resident, DocumentType.CertificateOfResidency,
                 new DateTime(2026, 3, 10, 11, 0, 0));
-            requests.FileRequest(resident, second, false);
+            requests.File(resident, second, false);
             Check("a request can be rejected with a reason",
                 requests.Reject(second, "Purpose is not clear").Succeeded);
             Check("the rejected request is closed", second.IsClosed);
@@ -516,7 +516,7 @@ namespace BarangayDocumentSystem.RuleChecks
             DocumentRequest request = Simple(resident, DocumentType.CertificateOfResidency,
                 new DateTime(2026, 3, 10, 16, 45, 0));
 
-            OperationResult<DocumentRequest> filed = requests.FileRequest(resident, request, false);
+            OperationResult<DocumentRequest> filed = requests.File(resident, request, false);
             Check("filing after the cut-off is still accepted",
                 filed.Succeeded && request.Status == RequestStatus.Pending, filed.Message);
 

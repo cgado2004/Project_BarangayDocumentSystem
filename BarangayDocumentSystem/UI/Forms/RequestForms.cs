@@ -508,7 +508,7 @@ namespace BarangayDocumentSystem.UI.Forms
             try
             {
                 OperationResult<DocumentRequest> result =
-                    _requests.FileRequest(_resident, request, _needsValidation.Checked);
+                    _requests.File(_resident, request, _needsValidation.Checked);
 
                 if (!result.Succeeded) { Dialog.Refused(this, result.Message); return; }
 

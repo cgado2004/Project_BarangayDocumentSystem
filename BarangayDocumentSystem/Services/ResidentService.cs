@@ -78,8 +78,8 @@ namespace BarangayDocumentSystem.Services
             if (resident == null) return ResidencyStatus.Newcomer;
 
             int months = resident.GetMonthsOfResidency();
-            if (months < AppConfig.ResidencyNewcomerMonths) return ResidencyStatus.Newcomer;
-            if (months < AppConfig.ResidencyPermanentYears * 12) return ResidencyStatus.Temporary;
+            if (months < AppConfig.NewcomerMonths) return ResidencyStatus.Newcomer;
+            if (months < AppConfig.PermanentResidencyYears * 12) return ResidencyStatus.Temporary;
             return ResidencyStatus.Permanent;
         }
 
@@ -185,8 +185,10 @@ namespace BarangayDocumentSystem.Services
                 return OperationResult.Fail("That record is already " + EnumText.Of(newState) + ".");
 
             RecordState previous = resident.RecordState;
-            resident.ChangeState(newState, reason.Trim(), _session.Username, _clock.Now());
-            _repository.UpdateResident(resident);
+            _repository.SetRecordState(resident.ResidentId, newState, reason.Trim(),
+                _session.Username, _clock.Now());
+            resident.RecordState = newState;
+            resident.StateReason = reason.Trim();
 
             _log.Record(ActivityModule.Residents,
                 EnumText.Of(newState) + " (was " + EnumText.Of(previous) + ")", "Resident",
@@ -278,13 +280,13 @@ namespace BarangayDocumentSystem.Services
         private bool Allowed(Permission permission, out string refusal)
         {
             refusal = string.Empty;
-            if (_session == null || _session.CurrentUser == null)
+            if (_session == null || _session.User == null)
             {
                 refusal = "Please sign in first.";
                 return false;
             }
 
-            if (!Permissions.Has(_session.CurrentUser.Role, permission))
+            if (!Permissions.Has(_session.User.Role, permission))
             {
                 refusal = "Your account is not allowed to change resident records. "
                         + "Ask the administrator if you need this.";
