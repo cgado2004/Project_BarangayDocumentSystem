@@ -29,7 +29,19 @@ jobs:
         run: msbuild BarangayDocumentSystem.sln /p:Configuration=Debug /m /v:m /nologo
 
       - name: Run the rule checks
-        run: tests\RuleChecks\bin\Debug\RuleChecks.exe
+        shell: pwsh
+        run: |
+          $output = & tests\RuleChecks\bin\Debug\RuleChecks.exe 2>&1 | Out-String
+          Write-Host $output
+          $code = $LASTEXITCODE
+          if ($code -ne 0) {
+            foreach ($line in ($output -split "`r?`n")) {
+              if ($line -match 'FAIL|Exception|Unhandled|inner exception|at BarangayDocumentSystem') {
+                Write-Host "::error title=RuleChecks::$($line.Trim())"
+              }
+            }
+            exit $code
+          }
 
       - name: Static structure checks
         shell: pwsh
