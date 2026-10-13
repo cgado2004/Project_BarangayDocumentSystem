@@ -80,6 +80,7 @@ namespace BarangayDocumentSystem.Security
                 Permission.ViewResidents,
                 Permission.ViewRequests,
                 Permission.ValidateRequests,
+                Permission.ReleaseDocuments,
                 Permission.ViewCensus,
                 Permission.ViewReports,
                 Permission.ViewActivityLog

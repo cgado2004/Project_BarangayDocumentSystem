@@ -81,17 +81,36 @@ namespace BarangayDocumentSystem.Models
         /// number theirs differently - but I do refuse blanks and I refuse
         /// more than 30 characters, which is what the column holds.
         /// </summary>
+        /// <summary>
+        /// A receipt number is a number, however the barangay writes it:
+        /// "0004501" or "OR-2026-000451", but never "OR-1" - at least four
+        /// characters and at least three digits, or it is not a receipt.
+        /// </summary>
         public static bool IsWellFormedOrNumber(string orNumber)
         {
             if (string.IsNullOrWhiteSpace(orNumber)) return false;
-            if (orNumber.Trim().Length > 30) return false;
-            return orNumber.Trim().Length >= 4;
+            string trimmed = orNumber.Trim();
+            if (trimmed.Length < 4 || trimmed.Length > 30) return false;
+            return CountDigits(trimmed) >= 3;
         }
 
+        /// <summary>A booklet control number is a number too: the range on
+        /// the cover is printed in digits, so anything without a digit in it
+        /// ("abc") is not a control number.</summary>
         public static bool IsWellFormedControlNumber(string controlNumber)
         {
             if (string.IsNullOrWhiteSpace(controlNumber)) return false;
-            return controlNumber.Trim().Length <= 30;
+            string trimmed = controlNumber.Trim();
+            if (trimmed.Length < 3 || trimmed.Length > 30) return false;
+            return CountDigits(trimmed) >= 1;
+        }
+
+        private static int CountDigits(string text)
+        {
+            int digits = 0;
+            for (int i = 0; i < text.Length; i++)
+                if (text[i] >= '0' && text[i] <= '9') digits++;
+            return digits;
         }
 
         public string GetMethodText()
