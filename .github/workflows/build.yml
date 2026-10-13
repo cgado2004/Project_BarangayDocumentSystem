@@ -28,6 +28,9 @@ jobs:
       - name: Build (Debug)
         run: msbuild BarangayDocumentSystem.sln /p:Configuration=Debug /m /v:m /nologo
 
+      - name: Run the rule checks
+        run: tests\RuleChecks\bin\Debug\RuleChecks.exe
+
       - name: Static structure checks
         shell: pwsh
         run: python scripts/check_structure.py
