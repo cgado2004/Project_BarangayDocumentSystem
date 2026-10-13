@@ -235,7 +235,8 @@ namespace BarangayDocumentSystem.RuleChecks
                 !Enum.GetNames(typeof(ResidentClassification)).Contains("Student"));
 
             Check("the classification drop-down has no Student entry",
-                !EnumText.Spaced(ResidentClassification.None).Contains("Student"));
+                !Enum.GetNames(typeof(ResidentClassification)).Any(
+                    name => EnumText.Spaced(name).Contains("Student")));
 
             Resident scholar = Person(residents, "Reyes");
             Check("a seeded student is tagged through the fee category, not the classification",
@@ -555,8 +556,8 @@ namespace BarangayDocumentSystem.RuleChecks
 
             Check("the same password gives two different stored values",
                 hashOne != hashTwo && saltOne != saltTwo);
-            Check("the right password is accepted", hasher.Verify("Barangay@2026", hashOne, saltOne));
-            Check("a wrong password is refused", !hasher.Verify("barangay@2026", hashOne, saltOne));
+            Check("the right password is accepted", hasher.Verify("Barangay@2026", hashOne));
+            Check("a wrong password is refused", !hasher.Verify("barangay@2026", hashOne));
             Check("the stored value does not contain the password",
                 !hashOne.Contains("Barangay") && !hashOne.Contains("2026"));
             Check("the work factor is the configured one",
