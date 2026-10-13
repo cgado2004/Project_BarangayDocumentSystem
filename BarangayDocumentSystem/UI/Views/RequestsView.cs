@@ -411,7 +411,7 @@ namespace BarangayDocumentSystem.UI.Views
                 return;
             }
 
-            Resident resident = Residents.Get(request.ResidentId);
+            Resident resident = Residents.GetResident(request.ResidentId);
 
             if (resident == null)
             {

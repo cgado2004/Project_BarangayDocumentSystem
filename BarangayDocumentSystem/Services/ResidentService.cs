@@ -59,6 +59,14 @@ namespace BarangayDocumentSystem.Services
             return _repository.GetResident(residentId);
         }
 
+        /// <summary>The household of one resident, oldest first - the
+        /// dependents screen and the census both read it through here so
+        /// neither has to know how a household is stored.</summary>
+        public IList<Dependent> GetDependents(int headResidentId)
+        {
+            return _repository.GetDependents(headResidentId);
+        }
+
         /// <summary>
         /// Suggests the residency status from the date of residency, the way
         /// the barangay described it: a newcomer is inside the first six
