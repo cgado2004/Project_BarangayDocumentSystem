@@ -225,7 +225,7 @@ namespace BarangayDocumentSystem.Services
                 case DocumentType.AcceptanceCertificate:
                 case DocumentType.SoloParentCertification:
                 case DocumentType.MedicalAssistanceCertification:
-                case DocumentType.[REDACTED_SECRET]:
+                case DocumentType.FinancialAssistanceCertification:
                 case DocumentType.BurialAssistanceCertification:
                 case DocumentType.IpScholarshipCertification:
                 case DocumentType.FourPsScholarshipCertification:

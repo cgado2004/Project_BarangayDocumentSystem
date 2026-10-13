@@ -231,7 +231,7 @@ namespace BarangayDocumentSystem.Services
                 if (request != null && request.IsPaid
                     && string.Equals(request.OfficialReceiptNumber, receipt.OrNumber, StringComparison.OrdinalIgnoreCase))
                 {
-                    request.ReversePayment(_session.Username, now);
+                    request.ClearPaymentForVoidedReceipt(_session.Username, now);
                     _repository.UpdateRequest(request);
                 }
             }
