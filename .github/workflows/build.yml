@@ -12,6 +12,9 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: read
+      checks: write
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -31,21 +34,36 @@ jobs:
       - name: Run the rule checks
         shell: cmd
         run: |
-          if not exist tests\RuleChecks\bin\Debug\RuleChecks.exe (
-            echo ::error title=RuleChecks::RuleChecks.exe is not at tests\RuleChecks\bin\Debug - everything under tests\RuleChecks\bin:
-            for /f "delims=" %%L in ('dir /s /b tests\RuleChecks\bin 2^>nul') do echo ::error title=RuleChecks::%%L
-            echo ::error title=RuleChecks::- and every exe in the repo:
-            for /f "delims=" %%L in ('dir /s /b *.exe 2^>nul') do echo ::error title=RuleChecks::%%L
-            exit /b 2
-          )
           tests\RuleChecks\bin\Debug\RuleChecks.exe > rulechecks.out 2> rulechecks.err
           set RC=%ERRORLEVEL%
+          if %RC% NEQ 0 echo ::error::RuleChecks exited with code %RC%
+          findstr /C:"FAIL" /C:"Exception" /C:"Unhandled" rulechecks.out rulechecks.err > matched.txt 2>nul
+          for /f "delims=" %%L in (matched.txt) do echo ::error::%%L
           type rulechecks.out
           type rulechecks.err
-          findstr /C:"FAIL" /C:"Exception" /C:"Unhandled" rulechecks.out rulechecks.err > matched.txt 2>nul
-          for /f "delims=" %%L in (matched.txt) do echo ::error title=RuleChecks::%%L
-          if %RC% NEQ 0 echo ::error title=RuleChecks::RuleChecks exited with code %RC%
           if %RC% NEQ 0 exit /b %RC%
+
+      - name: Publish the rule-check output where it can be read
+        if: failure()
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $out = ""
+          if (Test-Path rulechecks.out) { $out += Get-Content rulechecks.out -Raw }
+          if (Test-Path rulechecks.err) { $out += "`n--- stderr ---`n" + (Get-Content rulechecks.err -Raw) }
+          $payload = @{
+            name = "rule-checks-output"
+            head_sha = "${{ github.sha }}"
+            status = "completed"
+            conclusion = "failure"
+            output = @{
+              title = "RuleChecks full output"
+              summary = "The rule checks failed; the complete output is in this check run's text."
+              text = $out
+            }
+          } | ConvertTo-Json -Depth 6
+          $payload | gh api --method POST "repos/${{ github.repository }}/check-runs" --input -
 
       - name: Static structure checks
         shell: pwsh
