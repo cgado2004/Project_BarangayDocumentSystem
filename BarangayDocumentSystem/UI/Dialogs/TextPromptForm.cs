@@ -133,5 +133,22 @@ namespace BarangayDocumentSystem.UI.Dialogs
         {
             return Ask(owner, title, question, string.Empty, false, true);
         }
+
+        /// <summary>
+        /// The same question with a worked example under it, and a suggested
+        /// answer already in the box. The workflow window uses this for the
+        /// sentences that become part of a request's history: the example
+        /// shows what a good answer looks like, the suggestion is one the
+        /// clerk can accept in one keystroke.
+        /// </summary>
+        public static string Ask(IWin32Window owner, string title, string question,
+                                 string example, string initial, bool multiline)
+        {
+            string words = string.IsNullOrWhiteSpace(example)
+                ? question
+                : question + Environment.NewLine + Environment.NewLine + "For example: " + example;
+
+            return Ask(owner, title, words, initial, multiline, true);
+        }
     }
 }

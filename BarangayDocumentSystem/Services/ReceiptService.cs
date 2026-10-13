@@ -211,8 +211,8 @@ namespace BarangayDocumentSystem.Services
         /// the receipt, the money would be untraceable. Together or not at all.
         /// </summary>
         public OperationResult<OfficialReceipt> Collect(DocumentRequest request,
-            string orNumber, string controlNumber, string seriesCode,
-            decimal amountTendered, PaymentMethod method, string remarks)
+            decimal amountTendered, string seriesCode, string orNumber, string controlNumber,
+            PaymentMethod method, string remarks)
         {
             if (request == null) return OperationResult<OfficialReceipt>.Fail("There is no request to collect for.");
 
@@ -225,7 +225,8 @@ namespace BarangayDocumentSystem.Services
                     "The fee for " + request.ReferenceNumber + " was already collected against OR "
                     + request.OfficialReceiptNumber + ".");
 
-            var problems = InputValidator.ValidateReceipt(orNumber, controlNumber, amountTendered, request.Fee);
+            var problems = InputValidator.ValidatePayment(amountTendered, orNumber, controlNumber,
+                request.Fee, seriesCode, FindSeriesForControlNumber(controlNumber));
             if (problems.Count > 0)
                 return OperationResult<OfficialReceipt>.Fail(string.Join(Environment.NewLine, problems.ToArray()));
 
@@ -251,7 +252,7 @@ namespace BarangayDocumentSystem.Services
 
             int receiptId = _repository.InsertReceipt(receipt);
 
-            request.RecordPayment(orNumber.Trim(), controlNumber.Trim(), now, _session.Username);
+            request.RecordPayment(amountTendered, orNumber.Trim(), controlNumber.Trim(), _session.Username, now);
             _repository.UpdateRequest(request);
 
             _log.Record(ActivityModule.Payments, "Collected " + amountTendered.ToString("#,##0.00"),
@@ -262,6 +263,61 @@ namespace BarangayDocumentSystem.Services
 
             return OperationResult<OfficialReceipt>.Ok(receipt,
                 "Collected " + amountTendered.ToString("#,##0.00") + " against OR " + orNumber.Trim() + ".");
+        }
+
+        /// <summary>
+        /// A collection at the counter that does not belong to any document
+        /// request - the odd fees the barangay collects that have no paper of
+        /// their own.
+        ///
+        /// It is still a government receipt: the booklet, the OR number and
+        /// the control number are all compulsory, exactly as for a request,
+        /// so the money lands in the same register and the same audit.
+        /// </summary>
+        public OperationResult<OfficialReceipt> CollectStandalone(string payerName,
+            decimal amountTendered, string seriesCode, string orNumber, string controlNumber,
+            PaymentMethod method, string remarks)
+        {
+            if (string.IsNullOrWhiteSpace(payerName))
+                return OperationResult<OfficialReceipt>.Fail(
+                    "Please tell whose money this is - the payer is written on the receipt.");
+
+            var problems = InputValidator.ValidatePayment(amountTendered, orNumber, controlNumber,
+                0m, seriesCode, FindSeriesForControlNumber(controlNumber));
+            if (problems.Count > 0)
+                return OperationResult<OfficialReceipt>.Fail(string.Join(Environment.NewLine, problems.ToArray()));
+
+            if (_repository.ReceiptNumberExists(seriesCode, orNumber, 0))
+                return OperationResult<OfficialReceipt>.Fail(
+                    "OR " + orNumber.Trim() + " in series " + seriesCode.Trim()
+                    + " is already recorded. Please check the receipt in your hand.");
+
+            DateTime now = _clock.Now();
+
+            OfficialReceipt receipt = new OfficialReceipt();
+            receipt.OrNumber = orNumber.Trim();
+            receipt.SeriesCode = seriesCode.Trim();
+            receipt.ControlNumber = controlNumber.Trim();
+            receipt.OrDate = now.Date;
+            receipt.PayerName = payerName.Trim();
+            receipt.Amount = amountTendered;
+            receipt.Method = method;
+            receipt.RequestId = 0;
+            receipt.CollectedBy = _session.Username;
+            receipt.Remarks = remarks ?? string.Empty;
+            receipt.CreatedOn = now;
+
+            int receiptId = _repository.InsertReceipt(receipt);
+
+            _log.Record(ActivityModule.Payments, "Collected " + amountTendered.ToString("#,##0.00"),
+                "Official receipt", receipt.OrNumber,
+                "Standalone collection from " + receipt.PayerName
+                + " (series " + receipt.SeriesCode + ", control " + receipt.ControlNumber + ")."
+                + (string.IsNullOrWhiteSpace(remarks) ? string.Empty : " " + remarks.Trim()));
+
+            return OperationResult<OfficialReceipt>.Ok(receipt,
+                "Collected " + amountTendered.ToString("#,##0.00") + " from " + receipt.PayerName
+                + " against OR " + receipt.OrNumber + ".");
         }
 
         // ==================================================================
