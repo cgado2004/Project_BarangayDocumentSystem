@@ -586,7 +586,9 @@ namespace BarangayDocumentSystem.UI.Forms
             parent.Controls.Add(control);
         }
 
-        private void Refresh()
+        // 'new' because every Control already has a Refresh; this one only
+        // refreshes the preview sentence on this small form.
+        private new void Refresh()
         {
             if (string.IsNullOrWhiteSpace(_series.Text))
             {

@@ -75,7 +75,7 @@ namespace BarangayDocumentSystem.Services.Documents
 
         public static bool RequiresBusinessDetails(DocumentType type)
         {
-            return Default.RequiresBusinessDetails(type);
+            return Default.NeedsBusinessDetails(type);
         }
 
         public void Register(IDocumentTemplate template)

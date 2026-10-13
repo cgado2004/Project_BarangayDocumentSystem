@@ -108,7 +108,7 @@ official receipts the money is recorded against, the census that comes out
 of all of it, and a log of who did what.
 
 This is the **re-designed build**. The list of every request and the file
-that answers it is in **[docs/11-revamp-notes.md](docs/11-revamp-notes.md)**
+that answers it is in **[docs/09-revamp-notes.md](docs/09-revamp-notes.md)**
 — read that first if you are reviewing the work.
 
 ### The decisions I made and why
@@ -168,15 +168,15 @@ that answers it is in **[docs/11-revamp-notes.md](docs/11-revamp-notes.md)**
 
 | File | What it covers |
 |---|---|
-| [docs/11-revamp-notes.md](docs/11-revamp-notes.md) | **Start here.** Every request and where it is implemented |
+| [docs/09-revamp-notes.md](docs/09-revamp-notes.md) | **Start here.** Every request and where it is implemented |
 | [docs/01-requirements.md](docs/01-requirements.md) | The requirements (FR/NFR) |
-| [docs/04-project-timeline.md](docs/04-project-timeline.md) | The project timeline |
-| [docs/05-database-guide.md](docs/05-database-guide.md) | Setting up MySQL or SQL Server, and debugging it |
-| [docs/06-pushing-to-github.md](docs/06-pushing-to-github.md) | How the group pushes to GitHub |
-| [docs/07-fee-schedule-and-legal-basis.md](docs/07-fee-schedule-and-legal-basis.md) | The fees and the laws behind them |
-| [docs/08-crystal-reports.md](docs/08-crystal-reports.md) | Crystal Reports: how it is loaded, and the columns each layout gets |
-| [docs/09-integration-notes.md](docs/09-integration-notes.md) | How the group's drafts became one program |
-| [docs/10-object-model.md](docs/10-object-model.md) | The old v3.2 design, kept for history (marked outdated) |
+| [docs/02-project-timeline.md](docs/02-project-timeline.md) | The project timeline |
+| [docs/03-database-guide.md](docs/03-database-guide.md) | Setting up MySQL or SQL Server, and debugging it |
+| [docs/04-pushing-to-github.md](docs/04-pushing-to-github.md) | How the group pushes to GitHub |
+| [docs/05-fee-schedule-and-legal-basis.md](docs/05-fee-schedule-and-legal-basis.md) | The fees and the laws behind them |
+| [docs/06-crystal-reports.md](docs/06-crystal-reports.md) | Crystal Reports: how it is loaded, and the columns each layout gets |
+| [docs/07-integration-notes.md](docs/07-integration-notes.md) | How the group's drafts became one program |
+| [docs/08-object-model.md](docs/08-object-model.md) | The old v3.2 design, kept for history (marked outdated) |
 
 ## 6. The seal
 
