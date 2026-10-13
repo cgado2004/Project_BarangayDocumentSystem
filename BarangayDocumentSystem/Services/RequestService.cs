@@ -208,7 +208,8 @@ namespace BarangayDocumentSystem.Services
             request.FiledDuringOfficeWindow = _window.IsInsideOfficeWindow(now);
 
             RequestStatus starting = _window.SuggestStartingStatus(request, forceValidation);
-            request.File(starting, _session.Username, now);
+            request.SetInitialStatus(starting,
+                _window.ExplainStartingStatus(request, starting), _session.Username, now);
 
             _repository.InsertRequest(request);
 
