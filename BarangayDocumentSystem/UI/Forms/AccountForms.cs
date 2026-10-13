@@ -199,7 +199,9 @@ namespace BarangayDocumentSystem.UI.Forms
             return names.ToArray();
         }
 
-        private void Load()
+        // 'new' because Form already has a Load event; this private method
+        // only fills the fields of this small form.
+        private new void Load()
         {
             _role.SelectedIndex = 0;
 
