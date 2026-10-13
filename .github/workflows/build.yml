@@ -29,23 +29,17 @@ jobs:
         run: msbuild BarangayDocumentSystem.sln /p:Configuration=Debug /m /v:m /nologo
 
       - name: Run the rule checks
-        shell: pwsh
+        shell: cmd
         run: |
-          $exe = "tests\RuleChecks\bin\Debug\RuleChecks.exe"
-          $p = Start-Process -FilePath $exe -NoNewWindow -Wait -PassThru `
-               -RedirectStandardOutput "rulechecks.out" -RedirectStandardError "rulechecks.err"
-          $lines = @()
-          if (Test-Path rulechecks.out) { $lines += Get-Content rulechecks.out }
-          if (Test-Path rulechecks.err) { $lines += Get-Content rulechecks.err }
-          Write-Host ($lines -join "`n")
-          if ($p.ExitCode -ne 0) {
-            foreach ($line in $lines) {
-              if ($line -match 'FAIL|Exception|Unhandled|inner exception|BarangayDocumentSystem\.') {
-                Write-Host ("::error title=RuleChecks::" + $line.Trim())
-              }
-            }
-            exit $p.ExitCode
-          }
+          if not exist tests\RuleChecks\bin\Debug\RuleChecks.exe (dir /s /b tests\*.exe & exit /b 2)
+          tests\RuleChecks\bin\Debug\RuleChecks.exe > rulechecks.out 2> rulechecks.err
+          set RC=%ERRORLEVEL%
+          type rulechecks.out
+          type rulechecks.err
+          findstr /C:"FAIL" /C:"Exception" /C:"Unhandled" rulechecks.out rulechecks.err > matched.txt 2>nul
+          for /f "delims=" %%L in (matched.txt) do echo ::error title=RuleChecks::%%L
+          if %RC% NEQ 0 echo ::error title=RuleChecks::RuleChecks exited with code %RC%
+          if %RC% NEQ 0 exit /b %RC%
 
       - name: Static structure checks
         shell: pwsh
