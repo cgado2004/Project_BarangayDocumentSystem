@@ -19,6 +19,9 @@ jobs:
       - name: Set up MSBuild
         uses: microsoft/setup-msbuild@v2
 
+      - name: Register MSBuild problem matcher
+        run: echo "::add-matcher::.github/msbuild-matcher.json"
+
       - name: Restore NuGet packages
         run: msbuild /t:Restore BarangayDocumentSystem.sln /p:Configuration=Debug /m
 
