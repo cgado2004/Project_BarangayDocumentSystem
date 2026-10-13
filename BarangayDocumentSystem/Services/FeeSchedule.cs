@@ -143,6 +143,18 @@ namespace BarangayDocumentSystem.Services
                 return assessment;
             }
 
+            if (IsAssistancePaper(request.DocumentType))
+            {
+                assessment.FinalFee = 0m;
+                assessment.IsExempt = true;
+                assessment.Category = "Free by law";
+                assessment.Basis = "FREE - assistance and social-service papers (medical, financial, "
+                                 + "burial, IP and 4Ps scholarships, solo parent, GAD, CSO) are issued "
+                                 + "without charge: the barangay does not charge somebody who is asking "
+                                 + "for help.";
+                return assessment;
+            }
+
             // ---- 3. Personal waivers --------------------------------------
             string waiverReason = PersonalWaiverReason(resident, request.DocumentType);
             if (waiverReason != null)
@@ -223,21 +235,22 @@ namespace BarangayDocumentSystem.Services
                 case DocumentType.CertificateOfGoodMoralCharacter:
                 case DocumentType.EmploymentCertification:
                 case DocumentType.AcceptanceCertificate:
-                case DocumentType.SoloParentCertification:
+                case DocumentType.OtherCertification:
+                    return AppConfig.FeeCertification;
+
+                // A barangay ID, the documents that only record an incident,
+                // and the assistance and social-service papers are all issued
+                // without charge.
+                case DocumentType.BarangayID:
+                case DocumentType.BlotterRelatedIncident:
                 case DocumentType.MedicalAssistanceCertification:
                 case DocumentType.FinancialAssistanceCertification:
                 case DocumentType.BurialAssistanceCertification:
                 case DocumentType.IpScholarshipCertification:
                 case DocumentType.FourPsScholarshipCertification:
+                case DocumentType.SoloParentCertification:
                 case DocumentType.GadRelatedDocumentation:
                 case DocumentType.CsoDocumentation:
-                case DocumentType.OtherCertification:
-                    return AppConfig.FeeCertification;
-
-                // A barangay ID and the documents that only record an incident
-                // are issued without charge.
-                case DocumentType.BarangayID:
-                case DocumentType.BlotterRelatedIncident:
                     return 0m;
 
                 case DocumentType.FirstTimeJobseekerCertificate:
@@ -385,6 +398,30 @@ namespace BarangayDocumentSystem.Services
         {
             return type == DocumentType.FirstTimeJobseekerCertificate
                 || type == DocumentType.BarangayClearance;
+        }
+
+        /// <summary>The assistance and social-service papers the barangay
+        /// issues without charge: medical, financial and burial assistance,
+        /// the IP and 4Ps scholarship papers, the solo parent certification,
+        /// and the GAD and CSO documentation. They cost nothing for anybody
+        /// who asks - the waiver questions never come into it.</summary>
+        private static bool IsAssistancePaper(DocumentType type)
+        {
+            switch (type)
+            {
+                case DocumentType.MedicalAssistanceCertification:
+                case DocumentType.FinancialAssistanceCertification:
+                case DocumentType.BurialAssistanceCertification:
+                case DocumentType.IpScholarshipCertification:
+                case DocumentType.FourPsScholarshipCertification:
+                case DocumentType.SoloParentCertification:
+                case DocumentType.GadRelatedDocumentation:
+                case DocumentType.CsoDocumentation:
+                    return true;
+
+                default:
+                    return false;
+            }
         }
 
         /// <summary>
