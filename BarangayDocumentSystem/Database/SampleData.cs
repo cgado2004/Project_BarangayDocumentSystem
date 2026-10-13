@@ -210,7 +210,6 @@ namespace BarangayDocumentSystem.Database
                 false, window, fees, "sample");
 
             clearance.RecordPayment(clearance.Fee, "OR-" + now.Year + "-000451", "0004501", "sample", now.AddDays(-9).AddHours(1));
-            clearance.Clear("Filed inside office hours, no validation needed", "sample", now.AddDays(-9).AddHours(9.6));
             clearance.MarkReadyForRelease("sample", now.AddDays(-9).AddHours(11));
             clearance.Release(residents[0].GetFullName(), "sample", now.AddDays(-9).AddHours(14));
             repository.UpdateRequest(clearance);
@@ -225,7 +224,6 @@ namespace BarangayDocumentSystem.Database
                 "Medical assistance at the provincial hospital", now.AddDays(-6).Date.AddHours(10),
                 false, window, fees, "sample");
 
-            indigency.Clear("Filed inside office hours, no validation needed", "sample", now.AddDays(-6).AddHours(10.1));
             indigency.MarkReadyForRelease("sample", now.AddDays(-6).AddHours(11));
             indigency.Release(residents[3].GetFullName(), "sample", now.AddDays(-6).AddHours(13));
             repository.UpdateRequest(indigency);
@@ -235,7 +233,6 @@ namespace BarangayDocumentSystem.Database
                 "Senior citizen discount application", now.AddDays(-4).Date.AddHours(8.25),
                 false, window, fees, "sample");
 
-            senior.Clear("Filed inside office hours, no validation needed", "sample", now.AddDays(-4).AddHours(8.3));
             senior.MarkReadyForRelease("sample", now.AddDays(-4).AddHours(9));
             senior.Release(residents[1].GetFullName(), "sample", now.AddDays(-4).AddHours(10));
             repository.UpdateRequest(senior);
@@ -279,8 +276,10 @@ namespace BarangayDocumentSystem.Database
             repository.UpdateRequest(rejected);
 
             // ---- today, still pending ---------------------------------------
+            // Filed at 7:45 AM, before the 8:00 window opens, so it sits in
+            // the queue exactly like a real early-morning walk-in.
             DocumentRequest today = Build(repository, residents[9], DocumentType.CertificateOfGoodMoralCharacter,
-                "Scholarship application", now.Date.AddHours(9).AddMinutes(45),
+                "Scholarship application", now.Date.AddHours(7).AddMinutes(45),
                 false, window, fees, "sample");
             repository.UpdateRequest(today);
 
@@ -292,7 +291,6 @@ namespace BarangayDocumentSystem.Database
 
             jobseeker.AddJobseekerWaiver("FREE - RA 11261 (First Time Jobseekers Assistance Act)", 100m);
             jobseeker.SetAssessment(0m, "FREE - RA 11261 (First Time Jobseekers Assistance Act)");
-            jobseeker.Clear("Verified as a first-time jobseeker", "sample", now.AddDays(-20).AddHours(10.2));
             jobseeker.MarkReadyForRelease("sample", now.AddDays(-20).AddHours(11));
             jobseeker.Release(jobseekerResident.GetFullName(), "sample", now.AddDays(-20).AddHours(13));
             jobseekerResident.HasAvailedFirstTimeJobseeker = true;
@@ -306,7 +304,6 @@ namespace BarangayDocumentSystem.Database
                 false, window, fees, "sample");
 
             ready.RecordPayment(ready.Fee, "OR-" + now.Year + "-000452", "0004502", "sample", now.AddDays(-1).AddHours(13.5));
-            ready.Clear("Filed inside office hours, no validation needed", "sample", now.AddDays(-1).AddHours(13.1));
             ready.MarkReadyForRelease("sample", now.AddDays(-1).AddHours(14));
             repository.UpdateRequest(ready);
 
