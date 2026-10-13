@@ -1,0 +1,30 @@
+# Builds the solution on a real Windows runner with Visual Studio 2022,
+# exactly the way the README tells the group to build it locally.
+# The build fails (red X) when any .cs file does not compile.
+name: Build
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Restore NuGet packages
+        run: msbuild /t:Restore BarangayDocumentSystem.sln /p:Configuration=Debug /m
+
+      - name: Build (Debug)
+        run: msbuild BarangayDocumentSystem.sln /p:Configuration=Debug /m /v:m /nologo
+
+      - name: Static structure checks
+        shell: pwsh
+        run: python scripts/check_structure.py
