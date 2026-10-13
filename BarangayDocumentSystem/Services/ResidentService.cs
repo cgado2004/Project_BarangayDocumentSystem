@@ -286,7 +286,7 @@ namespace BarangayDocumentSystem.Services
                 return false;
             }
 
-            if (!Permissions.Has(_session.User.Role, permission))
+            if (!PermissionSet.Allows(_session.User.Role, permission))
             {
                 refusal = "Your account is not allowed to change resident records. "
                         + "Ask the administrator if you need this.";
