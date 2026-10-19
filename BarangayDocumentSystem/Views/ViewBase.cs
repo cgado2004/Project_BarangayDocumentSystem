@@ -37,18 +37,19 @@ public abstract class ViewBase : UserControl
     protected bool Attempt(Action action)
     {
         try { action(); return true; }
-        catch (RepositoryException ex) { RecoverFrom(ex); return false; }
+        catch (RepositoryException) { RecoverFrom(); return false; }
     }
 
     protected T? AttemptGet<T>(Func<T> func) where T : class
     {
         try { return func(); }
-        catch (RepositoryException ex) { RecoverFrom(ex); return null; }
+        catch (RepositoryException) { RecoverFrom(); return null; }
     }
 
-    private void RecoverFrom(RepositoryException ex)
+    private void RecoverFrom()
     {
-        Dialog.Error(ex.Message + "\n\nYour last change was NOT saved.", "Database problem");
+        Dialog.Error("The operation could not be completed. Refresh the page before trying again. " +
+            "Contact the system administrator if the problem continues.", "Unable to save");
         try { Repository.Reload(); } catch (RepositoryException) { }
         RefreshData();
     }

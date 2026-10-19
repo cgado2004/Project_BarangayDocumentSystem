@@ -7,13 +7,7 @@ using BarangayDocumentSystem.UIHelpers;
 
 namespace BarangayDocumentSystem.Forms;
 
-/// <summary>
-/// Files a document request for a resident.
-///
-/// The fee is shown LIVE as the document type changes, including the legal
-/// basis for any waiver, so the clerk can tell the resident what is owed and
-/// why before anything is committed.
-/// </summary>
+// Previews the fee before filing.
 public partial class RequestForm : Form
 {
     private readonly Resident _resident;
@@ -105,7 +99,6 @@ public partial class RequestForm : Form
             lblFeeValue.ForeColor = SystemColors.ControlText;
         }
 
-        lblBasisValue.Text = assessment.Basis;
 
         // RA 11261 has statutory preconditions beyond the fee itself.
         if (type == DocumentType.FirstTimeJobseekerCertificate)

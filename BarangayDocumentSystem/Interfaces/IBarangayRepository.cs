@@ -122,6 +122,6 @@ public interface IUserRepository
 
     UserAccount? Find(string username);
 
-    /// <summary>Stores a new account. The caller passes an already-hashed password.</summary>
-    void Create(string username, string fullName, string passwordHash);
+    // Creates the first account only while setup is still open.
+    void CreateFirst(string username, string fullName, string passwordHash);
 }

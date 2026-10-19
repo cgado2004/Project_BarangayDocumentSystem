@@ -42,9 +42,9 @@ public class RequestsView : ViewBase
             Padding = new Padding(0)
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 72F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 84F));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 56F));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         root.Controls.Add(BuildToolbar(), 0, 0);
         root.Controls.Add(BuildGrid(), 0, 1);
@@ -56,7 +56,7 @@ public class RequestsView : ViewBase
     private Control BuildToolbar()
     {
         var bar = UiFactory.Toolbar();
-        bar.Margin = new Padding(0, 0, 0, 12);
+        bar.Margin = new Padding(0, 0, 0, 16);
 
         var wrap = new Panel
         {
@@ -126,15 +126,16 @@ public class RequestsView : ViewBase
         {
             Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.LeftToRight,
-            WrapContents = false,
+            WrapContents = true,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             BackColor = AppTheme.Background,
             Margin = new Padding(0),
             Padding = new Padding(0, 8, 0, 0)
         };
 
-        // New Document replaces the old "Start Processing" button: filing the
-        // request is what starts it.
-        var newDocument = UiFactory.PrimaryButton("New Document", 140);
+        // Filing starts a new request.
+        var newDocument = UiFactory.PrimaryButton("New Request", 140);
         newDocument.Click += (_, _) => NewDocument();
         actions.Controls.Add(newDocument);
 
@@ -400,9 +401,9 @@ public class RecordsView : ViewBase
             Padding = new Padding(0)
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 72F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 84F));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 56F));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         root.Controls.Add(BuildToolbar(), 0, 0);
         root.Controls.Add(BuildGrid(), 0, 1);
@@ -414,12 +415,11 @@ public class RecordsView : ViewBase
     private Control BuildToolbar()
     {
         var bar = UiFactory.Toolbar();
-        bar.Margin = new Padding(0, 0, 0, 12);
+        bar.Margin = new Padding(0, 0, 0, 16);
 
         var wrap = new Panel
         {
-            Dock = DockStyle.Left,
-            Width = 440,
+            Dock = DockStyle.Fill,
             BackColor = AppTheme.Surface,
             Padding = new Padding(0, 7, 0, 7)
         };
@@ -463,7 +463,9 @@ public class RecordsView : ViewBase
         {
             Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.LeftToRight,
-            WrapContents = false,
+            WrapContents = true,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             BackColor = AppTheme.Background,
             Margin = new Padding(0),
             Padding = new Padding(0, 8, 0, 0)

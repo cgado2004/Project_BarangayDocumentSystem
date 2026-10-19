@@ -16,21 +16,27 @@ public class MainShell : Form
     private readonly Panel _content = new();
     private readonly Label _contentTitle = new();
     private readonly Label _contentSubtitle = new();
-    private readonly Label _statusLabel = new();
 
     private ViewBase? _current;
-    private readonly string _signedInAs;
 
-    /// <summary>True when the user chose "Log out" (as opposed to closing the window).</summary>
     public bool LoggedOut { get; private set; }
 
-    public MainShell(string signedInAs = "")
+    public void LogOut()
     {
-        _signedInAs = signedInAs ?? string.Empty;
+        if (!Dialog.Confirm("Log out of the system?", "Log out")) return;
+        LoggedOut = true;
+        Close();
+    }
+
+    public MainShell()
+    {
         Text = "Barangay Resident & Document Management";
         StartPosition = FormStartPosition.CenterScreen;
         ClientSize = new Size(1366, 768);
-        MinimumSize = new Size(1180, 720);
+        MinimumSize = new Size(800, 560);
+        if (Screen.PrimaryScreen is { } screen)
+            Size = new Size(Math.Min(Width, screen.WorkingArea.Width),
+                            Math.Min(Height, screen.WorkingArea.Height));
         BackColor = AppTheme.Background;
         Font = AppTheme.BodyFont;
         DoubleBuffered = true;
@@ -60,7 +66,7 @@ public class MainShell : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 3,
+            RowCount = 2,
             BackColor = AppTheme.Background,
             Margin = new Padding(0),
             Padding = new Padding(0)
@@ -68,11 +74,9 @@ public class MainShell : Form
         right.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         right.RowStyles.Add(new RowStyle(SizeType.Absolute, 96F));
         right.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        right.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
 
         right.Controls.Add(BuildHeader(), 0, 0);
         right.Controls.Add(BuildContentArea(), 0, 1);
-        right.Controls.Add(BuildStatusBar(), 0, 2);
 
         root.Controls.Add(right, 1, 0);
         Controls.Add(root);
@@ -138,71 +142,8 @@ public class MainShell : Form
         return _content;
     }
 
-    private Control BuildStatusBar()
-    {
-        var bar = new Panel
-        {
-            Dock = DockStyle.Fill,
-            BackColor = AppTheme.Surface,
-            Padding = new Padding(28, 0, 28, 0),
-            Margin = new Padding(0)
-        };
-
-        bar.Paint += (s, e) =>
-        {
-            using var pen = new Pen(AppTheme.Border);
-            e.Graphics.DrawLine(pen, 0, 0, bar.Width, 0);
-        };
-
-        _statusLabel.Dock = DockStyle.Fill;
-        _statusLabel.TextAlign = ContentAlignment.MiddleLeft;
-        _statusLabel.Font = AppTheme.SmallFont;
-        _statusLabel.ForeColor = AppTheme.TextSecondary;
-        _statusLabel.Text = "Ready";
-        _statusLabel.Margin = new Padding(0);
-        bar.Controls.Add(_statusLabel);
-
-        // Docked-right controls go in AFTER the Fill label (WinForms docks the
-        // last-added edge control first, so Log out ends up at the far right).
-        if (_signedInAs.Length > 0)
-        {
-            bar.Controls.Add(new Label
-            {
-                Text = $"Signed in as {_signedInAs}",
-                Dock = DockStyle.Right,
-                Width = 240,
-                TextAlign = ContentAlignment.MiddleRight,
-                Font = AppTheme.SmallFont,
-                ForeColor = AppTheme.TextSecondary,
-                Margin = new Padding(0)
-            });
-
-            var logout = new LinkLabel
-            {
-                Text = "Log out",
-                Dock = DockStyle.Right,
-                Width = 70,
-                TextAlign = ContentAlignment.MiddleRight,
-                Font = AppTheme.SmallBoldFont,
-                LinkColor = AppTheme.Primary,
-                ActiveLinkColor = AppTheme.PrimaryHover,
-                Margin = new Padding(0)
-            };
-            logout.LinkClicked += (_, _) =>
-            {
-                if (!Dialog.Confirm("Log out of the system?", "Log out")) return;
-                LoggedOut = true;
-                Close();
-            };
-            bar.Controls.Add(logout);
-        }
-
-        return bar;
-    }
-
     public void AddView(string key, string label, string glyph, ViewBase view)
     {
-        view.StatusChanged += (_, message) => SetStatus(message);
         view.NavigateRequested += (_, req) => NavigateTo(req.Key, req.Argument);
         _views[key] = view;
         _sidebar.AddItem(key, label, glyph);
@@ -242,13 +183,17 @@ public class MainShell : Form
 
     public ViewBase? Current => _current;
 
-    public void SetStatus(string message) =>
-        _statusLabel.Text = $"{DateTime.Now:HH:mm:ss}   {message}";
-
     public void Start(string initialKey)
     {
         _sidebar.Navigate(initialKey);
         if (_current is null && _views.ContainsKey(initialKey))
             ShowView(initialKey);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+            foreach (var view in _views.Values) view.Dispose();
+        base.Dispose(disposing);
     }
 }

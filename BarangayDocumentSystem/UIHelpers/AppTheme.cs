@@ -49,7 +49,7 @@ public static class AppTheme
     public const int SpaceSm = 8;
     public const int SpaceMd = 16;
     public const int SpaceLg = 24;
-    public const int ControlHeight = 26;
+    public const int ControlHeight = 36;
 
     public static readonly Color AmberTint = Color.FromArgb(254, 243, 199);
     public static readonly Color AmberInk = Color.FromArgb(146, 64, 14);

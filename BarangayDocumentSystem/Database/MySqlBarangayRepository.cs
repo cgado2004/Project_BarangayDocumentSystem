@@ -461,7 +461,7 @@ public sealed class MySqlUserRepository : IUserRepository
             reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetString(3));
     });
 
-    public void Create(string username, string fullName, string passwordHash) => Run<object?>(conn =>
+    public void CreateFirst(string username, string fullName, string passwordHash) => Run<object?>(conn =>
     {
         using var cmd = Procedure(conn, "sp_user_add");
         cmd.Parameters.AddWithValue("p_username", username);
@@ -503,7 +503,7 @@ public sealed class MySqlUserRepository : IUserRepository
 /// </summary>
 public static class PasswordHasher
 {
-    private const int Iterations = 100_000;
+    private const int Iterations = 600_000;
     private const int SaltSize = 16;
     private const int HashSize = 32;
 
@@ -524,13 +524,15 @@ public static class PasswordHasher
         if (password is null || string.IsNullOrEmpty(stored)) return false;
 
         string[] parts = stored.Split('.');
-        if (parts.Length != 3 || !int.TryParse(parts[0], out int iterations) || iterations <= 0)
+        if (parts.Length != 3 || !int.TryParse(parts[0], out int iterations)
+            || iterations < 100_000 || iterations > 2_000_000)
             return false;
 
         try
         {
             byte[] salt = Convert.FromBase64String(parts[1]);
             byte[] expected = Convert.FromBase64String(parts[2]);
+            if (salt.Length != SaltSize || expected.Length != HashSize) return false;
             byte[] actual = Derive(password, salt, iterations);
 
             // Compare every byte so the time taken does not reveal where they differ.

@@ -37,9 +37,9 @@ public class ResidentsView : ViewBase
             Padding = new Padding(0)
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 72F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 84F));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 56F));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         root.Controls.Add(BuildToolbar(), 0, 0);
         root.Controls.Add(BuildGrid(), 0, 1);
@@ -51,12 +51,11 @@ public class ResidentsView : ViewBase
     private Control BuildToolbar()
     {
         var bar = UiFactory.Toolbar();
-        bar.Margin = new Padding(0, 0, 0, 12);
+        bar.Margin = new Padding(0, 0, 0, 16);
 
         var wrap = new Panel
         {
-            Dock = DockStyle.Left,
-            Width = 440,
+            Dock = DockStyle.Fill,
             BackColor = AppTheme.Surface,
             Padding = new Padding(0, 7, 0, 7)
         };
@@ -102,7 +101,9 @@ public class ResidentsView : ViewBase
         {
             Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.LeftToRight,
-            WrapContents = false,
+            WrapContents = true,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             BackColor = AppTheme.Background,
             Margin = new Padding(0),
             Padding = new Padding(0, 8, 0, 0)
@@ -236,9 +237,9 @@ public class ArchiveView : ViewBase
             Padding = new Padding(0)
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 72F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 84F));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 56F));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         root.Controls.Add(BuildToolbar(), 0, 0);
         root.Controls.Add(BuildGrid(), 0, 1);
@@ -250,12 +251,11 @@ public class ArchiveView : ViewBase
     private Control BuildToolbar()
     {
         var bar = UiFactory.Toolbar();
-        bar.Margin = new Padding(0, 0, 0, 12);
+        bar.Margin = new Padding(0, 0, 0, 16);
 
         var wrap = new Panel
         {
-            Dock = DockStyle.Left,
-            Width = 440,
+            Dock = DockStyle.Fill,
             BackColor = AppTheme.Surface,
             Padding = new Padding(0, 7, 0, 7)
         };
@@ -298,7 +298,9 @@ public class ArchiveView : ViewBase
         {
             Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.LeftToRight,
-            WrapContents = false,
+            WrapContents = true,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             BackColor = AppTheme.Background,
             Margin = new Padding(0),
             Padding = new Padding(0, 8, 0, 0)

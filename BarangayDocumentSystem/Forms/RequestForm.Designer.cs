@@ -35,8 +35,6 @@ partial class RequestForm
         this.grpFee = new System.Windows.Forms.GroupBox();
         this.lblFee = new System.Windows.Forms.Label();
         this.lblFeeValue = new System.Windows.Forms.Label();
-        this.lblBasis = new System.Windows.Forms.Label();
-        this.lblBasisValue = new System.Windows.Forms.Label();
 
         this.lblWarning = new System.Windows.Forms.Label();
         this.btnSubmit = new System.Windows.Forms.Button();
@@ -142,8 +140,6 @@ partial class RequestForm
         this.chkStudent.CheckedChanged += new System.EventHandler(this.chkStudent_CheckedChanged);
 
         // ── grpFee ──────────────────────────────────────────────────
-        this.grpFee.Controls.Add(this.lblBasisValue);
-        this.grpFee.Controls.Add(this.lblBasis);
         this.grpFee.Controls.Add(this.lblFeeValue);
         this.grpFee.Controls.Add(this.lblFee);
         this.grpFee.Font = labelFont;
@@ -166,17 +162,6 @@ partial class RequestForm
         this.lblFeeValue.Name = "lblFeeValue";
         this.lblFeeValue.Text = "—";
 
-        this.lblBasis.AutoSize = true;
-        this.lblBasis.Font = labelFont;
-        this.lblBasis.Location = new System.Drawing.Point(22, 84);
-        this.lblBasis.Name = "lblBasis";
-        this.lblBasis.Text = "Basis";
-
-        this.lblBasisValue.Font = inputFont;
-        this.lblBasisValue.Location = new System.Drawing.Point(168, 82);
-        this.lblBasisValue.Name = "lblBasisValue";
-        this.lblBasisValue.Size = new System.Drawing.Size(560, 30);
-        this.lblBasisValue.Text = "—";
 
         // ── warning ─────────────────────────────────────────────────
         this.lblWarning.Font = boldFont;
@@ -264,8 +249,6 @@ partial class RequestForm
     private System.Windows.Forms.GroupBox grpFee;
     private System.Windows.Forms.Label lblFee;
     private System.Windows.Forms.Label lblFeeValue;
-    private System.Windows.Forms.Label lblBasis;
-    private System.Windows.Forms.Label lblBasisValue;
     private System.Windows.Forms.Label lblWarning;
     private System.Windows.Forms.Button btnSubmit;
     private System.Windows.Forms.Button btnCancel;

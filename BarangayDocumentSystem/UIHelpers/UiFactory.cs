@@ -48,10 +48,12 @@ public static class UiFactory
         Text = text,
         Width = width,
         Height = AppTheme.ControlHeight,
+        AutoSize = true,
+        MinimumSize = new Size(width, AppTheme.ControlHeight),
         FlatStyle = FlatStyle.Flat,
         Cursor = Cursors.Hand,
         UseVisualStyleBackColor = false,
-        Margin = new Padding(0, 0, 8, 0)
+        Margin = new Padding(0, 0, 8, 8)
     };
 
     public static Panel CardHost(Control inner)
@@ -114,6 +116,11 @@ public static class UiFactory
         grid.RowHeadersVisible = false;
         grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        grid.ColumnAdded += (_, e) =>
+        {
+            e.Column.MinimumWidth = System.Math.Max(100,
+                TextRenderer.MeasureText(e.Column.HeaderText, AppTheme.SmallBoldFont).Width + 50);
+        };
 
         grid.EnableHeadersVisualStyles = false;
         grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;

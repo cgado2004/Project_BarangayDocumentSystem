@@ -59,10 +59,8 @@ internal static class Program
         catch (Exception ex) when (ex is RepositoryException or ArgumentException)
         {
             MessageBox.Show(
-                ex.Message + "\n\n" +
-                $"Check that the MySQL server is running, then check {"BarangayDocumentSystem.exe.config"} " +
-                "(next to the program) for the server, user name and password.",
-                "Cannot connect to the database",
+                "The system is unavailable. Contact the system administrator and try again later.",
+                "Cannot start the system",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
@@ -82,7 +80,7 @@ internal static class Program
                 user = login.User;
             }
 
-            using var shell = BuildShell(repository, renderer, feeSchedule, user);
+            using var shell = BuildShell(repository, renderer, feeSchedule, profile, user);
             Application.Run(shell);
 
             if (!shell.LoggedOut)
@@ -92,27 +90,27 @@ internal static class Program
 
     private static MainShell BuildShell(
         IBarangayRepository repository, DocumentRenderer renderer,
-        FeeSchedule feeSchedule, UserAccount user)
+        FeeSchedule feeSchedule, BarangayProfile profile, UserAccount user)
     {
-        var shell = new MainShell(string.IsNullOrWhiteSpace(user.FullName) ? user.Username : user.FullName);
+        var shell = new MainShell();
 
         var dashboard = new DashboardView(repository);
         var residents = new ResidentsView(repository);
         var requests  = new RequestsView(repository, renderer, feeSchedule);
         var records   = new RecordsView(repository, renderer);
         var archive   = new ArchiveView(repository);
+        var settings  = new SettingsView(repository, profile, user.Username, user.FullName);
+        settings.LogoutRequested += (_, _) => shell.LogOut();
 
         shell.AddView("dashboard", "Dashboard", "▦", dashboard);
         shell.AddView("residents", "Residents", "●", residents);
         shell.AddView("requests",  "Requests",  "▤", requests);
         shell.AddView("records",   "Records",   "▧", records);
         shell.AddView("archive",   "Archive",   "▣", archive);
+        shell.AddView("settings",  "Settings",  "⚙", settings);
 
         shell.Start("dashboard");
 
-        var stats = repository.GetStatistics();
-        shell.SetStatus($"Connected to MySQL — {stats.TotalResidents} active resident(s), " +
-                        $"{repository.Requests.Count} request(s) loaded.");
         return shell;
     }
 

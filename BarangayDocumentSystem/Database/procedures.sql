@@ -229,7 +229,27 @@ CREATE PROCEDURE sp_user_add(
     IN p_password_hash VARCHAR(255),
     IN p_created_on    DATETIME)
 BEGIN
+    DECLARE setup_lock VARCHAR(64);
+    DECLARE lock_taken INT DEFAULT 0;
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        IF lock_taken = 1 THEN
+            DO RELEASE_LOCK(setup_lock);
+        END IF;
+        RESIGNAL;
+    END;
+
+    -- Only one first-account setup can finish.
+    SET setup_lock = SHA2(CONCAT(DATABASE(), ':first-account'), 256);
+    SELECT GET_LOCK(setup_lock, 5) INTO lock_taken;
+    IF COALESCE(lock_taken, 0) <> 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Account setup is busy.';
+    END IF;
+    IF EXISTS (SELECT 1 FROM users) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Account setup is already complete.';
+    END IF;
     INSERT INTO users (username, full_name, password_hash, created_on)
     VALUES (p_username, p_full_name, p_password_hash, p_created_on);
+    DO RELEASE_LOCK(setup_lock);
 END
 $$

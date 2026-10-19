@@ -61,12 +61,11 @@ password out of source control, set the environment variable
 first build restores the `MySql.Data` NuGet package automatically.
 
 **You do not create the database by hand.** On start the app creates
-`barangay_db` and its two tables if they are missing
+`barangay_db` and its tables if they are missing
 (`Database/schema.sql`) and every stored procedure
 (`Database/procedures.sql`), and — only when the `residents` table is empty —
 loads the sample data below. Set `SeedSampleData` to `false` in App.config
-for real use. If MySQL is not reachable the app tells you why and exits
-instead of crashing.
+for real use. If the system cannot connect, it shows a general error and exits.
 
 ---
 
@@ -82,14 +81,13 @@ app starts, so to change a query, edit that file and restart. The MySQL user in
 App.config needs the CREATE ROUTINE and EXECUTE privileges (root has them).
 
 ### Sign in
-The app opens on a sign-in screen. Passwords are stored as salted PBKDF2
-hashes, never as text. **Registration is hidden:** there is no register button.
-Press **Ctrl+Shift+R** on the sign-in screen to reveal the sign-up panel (press
-it again to go back). On a brand-new database with no accounts, the sign-up
-panel opens by itself so the first account can be created. **Log out** is at
-the right of the status bar.
+Sign in with a staff account. An empty database offers first-account setup;
+the database blocks further setup accounts. There is no signup shortcut.
+New setup passwords need 15–128 characters. Use **Settings → Log out** to
+end your session. See [UI security notes](docs/UiSecurity.md) for the remaining
+authentication work.
 
-Five destinations in the left sidebar.
+Six destinations in the left sidebar.
 
 ### Residents
 Resident controls only: **Add Resident**, **Edit** and **Transfer**, plus
@@ -107,7 +105,7 @@ brings the resident back. Archived residents are left out of the dashboard count
 picked for a new document.
 
 ### Document Requests
-All document work happens here. **New Document** picks a resident, then the
+All document work happens here. **New Request** picks a resident, then the
 document and purpose, and files the request straight into Processing. Tick
 **Student** (school ID verified) to apply the student discount, 50% off by
 default (`FeeSchedule.StudentDiscountRate`, a placeholder like the other fees). Then
