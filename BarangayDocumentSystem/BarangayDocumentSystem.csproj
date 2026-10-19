@@ -121,6 +121,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Database\schema.sql" />
+    <EmbeddedResource Include="Database\procedures.sql" />
     <EmbeddedResource Include="Forms\ResidentForm.resx">
       <DependentUpon>ResidentForm.cs</DependentUpon>
     </EmbeddedResource>

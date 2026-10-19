@@ -24,61 +24,17 @@ namespace BarangayDocumentSystem.Database;
 /// two machines would not see each other's changes until Reload/restart.
 public class MySqlBarangayRepository : IBarangayRepository
 {
-    // ---------------------------------------------------------------- SQL
-    private const string ResidentColumns =
-        "resident_id, first_name, middle_name, last_name, suffix, date_of_birth, gender, " +
-        "civil_status, purok, address_line, contact_number, occupation, date_of_residency, " +
-        "is_registered_voter, classification, has_availed_jobseeker, " +
-        "is_archived, archived_on, transfer_destination, transfer_reason";
-
-    private const string SqlSelectResidents =
-        "SELECT " + ResidentColumns + " FROM residents ORDER BY resident_id";
-
-    private const string SqlSelectRequests =
-        "SELECT request_id, resident_id, document_type, purpose, date_requested, date_released, " +
-        "status, fee, fee_basis, is_paid, official_receipt_no, remarks " +
-        "FROM document_requests ORDER BY request_id";
-
-    private const string SqlInsertResident =
-        "INSERT INTO residents (first_name, middle_name, last_name, suffix, date_of_birth, gender, " +
-        "civil_status, purok, address_line, contact_number, occupation, date_of_residency, " +
-        "is_registered_voter, classification) " +
-        "VALUES (@first_name, @middle_name, @last_name, @suffix, @date_of_birth, @gender, " +
-        "@civil_status, @purok, @address_line, @contact_number, @occupation, @date_of_residency, " +
-        "@is_registered_voter, @classification)";
-
-    private const string SqlUpdateResident =
-        "UPDATE residents SET first_name=@first_name, middle_name=@middle_name, last_name=@last_name, " +
-        "suffix=@suffix, date_of_birth=@date_of_birth, gender=@gender, civil_status=@civil_status, " +
-        "purok=@purok, address_line=@address_line, contact_number=@contact_number, " +
-        "occupation=@occupation, date_of_residency=@date_of_residency, " +
-        "is_registered_voter=@is_registered_voter, classification=@classification " +
-        "WHERE resident_id=@resident_id";
-
-    // Residents are never deleted from the app — they are archived.
-    private const string SqlArchiveResident =
-        "UPDATE residents SET is_archived=1, archived_on=@archived_on, " +
-        "transfer_destination=@destination, transfer_reason=@reason " +
-        "WHERE resident_id=@resident_id";
-
-    private const string SqlRestoreResident =
-        "UPDATE residents SET is_archived=0, archived_on=NULL, " +
-        "transfer_destination='', transfer_reason='' " +
-        "WHERE resident_id=@resident_id";
-
-    private const string SqlInsertRequest =
-        "INSERT INTO document_requests (resident_id, document_type, purpose, date_requested, status, " +
-        "fee, fee_basis, is_paid, official_receipt_no, remarks) " +
-        "VALUES (@resident_id, @document_type, @purpose, @date_requested, @status, " +
-        "@fee, @fee_basis, 0, '', '')";
-
-    private const string SqlUpdateRequest =
-        "UPDATE document_requests SET purpose=@purpose, status=@status, date_released=@date_released, " +
-        "is_paid=@is_paid, official_receipt_no=@official_receipt_no, remarks=@remarks " +
-        "WHERE request_id=@request_id";
-
-    private const string SqlUpdateJobseekerFlag =
-        "UPDATE residents SET has_availed_jobseeker=@has_availed WHERE resident_id=@resident_id";
+    // ------------------------------------------------- stored procedures
+    // The SQL itself lives in procedures.sql (created in the database at start-up).
+    // This class only CALLs them by name.
+    private const string SpGetResidents    = "sp_residents_get_all";
+    private const string SpGetRequests     = "sp_requests_get_all";
+    private const string SpAddResident     = "sp_resident_add";
+    private const string SpUpdateResident  = "sp_resident_update";
+    private const string SpArchiveResident = "sp_resident_archive";
+    private const string SpRestoreResident = "sp_resident_restore";
+    private const string SpAddRequest      = "sp_request_add";
+    private const string SpSaveRequest     = "sp_request_save";
 
     // state
     private readonly string _connectionString;
@@ -113,7 +69,7 @@ public class MySqlBarangayRepository : IBarangayRepository
         {
             var byId = new Dictionary<int, Resident>();
 
-            using (var cmd = CreateCommand(conn, SqlSelectResidents))
+            using (var cmd = CreateCommand(conn, SpGetResidents))
             using (var reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
@@ -124,7 +80,7 @@ public class MySqlBarangayRepository : IBarangayRepository
                 }
             }
 
-            using (var cmd = CreateCommand(conn, SqlSelectRequests))
+            using (var cmd = CreateCommand(conn, SpGetRequests))
             using (var reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
@@ -188,12 +144,9 @@ public class MySqlBarangayRepository : IBarangayRepository
     {
         int id = Run(conn =>
         {
-            using (var cmd = CreateCommand(conn, SqlInsertResident))
-            {
-                BindResident(cmd, d);
-                cmd.ExecuteNonQuery();
-            }
-            return LastInsertId(conn);
+            using var cmd = CreateCommand(conn, SpAddResident);
+            BindResident(cmd, d);
+            return Convert.ToInt32(cmd.ExecuteScalar());   // the procedure returns the new id
         });
 
         // Database accepted it — now mirror it in memory.
@@ -209,9 +162,9 @@ public class MySqlBarangayRepository : IBarangayRepository
 
         RunNoResult(conn =>
         {
-            using var cmd = CreateCommand(conn, SqlUpdateResident);
+            using var cmd = CreateCommand(conn, SpUpdateResident);
             BindResident(cmd, d);
-            AddParameter(cmd, "@resident_id", resident.ResidentId);
+            AddParameter(cmd, "p_resident_id", resident.ResidentId);
             cmd.ExecuteNonQuery();
         });
 
@@ -227,11 +180,11 @@ public class MySqlBarangayRepository : IBarangayRepository
 
         RunNoResult(conn =>
         {
-            using var cmd = CreateCommand(conn, SqlArchiveResident);
-            AddParameter(cmd, "@archived_on", now);
-            AddParameter(cmd, "@destination", destination ?? string.Empty);
-            AddParameter(cmd, "@reason",      reason ?? string.Empty);
-            AddParameter(cmd, "@resident_id", resident.ResidentId);
+            using var cmd = CreateCommand(conn, SpArchiveResident);
+            AddParameter(cmd, "p_archived_on", now);
+            AddParameter(cmd, "p_destination", destination ?? string.Empty);
+            AddParameter(cmd, "p_reason",      reason ?? string.Empty);
+            AddParameter(cmd, "p_resident_id", resident.ResidentId);
             cmd.ExecuteNonQuery();
         });
 
@@ -247,8 +200,8 @@ public class MySqlBarangayRepository : IBarangayRepository
 
         RunNoResult(conn =>
         {
-            using var cmd = CreateCommand(conn, SqlRestoreResident);
-            AddParameter(cmd, "@resident_id", resident.ResidentId);
+            using var cmd = CreateCommand(conn, SpRestoreResident);
+            AddParameter(cmd, "p_resident_id", resident.ResidentId);
             cmd.ExecuteNonQuery();
         });
 
@@ -302,20 +255,20 @@ public class MySqlBarangayRepository : IBarangayRepository
     /// Binds the fourteen editable fields — shared by INSERT and UPDATE.
     private static void BindResident(DbCommand cmd, ResidentDetails d)
     {
-        AddParameter(cmd, "@first_name",          d.FirstName);
-        AddParameter(cmd, "@middle_name",         d.MiddleName ?? string.Empty);
-        AddParameter(cmd, "@last_name",           d.LastName);
-        AddParameter(cmd, "@suffix",              d.Suffix ?? string.Empty);
-        AddParameter(cmd, "@date_of_birth",       d.DateOfBirth.Date);
-        AddParameter(cmd, "@gender",              d.Gender.ToString());
-        AddParameter(cmd, "@civil_status",        d.CivilStatus.ToString());
-        AddParameter(cmd, "@purok",               d.Purok ?? string.Empty);
-        AddParameter(cmd, "@address_line",        d.AddressLine ?? string.Empty);
-        AddParameter(cmd, "@contact_number",      d.ContactNumber ?? string.Empty);
-        AddParameter(cmd, "@occupation",          d.Occupation ?? string.Empty);
-        AddParameter(cmd, "@date_of_residency",   d.DateOfResidency.Date);
-        AddParameter(cmd, "@is_registered_voter", d.IsRegisteredVoter);
-        AddParameter(cmd, "@classification",      (int)d.Classification);
+        AddParameter(cmd, "p_first_name",          d.FirstName);
+        AddParameter(cmd, "p_middle_name",         d.MiddleName ?? string.Empty);
+        AddParameter(cmd, "p_last_name",           d.LastName);
+        AddParameter(cmd, "p_suffix",              d.Suffix ?? string.Empty);
+        AddParameter(cmd, "p_date_of_birth",       d.DateOfBirth.Date);
+        AddParameter(cmd, "p_gender",              d.Gender.ToString());
+        AddParameter(cmd, "p_civil_status",        d.CivilStatus.ToString());
+        AddParameter(cmd, "p_purok",               d.Purok ?? string.Empty);
+        AddParameter(cmd, "p_address_line",        d.AddressLine ?? string.Empty);
+        AddParameter(cmd, "p_contact_number",      d.ContactNumber ?? string.Empty);
+        AddParameter(cmd, "p_occupation",          d.Occupation ?? string.Empty);
+        AddParameter(cmd, "p_date_of_residency",   d.DateOfResidency.Date);
+        AddParameter(cmd, "p_is_registered_voter", d.IsRegisteredVoter);
+        AddParameter(cmd, "p_classification",      (int)d.Classification);
     }
 
     // requests
@@ -332,18 +285,15 @@ public class MySqlBarangayRepository : IBarangayRepository
 
         int id = Run(conn =>
         {
-            using (var cmd = CreateCommand(conn, SqlInsertRequest))
-            {
-                AddParameter(cmd, "@resident_id",    resident.ResidentId);
-                AddParameter(cmd, "@document_type",  type.ToString());
-                AddParameter(cmd, "@purpose",        purpose ?? string.Empty);
-                AddParameter(cmd, "@date_requested", now);
-                AddParameter(cmd, "@status",         RequestStatus.Pending.ToString());
-                AddParameter(cmd, "@fee",            assessment.FinalFee);
-                AddParameter(cmd, "@fee_basis",      assessment.Basis);
-                cmd.ExecuteNonQuery();
-            }
-            return LastInsertId(conn);
+            using var cmd = CreateCommand(conn, SpAddRequest);
+            AddParameter(cmd, "p_resident_id",    resident.ResidentId);
+            AddParameter(cmd, "p_document_type",  type.ToString());
+            AddParameter(cmd, "p_purpose",        purpose ?? string.Empty);
+            AddParameter(cmd, "p_date_requested", now);
+            AddParameter(cmd, "p_status",         RequestStatus.Pending.ToString());
+            AddParameter(cmd, "p_fee",            assessment.FinalFee);
+            AddParameter(cmd, "p_fee_basis",      assessment.Basis);
+            return Convert.ToInt32(cmd.ExecuteScalar());   // the procedure returns the new id
         });
 
         var request = DocumentRequest.Restore(
@@ -360,32 +310,21 @@ public class MySqlBarangayRepository : IBarangayRepository
     {
         if (request is null) throw new ArgumentNullException(nameof(request));
 
+        // One procedure saves the request AND the resident's RA 11261 flag in a
+        // single transaction (see sp_request_save in procedures.sql).
         RunNoResult(conn =>
         {
-            // One transaction: the request row and the resident's RA 11261
-            // flag either both change or neither does.
-            using var tx = conn.BeginTransaction();
-
-            using (var cmd = CreateCommand(conn, SqlUpdateRequest, tx))
-            {
-                AddParameter(cmd, "@purpose",             request.Purpose ?? string.Empty);
-                AddParameter(cmd, "@status",              request.Status.ToString());
-                AddParameter(cmd, "@date_released",       request.DateReleased);
-                AddParameter(cmd, "@is_paid",             request.IsPaid);
-                AddParameter(cmd, "@official_receipt_no", request.OfficialReceiptNo);
-                AddParameter(cmd, "@remarks",             request.Remarks ?? string.Empty);
-                AddParameter(cmd, "@request_id",          request.RequestId);
-                cmd.ExecuteNonQuery();
-            }
-
-            using (var cmd = CreateCommand(conn, SqlUpdateJobseekerFlag, tx))
-            {
-                AddParameter(cmd, "@has_availed",  request.Resident.HasAvailedFirstTimeJobseeker);
-                AddParameter(cmd, "@resident_id",  request.Resident.ResidentId);
-                cmd.ExecuteNonQuery();
-            }
-
-            tx.Commit();
+            using var cmd = CreateCommand(conn, SpSaveRequest);
+            AddParameter(cmd, "p_purpose",             request.Purpose ?? string.Empty);
+            AddParameter(cmd, "p_status",              request.Status.ToString());
+            AddParameter(cmd, "p_date_released",       request.DateReleased);
+            AddParameter(cmd, "p_is_paid",             request.IsPaid);
+            AddParameter(cmd, "p_official_receipt_no", request.OfficialReceiptNo);
+            AddParameter(cmd, "p_remarks",             request.Remarks ?? string.Empty);
+            AddParameter(cmd, "p_request_id",          request.RequestId);
+            AddParameter(cmd, "p_has_availed",         request.Resident.HasAvailedFirstTimeJobseeker);
+            AddParameter(cmd, "p_resident_id",         request.Resident.ResidentId);
+            cmd.ExecuteNonQuery();
         });
     }
 
@@ -446,14 +385,17 @@ public class MySqlBarangayRepository : IBarangayRepository
             $"MySQL refused the user name or password. Check {"BarangayDocumentSystem.exe.config"}.",
         1049 =>
             "The database does not exist yet.",
+        1305 =>
+            "A stored procedure is missing. Close and reopen the app so it can be created again.",
         _ => "The database reported a problem: " + ex.Message
     };
 
-    private static DbCommand CreateCommand(DbConnection conn, string sql, DbTransaction? tx = null)
+    /// A command that CALLs the named stored procedure.
+    private static DbCommand CreateCommand(DbConnection conn, string procedure)
     {
         var cmd = conn.CreateCommand();
-        cmd.CommandText = sql;
-        cmd.Transaction = tx;
+        cmd.CommandText = procedure;
+        cmd.CommandType = System.Data.CommandType.StoredProcedure;
         return cmd;
     }
 
@@ -463,13 +405,6 @@ public class MySqlBarangayRepository : IBarangayRepository
         p.ParameterName = name;
         p.Value = value ?? DBNull.Value;
         cmd.Parameters.Add(p);
-    }
-
-    /// Id generated by the INSERT just run on THIS connection.
-    private static int LastInsertId(DbConnection conn)
-    {
-        using var cmd = CreateCommand(conn, "SELECT LAST_INSERT_ID()");
-        return Convert.ToInt32(cmd.ExecuteScalar());
     }
 
     // Small readers so the mapping code above stays one line per column.
@@ -510,15 +445,14 @@ public sealed class MySqlUserRepository : IUserRepository
 
     public bool AnyUsers() => Run(conn =>
     {
-        using var cmd = new MySqlCommand("SELECT COUNT(*) FROM users", conn);
+        using var cmd = Procedure(conn, "sp_user_count");
         return Convert.ToInt64(cmd.ExecuteScalar()) > 0;
     });
 
     public UserAccount? Find(string username) => Run(conn =>
     {
-        using var cmd = new MySqlCommand(
-            "SELECT user_id, username, full_name, password_hash FROM users WHERE username=@username", conn);
-        cmd.Parameters.AddWithValue("@username", username);
+        using var cmd = Procedure(conn, "sp_user_find");
+        cmd.Parameters.AddWithValue("p_username", username);
 
         using var reader = cmd.ExecuteReader();
         if (!reader.Read()) return null;
@@ -529,16 +463,17 @@ public sealed class MySqlUserRepository : IUserRepository
 
     public void Create(string username, string fullName, string passwordHash) => Run<object?>(conn =>
     {
-        using var cmd = new MySqlCommand(
-            "INSERT INTO users (username, full_name, password_hash, created_on) " +
-            "VALUES (@username, @full_name, @password_hash, @created_on)", conn);
-        cmd.Parameters.AddWithValue("@username", username);
-        cmd.Parameters.AddWithValue("@full_name", fullName ?? string.Empty);
-        cmd.Parameters.AddWithValue("@password_hash", passwordHash);
-        cmd.Parameters.AddWithValue("@created_on", DateTime.Now);
+        using var cmd = Procedure(conn, "sp_user_add");
+        cmd.Parameters.AddWithValue("p_username", username);
+        cmd.Parameters.AddWithValue("p_full_name", fullName ?? string.Empty);
+        cmd.Parameters.AddWithValue("p_password_hash", passwordHash);
+        cmd.Parameters.AddWithValue("p_created_on", DateTime.Now);
         cmd.ExecuteNonQuery();
         return null;
     });
+
+    private static MySqlCommand Procedure(MySqlConnection conn, string name) =>
+        new MySqlCommand(name, conn) { CommandType = System.Data.CommandType.StoredProcedure };
 
     private T Run<T>(Func<MySqlConnection, T> work)
     {

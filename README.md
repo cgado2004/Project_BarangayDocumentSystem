@@ -62,7 +62,8 @@ first build restores the `MySql.Data` NuGet package automatically.
 
 **You do not create the database by hand.** On start the app creates
 `barangay_db` and its two tables if they are missing
-(`Database/schema.sql`), and — only when the `residents` table is empty —
+(`Database/schema.sql`) and every stored procedure
+(`Database/procedures.sql`), and — only when the `residents` table is empty —
 loads the sample data below. Set `SeedSampleData` to `false` in App.config
 for real use. If MySQL is not reachable the app tells you why and exits
 instead of crashing.
@@ -70,6 +71,15 @@ instead of crashing.
 ---
 
 ## What it does
+
+### Stored procedures
+The app does not send SQL text. All queries are stored procedures defined in
+`Database/procedures.sql` (`sp_residents_get_all`, `sp_resident_add`,
+`sp_resident_update`, `sp_resident_archive`, `sp_resident_restore`,
+`sp_requests_get_all`, `sp_request_add`, `sp_request_save`, `sp_user_count`,
+`sp_user_find`, `sp_user_add`). They are dropped and created again each time the
+app starts, so to change a query, edit that file and restart. The MySQL user in
+App.config needs the CREATE ROUTINE and EXECUTE privileges (root has them).
 
 ### Sign in
 The app opens on a sign-in screen. Passwords are stored as salted PBKDF2
@@ -188,9 +198,10 @@ BarangayDocumentSystem/
     │   └── AssemblyInfo.cs             assembly title, version, GUID
     ├── Database/                       everything that talks to MySQL
     │   ├── schema.sql                  table definitions (also embedded in the .exe)
+    │   ├── procedures.sql              every query, as a stored procedure (embedded too)
     │   ├── DatabaseSettings.cs         reads App.config / env variable
     │   ├── DatabaseInitializer.cs      creates the database + tables if missing
-    │   ├── MySqlBarangayRepository.cs  all SQL: load, add, edit, archive, save
+    │   ├── MySqlBarangayRepository.cs  calls the stored procedures: load, add, edit, archive, save
     │   │                               (+ MySqlUserRepository and PasswordHasher for sign-in)
     │   └── SampleDataSeeder.cs         demo residents for an empty database
     ├── Models/                         the data: what a resident / request IS

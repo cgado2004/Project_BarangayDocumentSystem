@@ -40,7 +40,7 @@ public static class DatabaseInitializer
             // 2. Connect to the database and create any missing tables.
             using var conn = new MySqlConnection(connectionString);
             conn.Open();
-            foreach (string statement in SplitStatements(ReadSchema()))
+            foreach (string statement in SplitStatements(ReadResource("schema.sql")))
                 Run(conn, statement);
 
             // 3. Databases created by an older version already have a residents
@@ -49,6 +49,11 @@ public static class DatabaseInitializer
             EnsureColumn(conn, database, "residents", "archived_on", "DATETIME NULL");
             EnsureColumn(conn, database, "residents", "transfer_destination", "VARCHAR(255) NOT NULL DEFAULT ''");
             EnsureColumn(conn, database, "residents", "transfer_reason", "VARCHAR(255) NOT NULL DEFAULT ''");
+
+            // 4. (Re)create every stored procedure. They are dropped and created
+            //    again on each start, so editing procedures.sql is enough to update them.
+            foreach (string statement in SplitProcedures(ReadResource("procedures.sql")))
+                Run(conn, statement);
         }
         catch (MySqlException ex)
         {
@@ -81,16 +86,43 @@ public static class DatabaseInitializer
         command.ExecuteNonQuery();
     }
 
-    private static string ReadSchema()
+    private static string ReadResource(string fileName)
     {
         var assembly = Assembly.GetExecutingAssembly();
         string name = assembly.GetManifestResourceNames()
-            .FirstOrDefault(n => n.EndsWith("schema.sql", StringComparison.OrdinalIgnoreCase))
-            ?? throw new RepositoryException("schema.sql is missing from the application.");
+            .FirstOrDefault(n => n.EndsWith(fileName, StringComparison.OrdinalIgnoreCase))
+            ?? throw new RepositoryException(fileName + " is missing from the application.");
 
         using var stream = assembly.GetManifestResourceStream(name)!;
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
+    }
+
+    /// Procedure bodies contain semicolons, so procedures.sql is split on lines
+    /// that hold only "$$" instead. "-- comment" lines are dropped first.
+    private static IEnumerable<string> SplitProcedures(string script)
+    {
+        var lines = script.Split('\n')
+            .Select(l => l.TrimEnd('\r'))
+            .Where(l => !l.TrimStart().StartsWith("--", StringComparison.Ordinal));
+
+        var statement = new System.Text.StringBuilder();
+        foreach (string line in lines)
+        {
+            if (line.Trim() == "$$")
+            {
+                if (statement.ToString().Trim().Length > 0)
+                    yield return statement.ToString().Trim();
+                statement.Clear();
+            }
+            else
+            {
+                statement.AppendLine(line);
+            }
+        }
+
+        if (statement.ToString().Trim().Length > 0)
+            yield return statement.ToString().Trim();
     }
 
     /// Drops "-- comment" lines, then splits on ';' into statements.
