@@ -155,16 +155,8 @@ that answers it is in **[docs/09-revamp-notes.md](docs/09-revamp-notes.md)**
 | Database setup and upgrades | `Database/DatabaseInitializer.cs` |
 | Sign-in and permissions | `Security/`, `Services/AuthenticationService.cs` |
 
-## 4. The group
 
-| Member | Working branch | What of theirs is in this build |
-|---|---|---|
-| Clint Wood Gado | `leader_draft` | The system design and the rewrite: models, services, data layer, database scripts, security, reports, tests, docs |
-| TBD | `Draft` | The screen look the new interface keeps: flat sidebar, page headings, summary cards, status strip |
-| TBD | `Fdraft` | The persistence idea (repository + initializer + settings) and the MySQL access, carried into `Data/` and `Database/` |
-| TBD | `draft3` | — (a stale .NET 8 layout; not integrated) |
-
-## 5. Documentation
+## 4. Documentation
 
 | File | What it covers |
 |---|---|
@@ -178,7 +170,7 @@ that answers it is in **[docs/09-revamp-notes.md](docs/09-revamp-notes.md)**
 | [docs/07-integration-notes.md](docs/07-integration-notes.md) | How the group's drafts became one program |
 | [docs/08-object-model.md](docs/08-object-model.md) | The old v3.2 design, kept for history (marked outdated) |
 
-## 6. The seal
+## 5. The seal
 
 `Assets/barangay-logo.png` is the barangay's own seal. It is drawn on the
 sign-in card, the sidebar and every printed document, and it is **not to be
