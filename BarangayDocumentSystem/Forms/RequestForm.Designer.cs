@@ -135,7 +135,7 @@ partial class RequestForm
         this.chkStudent.Location = new System.Drawing.Point(210, 252);
         this.chkStudent.Name = "chkStudent";
         this.chkStudent.TabIndex = 5;
-        this.chkStudent.Text = "Student — eligible for student discount (school ID verified)";
+        this.chkStudent.Text = "Student discount";
         this.chkStudent.UseVisualStyleBackColor = true;
         this.chkStudent.CheckedChanged += new System.EventHandler(this.chkStudent_CheckedChanged);
 
@@ -222,7 +222,7 @@ partial class RequestForm
         this.MinimizeBox = false;
         this.Name = "RequestForm";
         this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-        this.Text = "New Document Request";
+        this.Text = "New Request";
         this.Load += new System.EventHandler(this.RequestForm_Load);
         this.grpResident.ResumeLayout(false);
         this.grpResident.PerformLayout();

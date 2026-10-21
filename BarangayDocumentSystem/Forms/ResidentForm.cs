@@ -21,6 +21,7 @@ public partial class ResidentForm : Form
     public ResidentForm(Resident? existing)
     {
         InitializeComponent();
+        DialogLayout.MakeScrollable(this);
         _editing = existing;
     }
 
@@ -41,7 +42,7 @@ public partial class ResidentForm : Form
 
         if (_editing is null)
         {
-            Text = "Register Resident";
+            Text = "Add Resident";
             cmbPurok.SelectedIndex = 0;
             cmbCivilStatus.SelectedIndex = 0;
             radMale.Checked = true;
@@ -61,6 +62,7 @@ public partial class ResidentForm : Form
 
         radMale.Checked = _editing.Gender == Gender.Male;
         radFemale.Checked = _editing.Gender == Gender.Female;
+        radOther.Checked = _editing.Gender == Gender.Other;
 
         cmbCivilStatus.SelectedItem = _editing.CivilStatus.ToString();
         cmbPurok.Text = _editing.Purok;
@@ -87,7 +89,7 @@ public partial class ResidentForm : Form
             LastName: txtLastName.Text.Trim(),
             Suffix: txtSuffix.Text.Trim(),
             DateOfBirth: dtpBirth.Value.Date,
-            Gender: radFemale.Checked ? Gender.Female : Gender.Male,
+            Gender: radFemale.Checked ? Gender.Female : radOther.Checked ? Gender.Other : Gender.Male,
             CivilStatus: (CivilStatus)Enum.Parse(typeof(CivilStatus), cmbCivilStatus.Text),
             Purok: cmbPurok.Text.Trim(),
             AddressLine: txtAddress.Text.Trim(),
@@ -173,7 +175,10 @@ public partial class ResidentForm : Form
 
     private ResidentClassification BuildClassification()
     {
-        var result = ResidentClassification.None;
+        // Keep stored flags this form doesn't edit.
+        const ResidentClassification editable = ResidentClassification.SeniorCitizen
+            | ResidentClassification.PWD | ResidentClassification.Indigent | ResidentClassification.SoloParent;
+        var result = (_editing?.Classification ?? ResidentClassification.None) & ~editable;
 
         if (chkSenior.Checked) result |= ResidentClassification.SeniorCitizen;
         if (chkPwd.Checked) result |= ResidentClassification.PWD;

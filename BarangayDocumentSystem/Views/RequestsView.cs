@@ -17,10 +17,11 @@ public class RequestsView : ViewBase
     private readonly FeeSchedule _feeSchedule;
     private readonly DataGridView _grid = new();
     private readonly ComboBox _statusFilter = new();
+    private readonly DateTimePicker _dateFilter = UiFactory.DayFilter("requestedDate");
+    private readonly CheckBox _filterByDate = new() { Name = "filterRequestedDate", Text = "Filed on", AutoSize = true };
     private readonly Label _emptyLabel = new();
 
     public override string Title => "Document Requests";
-    public override string Subtitle => "Track requests from filing through release";
 
     public RequestsView(IBarangayRepository repository, DocumentRenderer renderer, FeeSchedule feeSchedule)
         : base(repository)
@@ -42,7 +43,7 @@ public class RequestsView : ViewBase
             Padding = new Padding(0)
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 84F));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
@@ -55,20 +56,11 @@ public class RequestsView : ViewBase
 
     private Control BuildToolbar()
     {
-        var bar = UiFactory.Toolbar();
-        bar.Margin = new Padding(0, 0, 0, 16);
-
-        var wrap = new Panel
-        {
-            Dock = DockStyle.Left,
-            Width = 260,
-            BackColor = AppTheme.Surface,
-            Padding = new Padding(0, 7, 0, 7)
-        };
+        var bar = UiFactory.FilterBar();
 
         _statusFilter.DropDownStyle = ComboBoxStyle.DropDownList;
         _statusFilter.Font = AppTheme.BodyFont;
-        _statusFilter.Dock = DockStyle.Fill;
+        _statusFilter.Width = 180;
         _statusFilter.FlatStyle = FlatStyle.Flat;
         _statusFilter.BackColor = AppTheme.Background;
         _statusFilter.Items.Add("All statuses");
@@ -79,21 +71,14 @@ public class RequestsView : ViewBase
         _statusFilter.SelectedIndex = 0;
         _statusFilter.SelectedIndexChanged += (_, _) => RefreshData();
 
-        wrap.Controls.Add(_statusFilter);
-
-        var label = new Label
+        _dateFilter.ValueChanged += (_, _) => RefreshData();
+        _filterByDate.CheckedChanged += (_, _) =>
         {
-            Text = "Show",
-            Dock = DockStyle.Left,
-            Width = 56,
-            TextAlign = ContentAlignment.MiddleLeft,
-            Font = AppTheme.BodyFont,
-            ForeColor = AppTheme.TextSecondary,
-            Padding = new Padding(0, 0, 8, 0)
+            _dateFilter.Enabled = _filterByDate.Checked;
+            RefreshData();
         };
-
-        bar.Controls.Add(wrap);
-        bar.Controls.Add(label);
+        bar.Controls.Add(UiFactory.FilterField("Status", _statusFilter));
+        bar.Controls.Add(UiFactory.FilterField(_filterByDate, _dateFilter));
         return bar;
     }
 
@@ -151,7 +136,7 @@ public class RequestsView : ViewBase
         var pay = UiFactory.SecondaryButton("Record Payment", 140);
         pay.Click += (_, _) => RecordPayment();
 
-        var print = UiFactory.SecondaryButton("View / Print", 120);
+        var print = UiFactory.SecondaryButton("Preview", 120);
         print.Click += (_, _) => PrintDocument();
 
         var reject = UiFactory.DangerButton("Reject", 90);
@@ -181,6 +166,7 @@ public class RequestsView : ViewBase
 
         _grid.DataSource = Repository.GetRequestsByStatus(filter)
             .Where(r => r.Status != RequestStatus.Released)
+            .Where(r => !_filterByDate.Checked || r.DateRequested.Date == _dateFilter.Value.Date)
             .Select(r => new
             {
                 Reference = r.GetReferenceNumber(),
@@ -205,7 +191,11 @@ public class RequestsView : ViewBase
     {
         if (string.IsNullOrEmpty(argument)) return;
         int idx = _statusFilter.Items.IndexOf(argument);
-        if (idx >= 0) _statusFilter.SelectedIndex = idx;
+        if (idx >= 0)
+        {
+            _filterByDate.Checked = false;
+            _statusFilter.SelectedIndex = idx;
+        }
     }
 
     private DocumentRequest? Selected()
@@ -238,6 +228,7 @@ public class RequestsView : ViewBase
 
         // Make sure the new row is visible whatever the filter was.
         _statusFilter.SelectedIndex = 0;
+        _filterByDate.Checked = false;
         RefreshData();
 
         string fee = request.Fee > 0
@@ -378,10 +369,11 @@ public class RecordsView : ViewBase
     private readonly DocumentRenderer _renderer;
     private readonly DataGridView _grid = new();
     private readonly TextBox _search = new();
+    private readonly DateTimePicker _dateFilter = UiFactory.DayFilter("releasedDate");
+    private readonly CheckBox _filterByDate = new() { Name = "filterReleasedDate", Text = "Released on", AutoSize = true };
     private readonly Label _emptyLabel = new();
 
     public override string Title => "Records";
-    public override string Subtitle => "Released documents — a permanent record of everything issued";
 
     public RecordsView(IBarangayRepository repository, DocumentRenderer renderer) : base(repository)
     {
@@ -401,7 +393,7 @@ public class RecordsView : ViewBase
             Padding = new Padding(0)
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 84F));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
@@ -414,25 +406,26 @@ public class RecordsView : ViewBase
 
     private Control BuildToolbar()
     {
-        var bar = UiFactory.Toolbar();
-        bar.Margin = new Padding(0, 0, 0, 16);
+        var bar = UiFactory.FilterBar();
 
-        var wrap = new Panel
-        {
-            Dock = DockStyle.Fill,
-            BackColor = AppTheme.Surface,
-            Padding = new Padding(0, 7, 0, 7)
-        };
-
-        _search.Dock = DockStyle.Fill;
+        _search.Width = 280;
+        _search.Name = "recordSearch";
+        _search.AccessibleName = "Search released records";
         _search.Font = AppTheme.BodyFont;
         _search.BorderStyle = BorderStyle.FixedSingle;
         _search.BackColor = AppTheme.Background;
         CueBanner.Set(_search, "Search by reference, resident, or document…");
         _search.TextChanged += (_, _) => RefreshData();
 
-        wrap.Controls.Add(_search);
-        bar.Controls.Add(wrap);
+        _search.Margin = new Padding(0, 2, 12, 4);
+        _dateFilter.ValueChanged += (_, _) => RefreshData();
+        _filterByDate.CheckedChanged += (_, _) =>
+        {
+            _dateFilter.Enabled = _filterByDate.Checked;
+            RefreshData();
+        };
+        bar.Controls.Add(_search);
+        bar.Controls.Add(UiFactory.FilterField(_filterByDate, _dateFilter));
         return bar;
     }
 
@@ -483,6 +476,7 @@ public class RecordsView : ViewBase
         string term = _search.Text.Trim();
 
         var released = Repository.GetRequestsByStatus(RequestStatus.Released)
+            .Where(r => !_filterByDate.Checked || r.DateReleased?.Date == _dateFilter.Value.Date)
             .Where(r => term.Length == 0
                      || r.GetReferenceNumber().IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0
                      || r.Resident.GetFullName().IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0
@@ -509,7 +503,9 @@ public class RecordsView : ViewBase
         if (_grid.Columns["OR"] is { } orColumn)
             orColumn.HeaderText = "O.R. No.";
 
-        _emptyLabel.Text = term.Length == 0
+        _emptyLabel.Text = _filterByDate.Checked
+            ? $"No records match this search on {_dateFilter.Value:MMM dd, yyyy}"
+            : term.Length == 0
             ? "No released documents yet — documents you release will be kept here"
             : $"No records match \u201c{term}\u201d";
         _emptyLabel.Visible = _grid.Rows.Count == 0;
@@ -522,7 +518,7 @@ public class RecordsView : ViewBase
         var request = Repository.Requests.FirstOrDefault(r => r.RequestId == id);
         if (request is null) return;
 
-        using var dialog = new DocumentPreviewForm(request.GetDocumentName(), _renderer.Render(request));
+        using var dialog = new DocumentPreviewForm(request.GetDocumentName(), _renderer.Render(request), allowOutput: true);
         dialog.ShowDialog(this);
     }
 }

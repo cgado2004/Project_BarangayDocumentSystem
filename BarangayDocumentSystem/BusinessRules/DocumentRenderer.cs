@@ -129,7 +129,8 @@ public class DocumentRenderer
 
     private void AppendFooter(StringBuilder sb, DocumentRequest request)
     {
-        sb.AppendLine(Wrap($"Issued this {DateTime.Now:d} day of {DateTime.Now:MMMM, yyyy} at " +
+        var issued = request.DateReleased ?? request.DateRequested;
+        sb.AppendLine(Wrap($"Issued on {issued:MMMM d, yyyy} at " +
                            $"{_profile.BarangayName}, {_profile.CityName}, Davao del Norte."));
         sb.AppendLine();
         sb.AppendLine();
@@ -138,7 +139,7 @@ public class DocumentRenderer
         sb.AppendLine();
         sb.AppendLine(new string('-', PageWidth));
         sb.AppendLine($"Reference No. : {request.GetReferenceNumber()}");
-        sb.AppendLine($"Date Issued   : {DateTime.Now:MMMM d, yyyy  h:mm tt}");
+        sb.AppendLine($"Date Issued   : {issued:MMMM d, yyyy  h:mm tt}");
 
         if (request.Fee > 0)
         {

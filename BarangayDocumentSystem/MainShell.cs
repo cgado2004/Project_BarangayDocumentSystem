@@ -15,7 +15,6 @@ public class MainShell : Form
     private readonly NavigationSidebar _sidebar = new();
     private readonly Panel _content = new();
     private readonly Label _contentTitle = new();
-    private readonly Label _contentSubtitle = new();
 
     private ViewBase? _current;
 
@@ -72,7 +71,7 @@ public class MainShell : Form
             Padding = new Padding(0)
         };
         right.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        right.RowStyles.Add(new RowStyle(SizeType.Absolute, 96F));
+        right.RowStyles.Add(new RowStyle(SizeType.Absolute, 76F));
         right.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
         right.Controls.Add(BuildHeader(), 0, 0);
@@ -104,14 +103,13 @@ public class MainShell : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 2,
+            RowCount = 1,
             BackColor = AppTheme.Surface,
             Margin = new Padding(0),
-            Padding = new Padding(32, 22, 32, 14)
+            Padding = new Padding(32, 20, 32, 18)
         };
         stack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
-        stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 22F));
 
         _contentTitle.Dock = DockStyle.Fill;
         _contentTitle.Font = AppTheme.PageTitleFont;
@@ -120,14 +118,7 @@ public class MainShell : Form
         _contentTitle.Margin = new Padding(0);
         _contentTitle.Text = "Dashboard";
 
-        _contentSubtitle.Dock = DockStyle.Fill;
-        _contentSubtitle.Font = AppTheme.SmallFont;
-        _contentSubtitle.ForeColor = AppTheme.TextSecondary;
-        _contentSubtitle.TextAlign = ContentAlignment.MiddleLeft;
-        _contentSubtitle.Margin = new Padding(0);
-
         stack.Controls.Add(_contentTitle, 0, 0);
-        stack.Controls.Add(_contentSubtitle, 0, 1);
 
         header.Controls.Add(stack);
         return header;
@@ -170,7 +161,6 @@ public class MainShell : Form
         _content.ResumeLayout();
 
         _contentTitle.Text = view.Title;
-        _contentSubtitle.Text = view.Subtitle;
 
         view.RefreshData();
         _current = view;

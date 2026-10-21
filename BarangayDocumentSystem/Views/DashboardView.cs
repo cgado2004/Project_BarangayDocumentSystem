@@ -17,7 +17,6 @@ public class DashboardView : ViewBase
     private readonly TableLayoutPanel _tables = new();
 
     public override string Title => "Dashboard";
-    public override string Subtitle => "Operational overview of residents and document requests";
 
     public DashboardView(IBarangayRepository repository) : base(repository)
     {
@@ -26,7 +25,7 @@ public class DashboardView : ViewBase
         var root = new TableLayoutPanel
         {
             Dock = DockStyle.Top,
-            Height = 540,
+            Height = 512,
             ColumnCount = 1,
             RowCount = 3,
             BackColor = AppTheme.Background,
@@ -34,7 +33,7 @@ public class DashboardView : ViewBase
             Padding = new Padding(0)
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 156F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 128F));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
@@ -60,6 +59,7 @@ public class DashboardView : ViewBase
         root.Controls.Add(_tables, 0, 2);
 
         Controls.Add(root);
+        Resize += (_, _) => ArrangeCards(root);
     }
 
     public override void RefreshData()
@@ -67,20 +67,21 @@ public class DashboardView : ViewBase
         var stats = Repository.GetStatistics();
 
         ClearHost(_cards);
+        int columns = _cards.ColumnCount;
         _cards.Controls.Add(MetricCard("Pending Requests", stats.Pending.ToString(),
-            "Awaiting action", AppTheme.AmberTint, AppTheme.AmberInk, AppTheme.AmberDeep,
-            "requests", "Pending"), 0, 0);
+            AppTheme.AmberTint, AppTheme.AmberInk, AppTheme.AmberDeep,
+            "requests", "Pending"), 0 % columns, 0 / columns);
         _cards.Controls.Add(MetricCard("Ready for Release", stats.ReadyForRelease.ToString(),
-            "Awaiting pickup", AppTheme.SkyTint, AppTheme.SkyInk, AppTheme.SkyDeep,
-            "requests", "ReadyForRelease"), 1, 0);
+            AppTheme.SkyTint, AppTheme.SkyInk, AppTheme.SkyDeep,
+            "requests", "ReadyForRelease"), 1 % columns, 1 / columns);
         _cards.Controls.Add(MetricCard("Total Residents", stats.TotalResidents.ToString(),
-            $"{stats.RegisteredVoters} registered voters",
             AppTheme.NavyTint, AppTheme.NavyInk, AppTheme.NavyDeep,
-            "residents", null), 2, 0);
+            "residents", null), 2 % columns, 2 / columns);
         _cards.Controls.Add(MetricCard("Revenue Collected", $"₱{stats.TotalCollected:N0}",
-            $"{stats.IssuedFreeOfCharge} issued free",
             AppTheme.GreenTint, AppTheme.GreenInk, AppTheme.GreenDeep,
-            "records", null), 3, 0);
+            "records", null), 3 % columns, 3 / columns);
+
+        ArrangeCards((TableLayoutPanel)_cards.Parent);
 
         ClearHost(_tables);
         _tables.Controls.Add(BreakdownCard("Requests by Document Type",
@@ -89,14 +90,37 @@ public class DashboardView : ViewBase
             stats.ResidentsByPurok, new Padding(8, 0, 0, 0)), 1, 0);
     }
 
-    private Control MetricCard(string caption, string value, string note,
+    private void ArrangeCards(TableLayoutPanel root)
+    {
+        if (_cards.Controls.Count != 4) return;
+
+        bool narrow = ClientSize.Width < 900;
+        int columns = narrow ? 2 : 4;
+        if (_cards.ColumnCount == columns) return;
+
+        _cards.SuspendLayout();
+        _cards.ColumnStyles.Clear();
+        _cards.RowStyles.Clear();
+        _cards.ColumnCount = columns;
+        _cards.RowCount = narrow ? 2 : 1;
+        for (int i = 0; i < columns; i++)
+            _cards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F / columns));
+        for (int i = 0; i < _cards.RowCount; i++)
+            _cards.RowStyles.Add(new RowStyle(SizeType.Percent, 100F / _cards.RowCount));
+        for (int i = 0; i < _cards.Controls.Count; i++)
+            _cards.SetCellPosition(_cards.Controls[i], new TableLayoutPanelCellPosition(i % columns, i / columns));
+        root.RowStyles[0].Height = narrow ? 272F : 128F;
+        root.Height = narrow ? 656 : 512;
+        _cards.ResumeLayout();
+    }
+
+    private Control MetricCard(string caption, string value,
         Color tint, Color ink, Color deep, string targetKey, string? argument)
     {
         var card = new MetricCardControl
         {
             Caption = caption,
             Value = value,
-            Note = note,
             Tint = tint,
             Ink = ink,
             Deep = deep,
@@ -143,7 +167,7 @@ public class DashboardView : ViewBase
         grid.Columns[1].Width = 80;
 
         if (data.Count == 0)
-            grid.Rows.Add("(no data recorded)", "");
+            grid.Rows.Add("No data", "");
         else
             foreach (var pair in data.OrderByDescending(p => p.Value).ThenBy(p => p.Key))
                 grid.Rows.Add(pair.Key, pair.Value.ToString());
@@ -166,7 +190,6 @@ public class DashboardView : ViewBase
     {
         public string Caption { get; set; } = "";
         public string Value { get; set; } = "";
-        public string Note { get; set; } = "";
         public Color Tint { get; set; } = AppTheme.Surface;
         public Color Ink { get; set; } = AppTheme.TextPrimary;
         public Color Deep { get; set; } = AppTheme.Primary;
@@ -223,8 +246,6 @@ public class DashboardView : ViewBase
             using (var valBrush = new SolidBrush(Deep))
                 g.DrawString(Value, AppTheme.MetricFont, valBrush, new PointF(16, 42));
 
-            using (var noteBrush = new SolidBrush(Color.FromArgb(150, Ink)))
-                g.DrawString(Note, AppTheme.BodyFont, noteBrush, new PointF(20, Height - 36));
         }
     }
 

@@ -12,6 +12,13 @@ Based on the professor's notes in Stuff.docx. This is a partial implementation.
 - The main window supports 800×560. Action buttons wrap, search fields have more space, and grids scroll horizontally when columns cannot fit.
 - The Requests button says New Request. Its existing confirmation stays in place; the fee basis is kept in storage but removed from the request form.
 
+## October 21 UI follow-up
+
+- Requests now previews unreleased documents as marked drafts. Copy, Save, Print, and copy shortcuts are disabled there; released output is available from Records. This closes the normal UI bypass, not access through direct database commands or a modified client.
+- Reprints use the saved release date. Resident/profile snapshots still need database work, so other historical content can still change.
+- Requests filters by filed date; Records filters by release date and search. Unchecking the date restores all dates. Neither is a payment-date report.
+- Fixed resident, request, payment, transfer, and resident-picker dialogs scroll when their content cannot fit. The resident form groups the name fields and preserves legacy gender/classification data during edits.
+
 First setup must be completed by authorized staff. After that, account provisioning and password recovery need the team's account-management implementation; this UI does not provide public registration or invent administrator privileges.
 
 ## Still for the logic/database team

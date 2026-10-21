@@ -34,6 +34,7 @@ public partial class RequestForm : Form
     public RequestForm(Resident resident, FeeSchedule feeSchedule)
     {
         InitializeComponent();
+        DialogLayout.MakeScrollable(this);
         _resident = resident ?? throw new ArgumentNullException(nameof(resident));
         _feeSchedule = feeSchedule ?? throw new ArgumentNullException(nameof(feeSchedule));
     }
@@ -45,8 +46,8 @@ public partial class RequestForm : Form
 
         lblClassValue.Text = _resident.GetClassificationText();
         lblResidencyValue.Text =
-            $"{_resident.GetMonthsOfResidency()} months " +
-            $"(since {_resident.DateOfResidency:MMM yyyy})";
+            $"{FormatDuration(_resident.GetMonthsOfResidency())} " +
+            $"(since {_resident.DateOfResidency:MMM d, yyyy})";
 
         cmbDocument.Items.AddRange(new object[]
         {
@@ -74,6 +75,16 @@ public partial class RequestForm : Form
         });
 
         cmbDocument.SelectedIndex = 0;
+    }
+
+    private static string FormatDuration(int months)
+    {
+        int years = months / 12;
+        int remainingMonths = months % 12;
+        if (years == 0 && remainingMonths == 0) return "Less than a month";
+        string yearText = years == 0 ? "" : $"{years} {(years == 1 ? "year" : "years")}";
+        string monthText = remainingMonths == 0 ? "" : $"{remainingMonths} {(remainingMonths == 1 ? "month" : "months")}";
+        return years > 0 && remainingMonths > 0 ? yearText + ", " + monthText : yearText + monthText;
     }
 
     /// <summary>

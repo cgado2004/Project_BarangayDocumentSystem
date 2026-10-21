@@ -16,7 +16,6 @@ public sealed class SettingsView : ViewBase
     private readonly Label _punongBarangay = new();
 
     public override string Title => "Settings";
-    public override string Subtitle => "Barangay profile and account settings";
 
     public event EventHandler? LogoutRequested;
 
@@ -29,7 +28,7 @@ public sealed class SettingsView : ViewBase
         var root = new TableLayoutPanel
         {
             Dock = DockStyle.Top,
-            Height = 578,
+            Height = 482,
             ColumnCount = 1,
             RowCount = 5,
             BackColor = AppTheme.Background,
@@ -37,17 +36,17 @@ public sealed class SettingsView : ViewBase
             Padding = new Padding(0)
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        foreach (int height in new[] { 246, 16, 150, 16, 150 })
+        foreach (int height in new[] { 210, 16, 120, 16, 120 })
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
 
         root.Controls.Add(BuildProfileCard(), 0, 0);
-        root.Controls.Add(BuildCard("Staff profile", "Signed-in account",
+        root.Controls.Add(BuildCard("Staff profile",
             $"Name: {fullName}\nUsername: {username}"), 0, 2);
         var logout = UiFactory.SecondaryButton("Log out");
         logout.Name = "logout";
         logout.AutoSize = true;
         logout.Click += (_, _) => LogoutRequested?.Invoke(this, EventArgs.Empty);
-        root.Controls.Add(BuildCard("Security", "Log out before leaving this device", logout), 0, 4);
+        root.Controls.Add(BuildCard("Security", logout), 0, 4);
 
         Controls.Add(root);
         RefreshData();
@@ -82,7 +81,7 @@ public sealed class SettingsView : ViewBase
         AddDetail(details, 1, "City", _city);
         AddDetail(details, 2, "Province", _province);
         AddDetail(details, 3, "Punong Barangay", _punongBarangay);
-        return BuildCard("Barangay profile", "Details used on printed documents", details);
+        return BuildCard("Barangay profile", details);
     }
 
     private static void AddDetail(TableLayoutPanel table, int row, string caption, Label value)
@@ -105,8 +104,8 @@ public sealed class SettingsView : ViewBase
         table.Controls.Add(value, 1, row);
     }
 
-    private static Control BuildCard(string title, string description, string message) =>
-        BuildCard(title, description, new Label
+    private static Control BuildCard(string title, string message) =>
+        BuildCard(title, new Label
         {
             Dock = DockStyle.Fill,
             Text = message,
@@ -115,20 +114,19 @@ public sealed class SettingsView : ViewBase
             Margin = new Padding(0)
         });
 
-    private static Control BuildCard(string title, string description, Control details)
+    private static Control BuildCard(string title, Control details)
     {
         var content = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 3,
+            RowCount = 2,
             BackColor = AppTheme.Surface,
             Padding = new Padding(20, 16, 20, 16),
             Margin = new Padding(0)
         };
         content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         content.RowStyles.Add(new RowStyle(SizeType.Absolute, 28F));
-        content.RowStyles.Add(new RowStyle(SizeType.Absolute, 36F));
         content.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         content.Controls.Add(new Label
         {
@@ -138,14 +136,7 @@ public sealed class SettingsView : ViewBase
             ForeColor = AppTheme.TextPrimary,
             Margin = new Padding(0)
         }, 0, 0);
-        content.Controls.Add(new Label
-        {
-            Dock = DockStyle.Fill,
-            Text = description,
-            ForeColor = AppTheme.TextSecondary,
-            Margin = new Padding(0)
-        }, 0, 1);
-        content.Controls.Add(details, 0, 2);
+        content.Controls.Add(details, 0, 1);
         return UiFactory.CardHost(content);
     }
 }

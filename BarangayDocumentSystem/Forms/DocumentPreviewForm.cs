@@ -15,25 +15,33 @@ namespace BarangayDocumentSystem.Forms;
 public partial class DocumentPreviewForm : Form
 {
     private readonly string _documentText;
+    private readonly bool _allowOutput;
     private string[] _linesToPrint = Array.Empty<string>();
     private int _lineIndex;
 
-    public DocumentPreviewForm(string title, string documentText)
+    public DocumentPreviewForm(string title, string documentText, bool allowOutput = false)
     {
         InitializeComponent();
         Text = $"Preview — {title}";
         _documentText = documentText;
+        _allowOutput = allowOutput;
+        btnCopy.Enabled = btnSave.Enabled = btnPrint.Enabled = allowOutput;
+        txtDocument.ShortcutsEnabled = allowOutput;
+        if (!allowOutput)
+            Text += " — Not released";
+        Shown += (_, _) => DialogLayout.FitToScreen(this);
     }
 
     private void DocumentPreviewForm_Load(object sender, EventArgs e)
     {
-        txtDocument.Text = _documentText;
+        txtDocument.Text = _allowOutput ? _documentText
+            : "DRAFT — NOT RELEASED\r\nComplete release, then print from Records.\r\n\r\n" + _documentText;
         txtDocument.SelectionStart = 0;
     }
 
     private void btnCopy_Click(object sender, EventArgs e)
     {
-        if (string.IsNullOrEmpty(_documentText)) return;
+        if (!_allowOutput || string.IsNullOrEmpty(_documentText)) return;
 
         // Requires [STAThread] on Main — the clipboard is a COM API.
         Clipboard.SetText(_documentText);
@@ -42,6 +50,7 @@ public partial class DocumentPreviewForm : Form
 
     private void btnSave_Click(object sender, EventArgs e)
     {
+        if (!_allowOutput) return;
         using var dialog = new SaveFileDialog
         {
             Filter = "Text file (*.txt)|*.txt|All files (*.*)|*.*",
@@ -66,6 +75,7 @@ public partial class DocumentPreviewForm : Form
 
     private void btnPrint_Click(object sender, EventArgs e)
     {
+        if (!_allowOutput) return;
         // .NET Framework has no Split(string) overload -- only Split(string[], ...).
         _linesToPrint = _documentText.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
         _lineIndex = 0;

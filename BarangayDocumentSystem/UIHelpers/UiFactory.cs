@@ -101,6 +101,52 @@ public static class UiFactory
         return box;
     }
 
+    public static DateTimePicker DayFilter(string name) => new()
+    {
+        Name = name,
+        Format = DateTimePickerFormat.Custom,
+        CustomFormat = "MMM dd, yyyy",
+        Value = System.DateTime.Today,
+        Enabled = false,
+        Width = 170,
+        Font = AppTheme.BodyFont,
+        AccessibleDescription = "Check to filter this date. Uncheck to show all dates."
+    };
+
+    public static FlowLayoutPanel FilterBar() => new()
+    {
+        Dock = DockStyle.Fill,
+        AutoSize = true,
+        AutoSizeMode = AutoSizeMode.GrowAndShrink,
+        WrapContents = true,
+        BackColor = AppTheme.Surface,
+        Margin = new Padding(0, 0, 0, 16),
+        Padding = new Padding(12)
+    };
+
+    public static Control FilterField(string caption, Control input) => FilterField(new Label
+    {
+        Text = caption, AutoSize = true, Font = AppTheme.BodyFont,
+        ForeColor = AppTheme.TextSecondary
+    }, input);
+
+    public static Control FilterField(Control caption, Control input)
+    {
+        var field = new FlowLayoutPanel
+        {
+            AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            WrapContents = false, Margin = new Padding(0, 0, 12, 0)
+        };
+        caption.Margin = new Padding(0, 6, 8, 6);
+        caption.Font = AppTheme.BodyFont;
+        caption.ForeColor = AppTheme.TextSecondary;
+        field.Controls.Add(caption);
+        input.Margin = new Padding(0, 2, 0, 4);
+        input.AccessibleName = caption.Text;
+        field.Controls.Add(input);
+        return field;
+    }
+
     public static void StyleGrid(DataGridView grid)
     {
         grid.BackgroundColor = AppTheme.Surface;

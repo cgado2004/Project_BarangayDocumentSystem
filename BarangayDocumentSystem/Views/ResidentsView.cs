@@ -17,7 +17,6 @@ public class ResidentsView : ViewBase
     private readonly Label _emptyLabel = new();
 
     public override string Title => "Residents";
-    public override string Subtitle => "Registry of Barangay Magugpo Poblacion";
 
     public ResidentsView(IBarangayRepository repository)
         : base(repository)
@@ -218,7 +217,6 @@ public class ArchiveView : ViewBase
     private readonly Label _emptyLabel = new();
 
     public override string Title => "Archived Residents";
-    public override string Subtitle => "Residents who transferred out — records are kept, never deleted";
 
     public ArchiveView(IBarangayRepository repository) : base(repository)
     {

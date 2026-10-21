@@ -44,7 +44,7 @@ public class NavigationSidebar : Panel
             Padding = new Padding(0)
         };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 96F));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 76F));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         layout.Controls.Add(brand, 0, 0);
         layout.Controls.Add(_host, 0, 1);
@@ -59,30 +59,19 @@ public class NavigationSidebar : Panel
             Dock = DockStyle.Fill,
             BackColor = AppTheme.SidebarBg,
             Margin = new Padding(0),
-            Padding = new Padding(24, 26, 20, 10)
+            Padding = new Padding(24, 20, 20, 12)
         };
 
         var stack = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 2,
+            RowCount = 1,
             BackColor = AppTheme.SidebarBg,
             Margin = new Padding(0)
         };
         stack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 18F));
         stack.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
-
-        var small = new Label
-        {
-            Text = "MAGUGPO POBLACION",
-            Dock = DockStyle.Fill,
-            Font = AppTheme.SmallBoldFont,
-            ForeColor = AppTheme.SidebarActive,
-            TextAlign = ContentAlignment.MiddleLeft,
-            Margin = new Padding(0)
-        };
 
         var big = new Label
         {
@@ -94,8 +83,7 @@ public class NavigationSidebar : Panel
             Margin = new Padding(0)
         };
 
-        stack.Controls.Add(small, 0, 0);
-        stack.Controls.Add(big, 0, 1);
+        stack.Controls.Add(big, 0, 0);
         brand.Controls.Add(stack);
         return brand;
     }

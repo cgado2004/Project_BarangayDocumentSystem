@@ -68,6 +68,7 @@ public static class Prompt
 
         form.AcceptButton = ok;    // Enter
         form.CancelButton = cancel; // Esc
+        DialogLayout.MakeScrollable(form);
 
         return form.ShowDialog(owner) == DialogResult.OK
             ? textBox.Text.Trim()
@@ -148,6 +149,7 @@ public sealed class TransferForm : Form
         Controls.Add(cancel);
         AcceptButton = ok;
         CancelButton = cancel;
+        DialogLayout.MakeScrollable(this);
     }
 
     private static Label Caption(string text, int top) => new()
@@ -198,7 +200,7 @@ public sealed class ResidentPickerForm : Form
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
 
-        Text = "New document — choose a resident";
+        Text = "New Request — choose a resident";
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition = FormStartPosition.CenterParent;
         MaximizeBox = false;
@@ -246,6 +248,7 @@ public sealed class ResidentPickerForm : Form
         AcceptButton = choose;
         CancelButton = cancel;
 
+        DialogLayout.MakeScrollable(this);
         LoadResidents();
     }
 

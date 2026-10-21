@@ -104,6 +104,7 @@
     <Compile Include="UIHelpers\CompilerShims.cs" />
     <Compile Include="UIHelpers\CueBanner.cs" />
     <Compile Include="UIHelpers\Dialog.cs" />
+    <Compile Include="UIHelpers\DialogLayout.cs" />
     <Compile Include="UIHelpers\InputValidator.cs" />
     <Compile Include="UIHelpers\UiFactory.cs" />
     <Compile Include="Views\DashboardView.cs">

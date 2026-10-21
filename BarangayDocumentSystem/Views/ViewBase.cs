@@ -13,7 +13,6 @@ public abstract class ViewBase : UserControl
     protected IBarangayRepository Repository { get; }
 
     public abstract string Title { get; }
-    public virtual string Subtitle => string.Empty;
 
     public event EventHandler<string>? StatusChanged;
     public event EventHandler<NavigationRequest>? NavigateRequested;

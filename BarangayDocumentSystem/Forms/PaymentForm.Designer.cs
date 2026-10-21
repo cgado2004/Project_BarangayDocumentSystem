@@ -29,7 +29,6 @@ partial class PaymentForm
         this.lblAmountValue = new System.Windows.Forms.Label();
         this.lblOr = new System.Windows.Forms.Label();
         this.txtOr = new System.Windows.Forms.TextBox();
-        this.lblNote = new System.Windows.Forms.Label();
         this.btnConfirm = new System.Windows.Forms.Button();
         this.btnCancel = new System.Windows.Forms.Button();
         this.SuspendLayout();
@@ -110,14 +109,6 @@ partial class PaymentForm
         this.txtOr.Size = new System.Drawing.Size(330, 32);
         this.txtOr.TabIndex = 1;
 
-        this.lblNote.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Italic);
-        this.lblNote.ForeColor = System.Drawing.Color.FromArgb(107, 114, 128);
-        this.lblNote.Location = new System.Drawing.Point(32, 240);
-        this.lblNote.Name = "lblNote";
-        this.lblNote.Size = new System.Drawing.Size(500, 60);
-        this.lblNote.Text = "Type the O.R. number from the receipt you issued to the resident. " +
-                            "This marks the request as paid, so the document can be released.";
-
         // ── buttons ─────────────────────────────────────────────────
         this.btnConfirm.BackColor = System.Drawing.Color.FromArgb(21, 128, 61);
         this.btnConfirm.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -154,7 +145,6 @@ partial class PaymentForm
         this.ClientSize = new System.Drawing.Size(564, 392);
         this.Controls.Add(this.btnCancel);
         this.Controls.Add(this.btnConfirm);
-        this.Controls.Add(this.lblNote);
         this.Controls.Add(this.txtOr);
         this.Controls.Add(this.lblOr);
         this.Controls.Add(this.lblAmountValue);
@@ -189,7 +179,6 @@ partial class PaymentForm
     private System.Windows.Forms.Label lblAmountValue;
     private System.Windows.Forms.Label lblOr;
     private System.Windows.Forms.TextBox txtOr;
-    private System.Windows.Forms.Label lblNote;
     private System.Windows.Forms.Button btnConfirm;
     private System.Windows.Forms.Button btnCancel;
 }

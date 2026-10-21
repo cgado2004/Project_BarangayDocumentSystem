@@ -19,6 +19,7 @@ public partial class PaymentForm : Form
     public PaymentForm(DocumentRequest request)
     {
         InitializeComponent();
+        DialogLayout.MakeScrollable(this);
         _request = request ?? throw new ArgumentNullException(nameof(request));
     }
 
