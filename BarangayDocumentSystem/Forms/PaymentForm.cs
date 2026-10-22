@@ -1,0 +1,75 @@
+using System.Windows.Forms;
+using System;
+using BarangayDocumentSystem.Models;
+using BarangayDocumentSystem.UIHelpers;
+
+namespace BarangayDocumentSystem.Forms;
+
+/// <summary>
+/// Records payment of a document fee and captures the official receipt
+/// number. RA 11032 requires an OR for every collection, which is why the
+/// number is mandatory rather than optional.
+/// </summary>
+public partial class PaymentForm : Form
+{
+    private readonly DocumentRequest _request;
+
+    private readonly string _officialReceiptNo;
+
+    public string OfficialReceiptNo { get; private set; } = string.Empty;
+
+    /// <param name="officialReceiptNo">The next available O.R. number, filled in automatically.</param>
+    public PaymentForm(DocumentRequest request, string officialReceiptNo)
+    {
+        InitializeComponent();
+        _request = request ?? throw new ArgumentNullException(nameof(request));
+        _officialReceiptNo = officialReceiptNo ?? throw new ArgumentNullException(nameof(officialReceiptNo));
+    }
+
+    private void PaymentForm_Load(object sender, EventArgs e)
+    {
+        lblRefValue.Text      = _request.GetReferenceNumber();
+        lblDocumentValue.Text = _request.GetDocumentName();
+        lblResidentValue.Text = _request.Resident.GetFullName();
+        lblAmountValue.Text   = $"P{_request.Fee:N2}";
+        txtOr.Text = _officialReceiptNo;
+        txtOr.ReadOnly = true;       // numbers are assigned in order, not typed
+        btnConfirm.Focus();
+    }
+
+    private void btnConfirm_Click(object sender, EventArgs e)
+    {
+        string or = txtOr.Text.Trim();
+
+        if (string.IsNullOrWhiteSpace(or))
+        {
+            Dialog.Warn("Enter the O.R. number from the receipt you issued.\n\n" + "RA 11032 requires an O.R. for every collection.");
+            txtOr.Focus();
+            return;
+        }
+
+        if (or.Length < 3)
+        {
+            Dialog.Warn("That receipt number looks too short. Please check it.");
+            txtOr.Focus();
+            txtOr.SelectAll();
+            return;
+        }
+
+        if (!Dialog.Confirm(
+                $"Record payment of {lblAmountValue.Text} for {_request.GetReferenceNumber()}?\n\n" +
+                $"O.R. number: {or}",
+                "Confirm payment"))
+            return;
+
+        OfficialReceiptNo = or;
+        DialogResult = DialogResult.OK;
+        Close();
+    }
+
+    private void btnCancel_Click(object sender, EventArgs e)
+    {
+        DialogResult = DialogResult.Cancel;
+        Close();
+    }
+}
