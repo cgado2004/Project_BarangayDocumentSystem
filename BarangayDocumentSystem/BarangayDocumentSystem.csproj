@@ -39,6 +39,30 @@
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+  <!-- SAP Crystal Reports. Turned on automatically when the Crystal Reports runtime
+       for .NET is installed on this PC (it adds the CRYSTAL symbol and the four
+       references). Without the runtime the project still builds and the print
+       window falls back to the plain text preview.
+       Platform x86: the 32-bit runtime is the one Visual Studio installs. If you
+       only have the 64-bit runtime, change x86 to x64. -->
+  <PropertyGroup Condition="Exists('$(windir)\Microsoft.NET\assembly\GAC_MSIL\CrystalDecisions.CrystalReports.Engine')">
+    <DefineConstants>$(DefineConstants);CRYSTAL</DefineConstants>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup Condition="Exists('$(windir)\Microsoft.NET\assembly\GAC_MSIL\CrystalDecisions.CrystalReports.Engine')">
+    <Reference Include="CrystalDecisions.CrystalReports.Engine, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="CrystalDecisions.ReportSource, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="CrystalDecisions.Shared, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="CrystalDecisions.Windows.Forms, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -120,6 +144,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Reports\DocumentData.xsd" />
+    <None Include="Reports\HOW-TO-MAKE-THE-REPORT.txt" />
     <EmbeddedResource Include="Database\schema.sql" />
     <EmbeddedResource Include="Database\procedures.sql" />
     <EmbeddedResource Include="Forms\ResidentForm.resx">

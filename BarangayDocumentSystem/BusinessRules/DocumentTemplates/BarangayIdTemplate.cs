@@ -20,7 +20,7 @@ public class BarangayIdTemplate : IDocumentTemplate
         yield return $"Age             : {r.GetAge()}";
         yield return $"Gender          : {r.Gender}";
         yield return $"Civil Status    : {r.CivilStatus}";
-        yield return $"Address         : {r.AddressLine}, {r.Purok}";
+        yield return $"Address         : {r.GetAddressText()}";
         yield return $"Contact No.     : {r.ContactNumber}";
         yield return $"Resident Since  : {r.DateOfResidency:MMMM d, yyyy}";
         yield return $"Classification  : {r.GetClassificationText()}";

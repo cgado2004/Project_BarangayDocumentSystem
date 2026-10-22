@@ -98,13 +98,16 @@ internal static class Program
 
         var dashboard = new DashboardView(repository);
         var residents = new ResidentsView(repository);
-        var requests  = new RequestsView(repository, renderer, feeSchedule);
+        string staffName = string.IsNullOrWhiteSpace(user.FullName) ? user.Username : user.FullName;
+        var requests  = new RequestsView(repository, renderer, feeSchedule, staffName);
+        var receipts  = new OfficialReceiptsView(repository);
         var records   = new RecordsView(repository, renderer);
         var archive   = new ArchiveView(repository);
 
         shell.AddView("dashboard", "Dashboard", "▦", dashboard);
         shell.AddView("residents", "Residents", "●", residents);
         shell.AddView("requests",  "Requests",  "▤", requests);
+        shell.AddView("receipts",  "Receipts",  "▥", receipts);
         shell.AddView("records",   "Records",   "▧", records);
         shell.AddView("archive",   "Archive",   "▣", archive);
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Text;
 using System.Linq;
 
@@ -29,6 +30,24 @@ namespace BarangayDocumentSystem.BusinessRules;
 public class DocumentRenderer
 {
     private const int PageWidth = 72;
+
+    private const string OathText =
+        "I hereby declare under oath that I am a first time jobseeker, that the " +
+        "foregoing statements are true and correct, and that I am availing of the " +
+        "benefits under RA 11261 for the first time.";
+
+    /// <summary>
+    /// The columns of the one-row "Document" table the Crystal report is built on.
+    /// Reports/DocumentData.xsd describes the same columns for the report designer,
+    /// so the two must stay in step.
+    /// </summary>
+    private static readonly string[] ReportColumns =
+    {
+        "BarangayName", "CityName", "ProvinceName", "PunongBarangay",
+        "Title", "Subtitle", "Body", "Oath",
+        "ReferenceNo", "ResidentName", "Purpose",
+        "IssuedLine", "DateIssued", "FeeText", "FeeBasis", "ORNo"
+    };
 
     private readonly IReadOnlyDictionary<DocumentType, IDocumentTemplate> _templates;
     private readonly BarangayProfile _profile;
@@ -70,6 +89,72 @@ public class DocumentRenderer
 
         AppendFooter(sb, request);
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// The same document as <see cref="Render"/>, but as data for the Crystal
+    /// report: one row, with the letterhead, title, body paragraphs and footer
+    /// values in separate columns. The report supplies the page layout.
+    /// </summary>
+    public DataTable BuildReportData(DocumentRequest request)
+    {
+        if (request is null) throw new ArgumentNullException(nameof(request));
+
+        var table = new DataTable("Document");
+        foreach (string column in ReportColumns)
+            table.Columns.Add(column, typeof(string));
+
+        string title, subtitle, body;
+        if (_templates.TryGetValue(request.DocumentType, out var template))
+        {
+            title = template.Title;
+            subtitle = template.Subtitle ?? string.Empty;
+            body = string.Join(Environment.NewLine + Environment.NewLine,
+                               template.BuildBody(request, _profile));
+        }
+        else
+        {
+            title = request.GetDocumentName().ToUpper();
+            subtitle = string.Empty;
+            body = $"[No template registered for {request.DocumentType}]";
+        }
+
+        var now = DateTime.Now;
+        var row = table.NewRow();
+        row["BarangayName"]   = _profile.BarangayName;
+        row["CityName"]       = _profile.CityName;
+        row["ProvinceName"]   = _profile.ProvinceName;
+        row["PunongBarangay"] = _profile.PunongBarangay;
+        row["Title"]          = title;
+        row["Subtitle"]       = subtitle;
+        row["Body"]           = body;
+        row["Oath"]           = request.DocumentType == DocumentType.FirstTimeJobseekerCertificate
+                                    ? OathText : string.Empty;
+        row["ReferenceNo"]    = request.GetReferenceNumber();
+        row["ResidentName"]   = request.Resident.GetFullName().ToUpper();
+        row["Purpose"]        = request.Purpose;
+        row["IssuedLine"]     = $"Issued this {Ordinal(now.Day)} day of {now:MMMM, yyyy} at " +
+                                $"{_profile.BarangayName}, {_profile.CityName}, Davao del Norte.";
+        row["DateIssued"]     = now.ToString("MMMM d, yyyy  h:mm tt");
+        row["FeeText"]        = request.Fee > 0 ? $"\u20b1{request.Fee:N2}" : "FREE OF CHARGE";
+        row["FeeBasis"]       = request.Fee > 0 ? string.Empty : request.FeeBasis;
+        row["ORNo"]           = request.Fee > 0 ? request.OfficialReceiptNo : string.Empty;
+        table.Rows.Add(row);
+
+        return table;
+    }
+
+    /// <summary>1 → "1st", 2 → "2nd", 11 → "11th", 22 → "22nd".</summary>
+    private static string Ordinal(int day)
+    {
+        if (day % 100 >= 11 && day % 100 <= 13) return day + "th";
+        switch (day % 10)
+        {
+            case 1: return day + "st";
+            case 2: return day + "nd";
+            case 3: return day + "rd";
+            default: return day + "th";
+        }
     }
 
     // -----------------------------------------------------------------
@@ -117,10 +202,7 @@ public class DocumentRenderer
     {
         sb.AppendLine(new string('-', PageWidth));
         sb.AppendLine(Centre("OATH OF UNDERTAKING"));
-        sb.AppendLine(Wrap(
-            "I hereby declare under oath that I am a first time jobseeker, that the " +
-            "foregoing statements are true and correct, and that I am availing of the " +
-            "benefits under RA 11261 for the first time."));
+        sb.AppendLine(Wrap(OathText));
         sb.AppendLine();
         sb.AppendLine($"{"",40}________________________");
         sb.AppendLine($"{"",42}Signature of Applicant");

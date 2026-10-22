@@ -26,7 +26,7 @@ public class Resident
 
     /// <summary>Purok / sitio / street within Magugpo Poblacion.</summary>
     public string Purok { get; set; } = string.Empty;
-    public string AddressLine { get; set; } = string.Empty;
+    public string HouseNumber { get; set; } = string.Empty;
 
     public string ContactNumber { get; set; } = string.Empty;
     public string Occupation { get; set; } = string.Empty;
@@ -66,6 +66,10 @@ public class Resident
         LastName = lastName;
         DateOfResidency = DateTime.Today;
     }
+
+    /// <summary>"House No. 123, Purok 1" — for printed documents.</summary>
+    public string GetAddressText() =>
+        string.IsNullOrWhiteSpace(HouseNumber) ? Purok : $"House No. {HouseNumber.Trim()}, {Purok}";
 
     public string GetFullName()
     {

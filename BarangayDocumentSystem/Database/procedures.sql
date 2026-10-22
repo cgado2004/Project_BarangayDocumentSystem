@@ -20,7 +20,7 @@ $$
 CREATE PROCEDURE sp_residents_get_all()
 BEGIN
     SELECT resident_id, first_name, middle_name, last_name, suffix, date_of_birth, gender,
-           civil_status, purok, address_line, contact_number, occupation, date_of_residency,
+           civil_status, purok, house_number, contact_number, occupation, date_of_residency,
            is_registered_voter, classification, has_availed_jobseeker,
            is_archived, archived_on, transfer_destination, transfer_reason
     FROM residents
@@ -39,7 +39,7 @@ CREATE PROCEDURE sp_resident_add(
     IN p_gender              VARCHAR(20),
     IN p_civil_status        VARCHAR(20),
     IN p_purok               VARCHAR(100),
-    IN p_address_line        VARCHAR(255),
+    IN p_house_number         VARCHAR(30),
     IN p_contact_number      VARCHAR(30),
     IN p_occupation          VARCHAR(100),
     IN p_date_of_residency   DATE,
@@ -47,10 +47,10 @@ CREATE PROCEDURE sp_resident_add(
     IN p_classification      INT)
 BEGIN
     INSERT INTO residents (first_name, middle_name, last_name, suffix, date_of_birth, gender,
-                           civil_status, purok, address_line, contact_number, occupation,
+                           civil_status, purok, house_number, contact_number, occupation,
                            date_of_residency, is_registered_voter, classification)
     VALUES (p_first_name, p_middle_name, p_last_name, p_suffix, p_date_of_birth, p_gender,
-            p_civil_status, p_purok, p_address_line, p_contact_number, p_occupation,
+            p_civil_status, p_purok, p_house_number, p_contact_number, p_occupation,
             p_date_of_residency, p_is_registered_voter, p_classification);
 
     SELECT LAST_INSERT_ID() AS resident_id;
@@ -68,7 +68,7 @@ CREATE PROCEDURE sp_resident_update(
     IN p_gender              VARCHAR(20),
     IN p_civil_status        VARCHAR(20),
     IN p_purok               VARCHAR(100),
-    IN p_address_line        VARCHAR(255),
+    IN p_house_number         VARCHAR(30),
     IN p_contact_number      VARCHAR(30),
     IN p_occupation          VARCHAR(100),
     IN p_date_of_residency   DATE,
@@ -85,7 +85,7 @@ BEGIN
         gender = p_gender,
         civil_status = p_civil_status,
         purok = p_purok,
-        address_line = p_address_line,
+        house_number = p_house_number,
         contact_number = p_contact_number,
         occupation = p_occupation,
         date_of_residency = p_date_of_residency,
@@ -132,7 +132,7 @@ $$
 CREATE PROCEDURE sp_requests_get_all()
 BEGIN
     SELECT request_id, resident_id, document_type, purpose, date_requested, date_released,
-           status, fee, fee_basis, is_paid, official_receipt_no, remarks
+           status, fee, fee_basis, is_paid, official_receipt_no, date_paid, received_by, remarks
     FROM document_requests
     ORDER BY request_id;
 END
@@ -168,6 +168,8 @@ CREATE PROCEDURE sp_request_save(
     IN p_date_released        DATETIME,
     IN p_is_paid              TINYINT(1),
     IN p_official_receipt_no  VARCHAR(50),
+    IN p_date_paid            DATETIME,
+    IN p_received_by          VARCHAR(100),
     IN p_remarks              VARCHAR(500),
     IN p_request_id           INT,
     IN p_has_availed          TINYINT(1),
@@ -187,6 +189,8 @@ BEGIN
         date_released = p_date_released,
         is_paid = p_is_paid,
         official_receipt_no = p_official_receipt_no,
+        date_paid = p_date_paid,
+        received_by = p_received_by,
         remarks = p_remarks
     WHERE request_id = p_request_id;
 

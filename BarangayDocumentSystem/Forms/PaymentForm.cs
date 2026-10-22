@@ -14,12 +14,16 @@ public partial class PaymentForm : Form
 {
     private readonly DocumentRequest _request;
 
+    private readonly string _officialReceiptNo;
+
     public string OfficialReceiptNo { get; private set; } = string.Empty;
 
-    public PaymentForm(DocumentRequest request)
+    /// <param name="officialReceiptNo">The next available O.R. number, filled in automatically.</param>
+    public PaymentForm(DocumentRequest request, string officialReceiptNo)
     {
         InitializeComponent();
         _request = request ?? throw new ArgumentNullException(nameof(request));
+        _officialReceiptNo = officialReceiptNo ?? throw new ArgumentNullException(nameof(officialReceiptNo));
     }
 
     private void PaymentForm_Load(object sender, EventArgs e)
@@ -28,7 +32,9 @@ public partial class PaymentForm : Form
         lblDocumentValue.Text = _request.GetDocumentName();
         lblResidentValue.Text = _request.Resident.GetFullName();
         lblAmountValue.Text   = $"P{_request.Fee:N2}";
-        txtOr.Focus();
+        txtOr.Text = _officialReceiptNo;
+        txtOr.ReadOnly = true;       // numbers are assigned in order, not typed
+        btnConfirm.Focus();
     }
 
     private void btnConfirm_Click(object sender, EventArgs e)

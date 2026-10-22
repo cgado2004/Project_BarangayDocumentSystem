@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS residents (
     gender                VARCHAR(20)   NOT NULL,
     civil_status          VARCHAR(20)   NOT NULL,
     purok                 VARCHAR(100)  NOT NULL DEFAULT '',
-    address_line          VARCHAR(255)  NOT NULL DEFAULT '',
+    house_number          VARCHAR(30)   NOT NULL DEFAULT '',
     contact_number        VARCHAR(30)   NOT NULL DEFAULT '',
     occupation            VARCHAR(100)  NOT NULL DEFAULT '',
     date_of_residency     DATE          NOT NULL,
@@ -51,6 +51,9 @@ CREATE TABLE IF NOT EXISTS document_requests (
     fee_basis             VARCHAR(255)  NOT NULL DEFAULT '',
     is_paid               TINYINT(1)    NOT NULL DEFAULT 0,
     official_receipt_no   VARCHAR(50)   NOT NULL DEFAULT '',
+    -- When the fee was paid and who took the payment. The O.R. number looks like OR-20261022-1.
+    date_paid             DATETIME      NULL,
+    received_by           VARCHAR(100)  NOT NULL DEFAULT '',
     remarks               VARCHAR(500)  NOT NULL DEFAULT '',
     PRIMARY KEY (request_id),
     INDEX idx_requests_status (status),

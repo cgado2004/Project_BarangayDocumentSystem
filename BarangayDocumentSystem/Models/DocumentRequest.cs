@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 namespace BarangayDocumentSystem.Models;
 
 /// <summary>
@@ -39,6 +40,12 @@ public class DocumentRequest
     /// <summary>Official receipt number, blank for zero-fee documents.</summary>
     public string OfficialReceiptNo { get; private set; } = string.Empty;
 
+    /// <summary>When the fee was paid. Blank for free documents and for older payments.</summary>
+    public DateTime? DatePaid { get; private set; }
+
+    /// <summary>Name of the staff member who took the payment.</summary>
+    public string ReceivedBy { get; private set; } = string.Empty;
+
     public string Remarks { get; set; } = string.Empty;
 
     internal DocumentRequest(
@@ -66,7 +73,8 @@ public class DocumentRequest
     internal static DocumentRequest Restore(
         int requestId, Resident resident, DocumentType documentType, string purpose,
         DateTime dateRequested, DateTime? dateReleased, RequestStatus status,
-        decimal fee, string feeBasis, bool isPaid, string officialReceiptNo, string remarks)
+        decimal fee, string feeBasis, bool isPaid, string officialReceiptNo, string remarks,
+        DateTime? datePaid = null, string receivedBy = "")
     {
         return new DocumentRequest(requestId, resident, documentType, purpose, dateRequested)
         {
@@ -76,7 +84,9 @@ public class DocumentRequest
             FeeBasis = feeBasis,
             IsPaid = isPaid,
             OfficialReceiptNo = officialReceiptNo,
-            Remarks = remarks
+            Remarks = remarks,
+            DatePaid = datePaid,
+            ReceivedBy = receivedBy ?? string.Empty
         };
     }
 
@@ -172,7 +182,7 @@ public class DocumentRequest
     }
 
     /// <summary>Records payment and the official receipt number.</summary>
-    public void RecordPayment(string officialReceiptNo)
+    public void RecordPayment(string officialReceiptNo, string receivedBy = "")
     {
         if (Fee <= 0)
             throw new InvalidOperationException("This document carries no fee, so no payment is due.");
@@ -185,6 +195,11 @@ public class DocumentRequest
 
         IsPaid = true;
         OfficialReceiptNo = officialReceiptNo.Trim();
+        ReceivedBy = receivedBy?.Trim() ?? string.Empty;
+
+        // MySQL DATETIME keeps whole seconds, so store exactly that.
+        var now = DateTime.Now;
+        DatePaid = new DateTime(now.Ticks - now.Ticks % TimeSpan.TicksPerSecond);
     }
 
     /// <summary>Tracking reference, e.g. "BMP-2026-0042".</summary>
@@ -192,4 +207,32 @@ public class DocumentRequest
 
     public override string ToString() =>
         $"{GetReferenceNumber()} — {GetDocumentName()} for {Resident.GetFullName()} [{Status}]";
+}
+
+/// <summary>
+/// Official receipt numbers. Format: OR-yyyyMMdd-N, for example OR-20261022-1,
+/// OR-20261022-2 and so on. N starts at 1 each day and goes up with every payment.
+/// </summary>
+public static class OfficialReceiptNumber
+{
+    public static string Prefix(DateTime date) => $"OR-{date:yyyyMMdd}-";
+
+    /// <summary>The next number not yet used on <paramref name="date"/>.</summary>
+    public static string Next(IEnumerable<DocumentRequest> requests, DateTime date)
+    {
+        string prefix = Prefix(date);
+        int highest = 0;
+
+        foreach (var request in requests)
+        {
+            string no = request.OfficialReceiptNo;
+            if (string.IsNullOrEmpty(no) || !no.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (int.TryParse(no.Substring(prefix.Length), out int n) && n > highest)
+                highest = n;
+        }
+
+        return prefix + (highest + 1);
+    }
 }

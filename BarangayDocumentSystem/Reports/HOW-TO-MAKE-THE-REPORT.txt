@@ -1,0 +1,104 @@
+HOW TO MAKE THE CRYSTAL REPORT (one time, about 10 minutes)
+============================================================
+
+The program prints every barangay document through a Crystal Reports file called
+
+    Reports\DocumentReport.rpt
+
+A .rpt file can only be designed inside the Crystal Reports designer, so it is
+not included in this zip. Until you make it, the program shows its plain text
+preview instead, so nothing breaks.
+
+
+WHAT YOU NEED
+-------------
+1. Visual Studio with "SAP Crystal Reports, developer version for Microsoft
+   Visual Studio" installed (this adds the designer).
+2. The Crystal Reports runtime for .NET Framework (the 32-bit one is the
+   default and matches the project, which is set to x86). If you only have the
+   64-bit runtime, open BarangayDocumentSystem.csproj and change
+   <PlatformTarget>x86</PlatformTarget> to x64.
+
+With the runtime installed, the project turns Crystal printing on by itself
+(it adds the CRYSTAL symbol and the four CrystalDecisions references). Close and
+reopen the solution after installing so Visual Studio notices.
+
+
+STEP 1 - ADD THE REPORT
+-----------------------
+1. Solution Explorer > right-click the Reports folder > Add > New Item.
+2. Choose "Crystal Reports", name it  DocumentReport.rpt  > Add.
+3. In the gallery choose "As a Blank Report" > OK.
+   (If Visual Studio adds a DocumentReport.cs next to it, you can ignore it.)
+
+STEP 2 - CONNECT THE DATA
+-------------------------
+1. In the Database Expert window, open "Create New Connection" > "ADO.NET (XML)".
+2. File path: browse to  Reports\DocumentData.xsd  > Finish.
+3. Expand the connection, select the table  Document  > move it to
+   "Selected Tables" > OK.
+
+STEP 3 - LAY OUT THE PAGE
+-------------------------
+Open Field Explorer (View > Other Windows > Field Explorer) and drag the fields
+into the DETAILS section. There is only one row of data, so everything goes in
+Details. Suggested layout, top to bottom:
+
+    (text)  Republic of the Philippines            centred
+    {Document.ProvinceName}                        centred
+    {Document.CityName}                            centred
+    {Document.BarangayName}                        centred, bold
+    (text)  OFFICE OF THE PUNONG BARANGAY          centred, bold
+    (line)  Insert > Line, across the page
+    {Document.Title}                               centred, bold, about 16 pt
+    {Document.Subtitle}                            centred
+    {Document.Body}                                full width, justified, 12 pt
+    {Document.Oath}                                full width (see the note below)
+    {Document.IssuedLine}                          full width
+    {Document.PunongBarangay}                      right side, bold
+    (text)  Punong Barangay                        right side, under the name
+    (line)
+    (text)  Reference No. :   {Document.ReferenceNo}
+    (text)  Date Issued   :   {Document.DateIssued}
+    (text)  Fee           :   {Document.FeeText}
+    (text)  O.R. Number   :   {Document.ORNo}
+    (text)  Basis         :   {Document.FeeBasis}
+    (text)  NOT VALID WITHOUT OFFICIAL DRY SEAL    centred, bold
+
+Settings that matter:
+  * {Document.Body} and {Document.Oath}: right-click > Format Field > Common tab >
+    tick "Can Grow" (Maximum number of lines: unlimited). The body text is
+    different for every certificate, so it must be allowed to grow.
+  * {Document.Oath}: Format Field > Common > Suppress > click the formula button
+    and enter   {Document.Oath} = ""   so the oath only appears on the
+    First-Time Jobseeker certificate.
+  * Also suppress the "O.R. Number" line when it is empty ({Document.ORNo} = "")
+    and the "Basis" line when it is empty ({Document.FeeBasis} = "").
+  * You can use {Document.ResidentName} and {Document.Purpose} anywhere you want
+    them shown separately from the body text.
+
+STEP 4 - COPY IT NEXT TO THE PROGRAM
+------------------------------------
+Solution Explorer > click DocumentReport.rpt > Properties window:
+    Build Action              : None
+    Copy to Output Directory  : Copy if newer
+The program looks for  Reports\DocumentReport.rpt  beside the .exe.
+
+
+USING IT
+--------
+Run the app. View / Print (Requests page), the preview shown before Release, and
+View / Print on the Records page now open the Crystal Reports viewer, which has
+its own Print and Export (PDF, Word, Excel) buttons.
+
+If something is wrong the program tells you why and shows the plain preview:
+  * "report file was not found"  -> Step 4 was skipped.
+  * "could not be opened"        -> usually a 32-bit / 64-bit runtime mismatch
+                                    (see WHAT YOU NEED, point 2) or the data
+                                    source was not the XSD from Step 2.
+
+CHANGING THE DATA
+-----------------
+The columns come from DocumentRenderer.BuildReportData (code) and
+Reports\DocumentData.xsd (designer). If you add a column in one, add it to the
+other, then in the designer use Database > Verify Database.

@@ -21,7 +21,7 @@ public class BusinessClearanceTemplate : IDocumentTemplate
                      $"{profile.BarangayName}, {profile.CityName}, has been granted clearance to " +
                      $"operate within the territorial jurisdiction of this Barangay.";
         yield return $"Business / Purpose : {request.Purpose}";
-        yield return $"Location           : {r.AddressLine}, {r.Purok}";
+        yield return $"Location           : {r.GetAddressText()}";
         yield return "This clearance is issued subject to compliance with existing barangay " +
                      "ordinances and is valid until 31 December of the current year.";
     }

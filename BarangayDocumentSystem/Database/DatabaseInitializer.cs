@@ -49,6 +49,11 @@ public static class DatabaseInitializer
             EnsureColumn(conn, database, "residents", "archived_on", "DATETIME NULL");
             EnsureColumn(conn, database, "residents", "transfer_destination", "VARCHAR(255) NOT NULL DEFAULT ''");
             EnsureColumn(conn, database, "residents", "transfer_reason", "VARCHAR(255) NOT NULL DEFAULT ''");
+            // House number replaces the old free-text address (old column is left alone, unused).
+            EnsureColumn(conn, database, "residents", "house_number", "VARCHAR(30) NOT NULL DEFAULT ''");
+            // Payment records for the Official Receipts page.
+            EnsureColumn(conn, database, "document_requests", "date_paid", "DATETIME NULL");
+            EnsureColumn(conn, database, "document_requests", "received_by", "VARCHAR(100) NOT NULL DEFAULT ''");
 
             // 4. (Re)create every stored procedure. They are dropped and created
             //    again on each start, so editing procedures.sql is enough to update them.

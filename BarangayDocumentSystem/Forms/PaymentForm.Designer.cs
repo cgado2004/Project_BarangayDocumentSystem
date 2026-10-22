@@ -115,7 +115,7 @@ partial class PaymentForm
         this.lblNote.Location = new System.Drawing.Point(32, 240);
         this.lblNote.Name = "lblNote";
         this.lblNote.Size = new System.Drawing.Size(500, 60);
-        this.lblNote.Text = "Type the O.R. number from the receipt you issued to the resident. " +
+        this.lblNote.Text = "The O.R. number is the next available one and is filled in automatically. " +
                             "This marks the request as paid, so the document can be released.";
 
         // ── buttons ─────────────────────────────────────────────────

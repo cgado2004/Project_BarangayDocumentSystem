@@ -23,39 +23,39 @@ public static class SampleDataSeeder
                                                        contact, occ, since, voter, cls));
 
         var juan = Add("Juan", "Perez", "Dela Cruz", "", new DateTime(1985, 4, 12),
-            Gender.Male, CivilStatus.Married, "Purok 1", "123 Rizal Street",
+            Gender.Male, CivilStatus.Married, "Purok 1", "123",
             "09171234567", "Tricycle Driver", new DateTime(2010, 6, 1), true,
             ResidentClassification.None);
 
         var maria = Add("Maria", "Santos", "Reyes", "", new DateTime(1955, 9, 3),
-            Gender.Female, CivilStatus.Widowed, "Purok 2", "45 Bonifacio Avenue",
+            Gender.Female, CivilStatus.Widowed, "Purok 2", "45",
             "09181234567", "Retired", new DateTime(1998, 1, 15), true,
             ResidentClassification.SeniorCitizen);
 
         // 14 months' residency, never availed — qualifies under RA 11261.
         var jose = Add("Jose", "Cruz", "Bautista", "Jr.", new DateTime(2004, 2, 20),
-            Gender.Male, CivilStatus.Single, "Purok 3", "78 Mabini Street",
+            Gender.Male, CivilStatus.Single, "Purok 3", "78",
             "09191234567", "Fresh Graduate", today.AddMonths(-14), true,
             ResidentClassification.None);
 
         var ana = Add("Ana", "Lopez", "Villanueva", "", new DateTime(1992, 11, 8),
-            Gender.Female, CivilStatus.Single, "Purok 4", "12 Quezon Street",
+            Gender.Female, CivilStatus.Single, "Purok 4", "12",
             "09201234567", "Sari-sari Store Owner", new DateTime(2015, 3, 20), true,
             ResidentClassification.SoloParent);
 
         var pedro = Add("Pedro", "Ramos", "Mendoza", "", new DateTime(1978, 7, 25),
-            Gender.Male, CivilStatus.Married, "Purok 5", "90 Magsaysay Street",
+            Gender.Male, CivilStatus.Married, "Purok 5", "90",
             "09211234567", "Carpenter", new DateTime(2005, 8, 10), false,
             ResidentClassification.Indigent);
 
         var liza = Add("Liza", "Garcia", "Torres", "", new DateTime(1999, 5, 30),
-            Gender.Female, CivilStatus.Single, "Purok 2", "56 Del Pilar Street",
+            Gender.Female, CivilStatus.Single, "Purok 2", "56",
             "09221234567", "Student", new DateTime(2019, 6, 1), true,
             ResidentClassification.PWD);
 
         // Only 2 months — deliberately FAILS the RA 11261 six-month test.
         Add("Carlo", "Diaz", "Aquino", "", new DateTime(2003, 12, 5),
-            Gender.Male, CivilStatus.Single, "Purok 1", "34 Luna Street",
+            Gender.Male, CivilStatus.Single, "Purok 1", "34",
             "09231234567", "Unemployed", today.AddMonths(-2), false,
             ResidentClassification.None);
 

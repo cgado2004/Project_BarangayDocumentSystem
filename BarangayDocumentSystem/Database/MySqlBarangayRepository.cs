@@ -111,7 +111,7 @@ public class MySqlBarangayRepository : IBarangayRepository
             Gender            = (Gender)Enum.Parse(typeof(Gender), GetString(r, "gender")),
             CivilStatus       = (CivilStatus)Enum.Parse(typeof(CivilStatus), GetString(r, "civil_status")),
             Purok             = GetString(r, "purok"),
-            AddressLine       = GetString(r, "address_line"),
+            HouseNumber       = GetString(r, "house_number"),
             ContactNumber     = GetString(r, "contact_number"),
             Occupation        = GetString(r, "occupation"),
             DateOfResidency   = GetDate(r, "date_of_residency"),
@@ -137,7 +137,9 @@ public class MySqlBarangayRepository : IBarangayRepository
             feeBasis:          GetString(r, "fee_basis"),
             isPaid:            GetBool(r, "is_paid"),
             officialReceiptNo: GetString(r, "official_receipt_no"),
-            remarks:           GetString(r, "remarks"));
+            remarks:           GetString(r, "remarks"),
+            datePaid:          GetNullableDate(r, "date_paid"),
+            receivedBy:        GetString(r, "received_by"));
 
     // residents
     public Resident AddResident(ResidentDetails d)
@@ -244,7 +246,7 @@ public class MySqlBarangayRepository : IBarangayRepository
         r.Gender            = d.Gender;
         r.CivilStatus       = d.CivilStatus;
         r.Purok             = d.Purok;
-        r.AddressLine       = d.AddressLine;
+        r.HouseNumber       = d.HouseNumber;
         r.ContactNumber     = d.ContactNumber;
         r.Occupation        = d.Occupation;
         r.DateOfResidency   = d.DateOfResidency;
@@ -263,7 +265,7 @@ public class MySqlBarangayRepository : IBarangayRepository
         AddParameter(cmd, "p_gender",              d.Gender.ToString());
         AddParameter(cmd, "p_civil_status",        d.CivilStatus.ToString());
         AddParameter(cmd, "p_purok",               d.Purok ?? string.Empty);
-        AddParameter(cmd, "p_address_line",        d.AddressLine ?? string.Empty);
+        AddParameter(cmd, "p_house_number",        d.HouseNumber ?? string.Empty);
         AddParameter(cmd, "p_contact_number",      d.ContactNumber ?? string.Empty);
         AddParameter(cmd, "p_occupation",          d.Occupation ?? string.Empty);
         AddParameter(cmd, "p_date_of_residency",   d.DateOfResidency.Date);
@@ -320,6 +322,8 @@ public class MySqlBarangayRepository : IBarangayRepository
             AddParameter(cmd, "p_date_released",       request.DateReleased);
             AddParameter(cmd, "p_is_paid",             request.IsPaid);
             AddParameter(cmd, "p_official_receipt_no", request.OfficialReceiptNo);
+            AddParameter(cmd, "p_date_paid",           request.DatePaid);
+            AddParameter(cmd, "p_received_by",         request.ReceivedBy ?? string.Empty);
             AddParameter(cmd, "p_remarks",             request.Remarks ?? string.Empty);
             AddParameter(cmd, "p_request_id",          request.RequestId);
             AddParameter(cmd, "p_has_availed",         request.Resident.HasAvailedFirstTimeJobseeker);
@@ -330,6 +334,9 @@ public class MySqlBarangayRepository : IBarangayRepository
 
     private static bool ContainsIgnoreCase(string haystack, string needle) =>
         haystack.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0;
+
+    public string GetNextOfficialReceiptNo() =>
+        OfficialReceiptNumber.Next(_requests, DateTime.Today);
 
     public IEnumerable<DocumentRequest> GetRequestsByStatus(RequestStatus? status) =>
         status is null

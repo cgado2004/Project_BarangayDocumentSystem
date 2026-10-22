@@ -2,6 +2,9 @@ using System.Windows.Forms;
 using System.Drawing;
 using System;
 using System.IO;
+using System.Data;
+using BarangayDocumentSystem.BusinessRules;
+using BarangayDocumentSystem.Models;
 using BarangayDocumentSystem.UIHelpers;
 
 namespace BarangayDocumentSystem.Forms;
@@ -122,3 +125,90 @@ public partial class DocumentPreviewForm : Form
 
     private void btnClose_Click(object sender, EventArgs e) => Close();
 }
+
+/// <summary>
+/// Where every document is shown and printed.
+///
+/// When the SAP Crystal Reports runtime is installed (the project then builds
+/// with the CRYSTAL symbol, see the .csproj), the document opens in a Crystal
+/// Reports viewer using Reports\DocumentReport.rpt, which has its own Print and
+/// Export buttons. If the runtime or the .rpt file is missing, it falls back to
+/// the plain text preview above, so printing never stops working.
+/// </summary>
+public static class DocumentPrinter
+{
+    public const string ReportFolder = "Reports";
+    public const string ReportFileName = "DocumentReport.rpt";
+
+    public static void Show(IWin32Window owner, DocumentRequest request, DocumentRenderer renderer)
+    {
+#if CRYSTAL
+        string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ReportFolder, ReportFileName);
+
+        if (File.Exists(path))
+        {
+            try
+            {
+                using var viewer = new CrystalReportForm(request.GetDocumentName(), path,
+                                                         renderer.BuildReportData(request));
+                viewer.ShowDialog(owner);
+                return;
+            }
+            catch (Exception ex)
+            {
+                Dialog.Warn("The Crystal report could not be opened, so the plain preview is shown instead.\n\n" +
+                            ex.Message, "Crystal Reports");
+            }
+        }
+        else
+        {
+            Dialog.Info($"The report file {ReportFolder}\\{ReportFileName} was not found next to the program, " +
+                        "so the plain preview is shown instead.\n\nSee Reports\\HOW-TO-MAKE-THE-REPORT.txt.",
+                        "Crystal Reports");
+        }
+#endif
+        using var preview = new DocumentPreviewForm(request.GetDocumentName(), renderer.Render(request));
+        preview.ShowDialog(owner);
+    }
+}
+
+#if CRYSTAL
+/// <summary>
+/// Hosts the Crystal Reports viewer. The report is loaded from the .rpt file and
+/// bound to the one-row "Document" table from <see cref="DocumentRenderer.BuildReportData"/>.
+/// </summary>
+public sealed class CrystalReportForm : Form
+{
+    private readonly CrystalDecisions.CrystalReports.Engine.ReportDocument _report = new();
+
+    public CrystalReportForm(string title, string reportPath, DataTable data)
+    {
+        Text = $"Print — {title}";
+        StartPosition = FormStartPosition.CenterParent;
+        Size = new Size(980, 760);
+        MinimizeBox = false;
+
+        _report.Load(reportPath);
+        _report.SetDataSource(data);
+
+        var viewer = new CrystalDecisions.Windows.Forms.CrystalReportViewer
+        {
+            Dock = DockStyle.Fill,
+            ReportSource = _report,
+            ShowGroupTreeButton = false,
+            ShowParameterPanelButton = false,
+            ShowCopyButton = false
+        };
+        Controls.Add(viewer);
+    }
+
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        // The report holds a print-engine job; release it when the window closes.
+        _report.Close();
+        _report.Dispose();
+        base.OnFormClosed(e);
+    }
+}
+#endif
+

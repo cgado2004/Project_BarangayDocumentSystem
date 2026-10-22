@@ -89,11 +89,11 @@ it again to go back). On a brand-new database with no accounts, the sign-up
 panel opens by itself so the first account can be created. **Log out** is at
 the right of the status bar.
 
-Five destinations in the left sidebar.
+Six destinations in the left sidebar.
 
 ### Residents
 Resident controls only: **Add Resident**, **Edit** and **Transfer**, plus
-search. Tracks name, birth date, gender, civil status, purok, address, contact,
+search. Tracks name, birth date, gender, civil status, purok, house number, contact,
 occupation, voter status, date of residency, and **classifications** (senior
 citizen, PWD, indigent, solo parent). Student is not a resident category: it is
 confirmed on each document request. Residents are never deleted:
@@ -124,6 +124,30 @@ finished document.
 Every save asks for confirmation first: adding or editing a resident, filing a
 request, recording a payment, and transferring a resident. **Release** first
 opens a preview of the finished document, then asks you to confirm.
+
+### Printing documents with Crystal Reports
+View / Print, the preview before Release, and View / Print on the Records page
+open the document in a SAP Crystal Reports viewer (with Print and Export to
+PDF/Word/Excel). The data comes from `DocumentRenderer.BuildReportData`, and the
+layout comes from `Reports/DocumentReport.rpt`.
+
+That `.rpt` file can only be made in the Crystal Reports designer, so it is not
+in the zip. **Follow `BarangayDocumentSystem/Reports/HOW-TO-MAKE-THE-REPORT.txt`
+once** to create it from `Reports/DocumentData.xsd`. The project turns Crystal
+printing on automatically when the Crystal Reports runtime is installed; without
+the runtime or the `.rpt` the app falls back to the plain text preview, so
+printing never stops working.
+
+### Receipts
+Every payment is recorded against an official receipt (O.R.) number. Numbers
+are assigned automatically in the form `OR-<date>-<n>`, for example
+`OR-20261022-1`, `OR-20261022-2`, and the counter restarts at 1 each day.
+**Record Payment** on the Requests page fills in the next available number (it
+cannot be typed over) and stores the date and the staff member who took the
+payment. The Receipts page lists every payment (O.R. number, date, reference,
+resident, document, amount, received by), shows the **next available O.R.
+number** with today's issued count and collection, and opens **View / Print
+Receipt**. Documents with no fee have no receipt.
 
 ### Records
 Released documents. When a request is released it leaves the Requests page and

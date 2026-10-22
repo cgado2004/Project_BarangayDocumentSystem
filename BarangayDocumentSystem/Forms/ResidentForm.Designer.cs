@@ -36,8 +36,8 @@ partial class ResidentForm
         this.cmbCivilStatus = new System.Windows.Forms.ComboBox();
         this.lblPurok = new System.Windows.Forms.Label();
         this.cmbPurok = new System.Windows.Forms.ComboBox();
-        this.lblAddress = new System.Windows.Forms.Label();
-        this.txtAddress = new System.Windows.Forms.TextBox();
+        this.lblHouseNumber = new System.Windows.Forms.Label();
+        this.txtHouseNumber = new System.Windows.Forms.TextBox();
         this.lblContact = new System.Windows.Forms.Label();
         this.txtContact = new System.Windows.Forms.TextBox();
         this.lblOccupation = new System.Windows.Forms.Label();
@@ -213,30 +213,28 @@ partial class ResidentForm
         this.radFemale.Text = "Female";
         this.radFemale.UseVisualStyleBackColor = true;
 
-        this.lblAddress.AutoSize = true;
-        this.lblAddress.Font = labelFont;
-        this.lblAddress.Location = new System.Drawing.Point(R, 204);
-        this.lblAddress.Name = "lblAddress";
-        this.lblAddress.Text = "Address";
+        this.lblHouseNumber.AutoSize = true;
+        this.lblHouseNumber.Font = labelFont;
+        this.lblHouseNumber.Location = new System.Drawing.Point(R, 208);
+        this.lblHouseNumber.Name = "lblHouseNumber";
+        this.lblHouseNumber.Text = "House number";
 
-        this.txtAddress.Font = inputFont;
-        this.txtAddress.Location = new System.Drawing.Point(RC, 200);
-        this.txtAddress.MaxLength = 150;
-        this.txtAddress.Multiline = true;
-        this.txtAddress.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-        this.txtAddress.Name = "txtAddress";
-        CueBanner.Set(this.txtAddress, "house no. and street");
-        this.txtAddress.Size = new System.Drawing.Size(RW, 90);
-        this.txtAddress.TabIndex = 6;
+        this.txtHouseNumber.Font = inputFont;
+        this.txtHouseNumber.Location = new System.Drawing.Point(RC, 204);
+        this.txtHouseNumber.MaxLength = 30;
+        this.txtHouseNumber.Name = "txtHouseNumber";
+        CueBanner.Set(this.txtHouseNumber, "e.g. 123");
+        this.txtHouseNumber.Size = new System.Drawing.Size(RW, 30);
+        this.txtHouseNumber.TabIndex = 6;
 
         this.lblOccupation.AutoSize = true;
         this.lblOccupation.Font = labelFont;
-        this.lblOccupation.Location = new System.Drawing.Point(R, 308);
+        this.lblOccupation.Location = new System.Drawing.Point(R, 256);
         this.lblOccupation.Name = "lblOccupation";
         this.lblOccupation.Text = "Occupation";
 
         this.txtOccupation.Font = inputFont;
-        this.txtOccupation.Location = new System.Drawing.Point(RC, 304);
+        this.txtOccupation.Location = new System.Drawing.Point(RC, 252);
         this.txtOccupation.MaxLength = 60;
         this.txtOccupation.Name = "txtOccupation";
         this.txtOccupation.Size = new System.Drawing.Size(RW, 30);
@@ -244,7 +242,7 @@ partial class ResidentForm
 
         this.chkVoter.AutoSize = true;
         this.chkVoter.Font = inputFont;
-        this.chkVoter.Location = new System.Drawing.Point(R, 348);
+        this.chkVoter.Location = new System.Drawing.Point(R, 296);
         this.chkVoter.Name = "chkVoter";
         this.chkVoter.Size = new System.Drawing.Size(160, 24);
         this.chkVoter.TabIndex = 10;
@@ -255,7 +253,7 @@ partial class ResidentForm
         this.grpClassification.Controls.Add(this.chkPwd);
         this.grpClassification.Controls.Add(this.chkSenior);
         this.grpClassification.Font = labelFont;
-        this.grpClassification.Location = new System.Drawing.Point(36, 410);
+        this.grpClassification.Location = new System.Drawing.Point(36, 358);
         this.grpClassification.Name = "grpClassification";
         this.grpClassification.Size = new System.Drawing.Size(874, 106);
         this.grpClassification.TabIndex = 14;
@@ -299,7 +297,7 @@ partial class ResidentForm
         this.chkSoloParent.UseVisualStyleBackColor = true;
         this.lblNote.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Italic);
         this.lblNote.ForeColor = System.Drawing.Color.FromArgb(107, 114, 128);
-        this.lblNote.Location = new System.Drawing.Point(36, 528);
+        this.lblNote.Location = new System.Drawing.Point(36, 476);
         this.lblNote.Name = "lblNote";
         this.lblNote.Size = new System.Drawing.Size(874, 46);
         this.lblNote.TabIndex = 15;
@@ -310,7 +308,7 @@ partial class ResidentForm
         this.btnSave.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
         this.btnSave.Font = buttonFont;
         this.btnSave.ForeColor = System.Drawing.Color.White;
-        this.btnSave.Location = new System.Drawing.Point(690, 586);
+        this.btnSave.Location = new System.Drawing.Point(690, 534);
         this.btnSave.Name = "btnSave";
         this.btnSave.Size = new System.Drawing.Size(110, 42);
         this.btnSave.TabIndex = 16;
@@ -322,7 +320,7 @@ partial class ResidentForm
         this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
         this.btnCancel.Font = buttonFont;
         this.btnCancel.ForeColor = System.Drawing.Color.FromArgb(31, 39, 51);
-        this.btnCancel.Location = new System.Drawing.Point(810, 586);
+        this.btnCancel.Location = new System.Drawing.Point(810, 534);
         this.btnCancel.Name = "btnCancel";
         this.btnCancel.Size = new System.Drawing.Size(100, 42);
         this.btnCancel.TabIndex = 17;
@@ -335,7 +333,7 @@ partial class ResidentForm
         this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
         this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
         this.BackColor = System.Drawing.Color.FromArgb(243, 239, 231);
-        this.ClientSize = new System.Drawing.Size(946, 660);
+        this.ClientSize = new System.Drawing.Size(946, 608);
         this.Controls.Add(this.btnCancel);
         this.Controls.Add(this.btnSave);
         this.Controls.Add(this.lblNote);
@@ -343,8 +341,8 @@ partial class ResidentForm
         this.Controls.Add(this.chkVoter);
         this.Controls.Add(this.txtOccupation);
         this.Controls.Add(this.lblOccupation);
-        this.Controls.Add(this.txtAddress);
-        this.Controls.Add(this.lblAddress);
+        this.Controls.Add(this.txtHouseNumber);
+        this.Controls.Add(this.lblHouseNumber);
         this.Controls.Add(this.radOther);
         this.Controls.Add(this.radFemale);
         this.Controls.Add(this.radMale);
@@ -401,8 +399,8 @@ partial class ResidentForm
     private System.Windows.Forms.ComboBox cmbCivilStatus;
     private System.Windows.Forms.Label lblPurok;
     private System.Windows.Forms.ComboBox cmbPurok;
-    private System.Windows.Forms.Label lblAddress;
-    private System.Windows.Forms.TextBox txtAddress;
+    private System.Windows.Forms.Label lblHouseNumber;
+    private System.Windows.Forms.TextBox txtHouseNumber;
     private System.Windows.Forms.Label lblContact;
     private System.Windows.Forms.TextBox txtContact;
     private System.Windows.Forms.Label lblOccupation;

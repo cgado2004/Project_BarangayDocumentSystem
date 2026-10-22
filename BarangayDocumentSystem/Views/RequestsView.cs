@@ -15,6 +15,7 @@ public class RequestsView : ViewBase
 {
     private readonly DocumentRenderer _renderer;
     private readonly FeeSchedule _feeSchedule;
+    private readonly string _receivedBy;
     private readonly DataGridView _grid = new();
     private readonly ComboBox _statusFilter = new();
     private readonly Label _emptyLabel = new();
@@ -22,9 +23,12 @@ public class RequestsView : ViewBase
     public override string Title => "Document Requests";
     public override string Subtitle => "Track requests from filing through release";
 
-    public RequestsView(IBarangayRepository repository, DocumentRenderer renderer, FeeSchedule feeSchedule)
+    /// <param name="receivedBy">Signed-in staff name, recorded on every payment.</param>
+    public RequestsView(IBarangayRepository repository, DocumentRenderer renderer,
+                        FeeSchedule feeSchedule, string receivedBy)
         : base(repository)
     {
+        _receivedBy = receivedBy ?? string.Empty;
         _renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
         _feeSchedule = feeSchedule ?? throw new ArgumentNullException(nameof(feeSchedule));
         BuildLayout();
@@ -262,8 +266,7 @@ public class RequestsView : ViewBase
             return;
         }
 
-        using (var preview = new DocumentPreviewForm(request.GetDocumentName(), _renderer.Render(request)))
-            preview.ShowDialog(this);
+        DocumentPrinter.Show(this, request, _renderer);
 
         if (!Dialog.Confirm(
                 $"Release {request.GetReferenceNumber()} — {request.GetDocumentName()} " +
@@ -313,12 +316,12 @@ public class RequestsView : ViewBase
             return;
         }
 
-        using var dialog = new PaymentForm(request);
+        using var dialog = new PaymentForm(request, Repository.GetNextOfficialReceiptNo());
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
 
         try
         {
-            request.RecordPayment(dialog.OfficialReceiptNo);
+            request.RecordPayment(dialog.OfficialReceiptNo, _receivedBy);
             if (!Attempt(() => Repository.SaveRequest(request))) return;
 
             RefreshData();
@@ -360,10 +363,7 @@ public class RequestsView : ViewBase
         var request = Selected();
         if (request is null) { Dialog.SelectFirst("request"); return; }
 
-        string text = _renderer.Render(request);
-
-        using var dialog = new DocumentPreviewForm(request.GetDocumentName(), text);
-        dialog.ShowDialog(this);
+        DocumentPrinter.Show(this, request, _renderer);
     }
 }
 
@@ -520,7 +520,215 @@ public class RecordsView : ViewBase
         var request = Repository.Requests.FirstOrDefault(r => r.RequestId == id);
         if (request is null) return;
 
-        using var dialog = new DocumentPreviewForm(request.GetDocumentName(), _renderer.Render(request));
+        DocumentPrinter.Show(this, request, _renderer);
+    }
+}
+
+/// <summary>
+/// Official receipts: one row for every payment taken, with the O.R. number,
+/// the date, who paid, what for, how much and who received it. Also shows the
+/// next O.R. number that is still available. Documents with no fee have no
+/// receipt, so they do not appear here.
+/// </summary>
+public class OfficialReceiptsView : ViewBase
+{
+    private readonly DataGridView _grid = new();
+    private readonly TextBox _search = new();
+    private readonly Label _availability = new();
+    private readonly Label _emptyLabel = new();
+
+    public override string Title => "Official Receipts";
+    public override string Subtitle => "Payment records and the next available O.R. number";
+
+    public OfficialReceiptsView(IBarangayRepository repository) : base(repository)
+    {
+        BuildLayout();
+    }
+
+    private void BuildLayout()
+    {
+        var root = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 3,
+            BackColor = AppTheme.Background,
+            Margin = new Padding(0),
+            Padding = new Padding(0)
+        };
+        root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 72F));
+        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 56F));
+
+        root.Controls.Add(BuildToolbar(), 0, 0);
+        root.Controls.Add(BuildGrid(), 0, 1);
+        root.Controls.Add(BuildActions(), 0, 2);
+
+        Controls.Add(root);
+    }
+
+    private Control BuildToolbar()
+    {
+        var bar = UiFactory.Toolbar();
+        bar.Margin = new Padding(0, 0, 0, 12);
+
+        var wrap = new Panel
+        {
+            Dock = DockStyle.Left,
+            Width = 380,
+            BackColor = AppTheme.Surface,
+            Padding = new Padding(0, 7, 0, 7)
+        };
+
+        _search.Dock = DockStyle.Fill;
+        _search.Font = AppTheme.BodyFont;
+        _search.BorderStyle = BorderStyle.FixedSingle;
+        _search.BackColor = AppTheme.Background;
+        CueBanner.Set(_search, "Search by O.R. number, resident, or reference…");
+        _search.TextChanged += (_, _) => RefreshData();
+        wrap.Controls.Add(_search);
+
+        _availability.Dock = DockStyle.Right;
+        _availability.Width = 440;
+        _availability.TextAlign = ContentAlignment.MiddleRight;
+        _availability.Font = AppTheme.SmallFont;
+        _availability.ForeColor = AppTheme.TextSecondary;
+
+        bar.Controls.Add(wrap);
+        bar.Controls.Add(_availability);
+        return bar;
+    }
+
+    private Control BuildGrid()
+    {
+        UiFactory.StyleGrid(_grid);
+        _grid.Dock = DockStyle.Fill;
+        _grid.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) ViewReceipt(); };
+
+        var host = UiFactory.CardHost(_grid);
+        host.Margin = new Padding(0, 0, 0, 16);
+
+        _emptyLabel.Dock = DockStyle.Fill;
+        _emptyLabel.TextAlign = ContentAlignment.MiddleCenter;
+        _emptyLabel.Font = AppTheme.BodyFont;
+        _emptyLabel.ForeColor = AppTheme.TextMuted;
+        _emptyLabel.BackColor = AppTheme.Surface;
+        _emptyLabel.Visible = false;
+
+        host.Controls.Add(_emptyLabel);
+        _emptyLabel.BringToFront();
+        return host;
+    }
+
+    private Control BuildActions()
+    {
+        var actions = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            BackColor = AppTheme.Background,
+            Margin = new Padding(0),
+            Padding = new Padding(0, 8, 0, 0)
+        };
+
+        var view = UiFactory.PrimaryButton("View / Print Receipt", 180);
+        view.Click += (_, _) => ViewReceipt();
+
+        actions.Controls.Add(view);
+        return actions;
+    }
+
+    private static bool HasReceipt(DocumentRequest r) =>
+        r.IsPaid && !string.IsNullOrWhiteSpace(r.OfficialReceiptNo);
+
+    public override void RefreshData()
+    {
+        string term = _search.Text.Trim();
+
+        var paid = Repository.Requests.Where(HasReceipt).ToList();
+
+        var today = DateTime.Today;
+        var paidToday = paid.Where(r => r.DatePaid?.Date == today).ToList();
+        _availability.Text =
+            $"Next available O.R.:  {Repository.GetNextOfficialReceiptNo()}\n" +
+            $"Issued today: {paidToday.Count}   ·   Collected today: ₱{paidToday.Sum(r => r.Fee):N2}";
+
+        var rows = paid
+            .Where(r => term.Length == 0
+                     || r.OfficialReceiptNo.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0
+                     || r.Resident.GetFullName().IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0
+                     || r.GetReferenceNumber().IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0)
+            .OrderByDescending(r => r.DatePaid ?? r.DateRequested)
+            .ThenByDescending(r => r.RequestId);
+
+        _grid.DataSource = rows
+            .Select(r => new
+            {
+                ORNumber = r.OfficialReceiptNo,
+                ID = r.RequestId,
+                DatePaid = r.DatePaid?.ToString("yyyy-MM-dd HH:mm") ?? "",
+                Reference = r.GetReferenceNumber(),
+                Resident = r.Resident.GetFullName(),
+                Document = r.GetDocumentName(),
+                Amount = $"₱{r.Fee:N2}",
+                ReceivedBy = r.ReceivedBy,
+                Status = r.Status.ToString()
+            })
+            .ToList();
+
+        if (_grid.Columns["ID"] is { } idColumn) idColumn.Visible = false;
+        if (_grid.Columns["ORNumber"] is { } orColumn) orColumn.HeaderText = "O.R. Number";
+        if (_grid.Columns["DatePaid"] is { } dateColumn) dateColumn.HeaderText = "Date Paid";
+        if (_grid.Columns["ReceivedBy"] is { } byColumn) byColumn.HeaderText = "Received By";
+
+        _emptyLabel.Text = term.Length == 0
+            ? "No payments recorded yet — payments you record on the Requests page appear here"
+            : $"No receipts match \u201c{term}\u201d";
+        _emptyLabel.Visible = _grid.Rows.Count == 0;
+    }
+
+    private void ViewReceipt()
+    {
+        if (_grid.CurrentRow?.Cells["ID"].Value is not int id) { Dialog.SelectFirst("receipt"); return; }
+
+        var request = Repository.Requests.FirstOrDefault(r => r.RequestId == id);
+        if (request is null) return;
+
+        using var dialog = new DocumentPreviewForm("Official Receipt " + request.OfficialReceiptNo,
+                                                   BuildReceiptText(request));
         dialog.ShowDialog(this);
+    }
+
+    private static string BuildReceiptText(DocumentRequest r)
+    {
+        var profile = BarangayProfile.MagugpoPoblacion;
+        string line = new string('-', 56);
+        string paidOn = r.DatePaid?.ToString("MMMM d, yyyy  h:mm tt") ?? "(not recorded)";
+
+        return string.Join(Environment.NewLine, new[]
+        {
+            profile.ProvinceName,
+            profile.CityName,
+            profile.BarangayName,
+            "",
+            "OFFICIAL RECEIPT",
+            line,
+            $"O.R. No.       : {r.OfficialReceiptNo}",
+            $"Date paid      : {paidOn}",
+            line,
+            $"Received from  : {r.Resident.GetFullName()}",
+            $"Address        : {r.Resident.GetAddressText()}",
+            $"Payment for    : {r.GetDocumentName()}",
+            $"Reference no.  : {r.GetReferenceNumber()}",
+            $"Purpose        : {r.Purpose}",
+            line,
+            $"AMOUNT PAID    : \u20b1{r.Fee:N2}",
+            line,
+            $"Received by    : {(string.IsNullOrWhiteSpace(r.ReceivedBy) ? "(not recorded)" : r.ReceivedBy)}",
+            "",
+            "This receipt is proof of payment of the fee above."
+        });
     }
 }

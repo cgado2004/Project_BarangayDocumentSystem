@@ -49,6 +49,12 @@ public interface IBarangayRepository
     void SaveRequest(DocumentRequest request);
     IEnumerable<DocumentRequest> GetRequestsByStatus(RequestStatus? status);
 
+    /// <summary>
+    /// The next free official receipt number, e.g. OR-20261022-3: today's date plus
+    /// a counter that starts at 1 each day and goes up with every payment.
+    /// </summary>
+    string GetNextOfficialReceiptNo();
+
     BarangayStatistics GetStatistics();
 
     /// <summary>
@@ -79,7 +85,7 @@ public record ResidentDetails(
     Gender Gender,
     CivilStatus CivilStatus,
     string Purok,
-    string AddressLine,
+    string HouseNumber,
     string ContactNumber,
     string Occupation,
     DateTime DateOfResidency,

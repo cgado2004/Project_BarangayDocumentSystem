@@ -64,7 +64,7 @@ public partial class ResidentForm : Form
 
         cmbCivilStatus.SelectedItem = _editing.CivilStatus.ToString();
         cmbPurok.Text = _editing.Purok;
-        txtAddress.Text = _editing.AddressLine;
+        txtHouseNumber.Text = _editing.HouseNumber;
         txtContact.Text = _editing.ContactNumber;
         txtOccupation.Text = _editing.Occupation;
         dtpResidency.Value = _editing.DateOfResidency;
@@ -90,7 +90,7 @@ public partial class ResidentForm : Form
             Gender: radFemale.Checked ? Gender.Female : Gender.Male,
             CivilStatus: (CivilStatus)Enum.Parse(typeof(CivilStatus), cmbCivilStatus.Text),
             Purok: cmbPurok.Text.Trim(),
-            AddressLine: txtAddress.Text.Trim(),
+            HouseNumber: txtHouseNumber.Text.Trim(),
             ContactNumber: txtContact.Text.Trim(),
             Occupation: txtOccupation.Text.Trim(),
             DateOfResidency: dtpResidency.Value.Date,

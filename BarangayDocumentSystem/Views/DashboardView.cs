@@ -80,7 +80,7 @@ public class DashboardView : ViewBase
         _cards.Controls.Add(MetricCard("Revenue Collected", $"₱{stats.TotalCollected:N0}",
             $"{stats.IssuedFreeOfCharge} issued free",
             AppTheme.GreenTint, AppTheme.GreenInk, AppTheme.GreenDeep,
-            "records", null), 3, 0);
+            "receipts", null), 3, 0);
 
         ClearHost(_tables);
         _tables.Controls.Add(BreakdownCard("Requests by Document Type",
