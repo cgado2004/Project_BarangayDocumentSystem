@@ -1,4 +1,4 @@
-# Fee Schedule and Legal Basis — v3.1
+# Fee Schedule and Legal Basis
 
 > **Note (re-design):** this document describes the earlier build. The
 > re-designed system and the list of every request with the file that
