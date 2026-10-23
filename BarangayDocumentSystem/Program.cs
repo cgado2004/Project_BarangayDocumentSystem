@@ -24,9 +24,9 @@ internal static class Program
     {
         // The .NET 6+ WinForms template generates this pair as
         // ApplicationConfiguration.Initialize(); .NET Framework has no such
-        // generator, so it is written out by hand here. Per-monitor DPI
-        // awareness itself is declared in App.config, since .NET Framework
-        // reads that setting before Main() ever runs.
+        // generator, so it is written out by hand here. The app is declared
+        // DPI-unaware in app.manifest so the fixed-pixel layout looks the same
+        // on every PC.
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
@@ -82,8 +82,15 @@ internal static class Program
                 user = login.User;
             }
 
+            // Everything done from here on is logged under this person's name.
+            repository.CurrentUser = string.IsNullOrWhiteSpace(user.FullName) ? user.Username : user.FullName;
+            repository.LogActivity("Signed in", $"Username: {user.Username}");
+
             using var shell = BuildShell(repository, renderer, feeSchedule, user);
             Application.Run(shell);
+
+            repository.LogActivity(shell.LoggedOut ? "Signed out" : "Closed the program", $"Username: {user.Username}");
+            repository.CurrentUser = "System";
 
             if (!shell.LoggedOut)
                 return;
@@ -103,6 +110,7 @@ internal static class Program
         var receipts  = new OfficialReceiptsView(repository);
         var records   = new RecordsView(repository, renderer);
         var archive   = new ArchiveView(repository);
+        var activity  = new ActivityLogView(repository);
 
         shell.AddView("dashboard", "Dashboard", "▦", dashboard);
         shell.AddView("residents", "Residents", "●", residents);
@@ -110,6 +118,7 @@ internal static class Program
         shell.AddView("receipts",  "Receipts",  "▥", receipts);
         shell.AddView("records",   "Records",   "▧", records);
         shell.AddView("archive",   "Archive",   "▣", archive);
+        shell.AddView("activity",  "Activity",  "▨", activity);
 
         shell.Start("dashboard");
 

@@ -136,10 +136,10 @@ public class RequestsView : ViewBase
             Padding = new Padding(0, 8, 0, 0)
         };
 
-        // New Document replaces the old "Start Processing" button: filing the
+        // New Request replaces the old "Start Processing" button: filing the
         // request is what starts it.
-        var newDocument = UiFactory.PrimaryButton("New Document", 140);
-        newDocument.Click += (_, _) => NewDocument();
+        var newDocument = UiFactory.PrimaryButton("New Request", 140);
+        newDocument.Click += (_, _) => NewRequest();
         actions.Controls.Add(newDocument);
 
         var markReady = UiFactory.SecondaryButton("Mark Ready", 130);
@@ -221,7 +221,7 @@ public class RequestsView : ViewBase
     /// Pick a resident, choose the document, and file it. The request goes
     /// straight into Processing — this is the step "Start Processing" used to be.
     /// </summary>
-    private void NewDocument()
+    private void NewRequest()
     {
         using var picker = new ResidentPickerForm(Repository);
         if (picker.ShowDialog(this) != DialogResult.OK || picker.SelectedResident is null) return;
@@ -377,6 +377,7 @@ public class RecordsView : ViewBase
     private readonly DocumentRenderer _renderer;
     private readonly DataGridView _grid = new();
     private readonly TextBox _search = new();
+    private readonly DateRangeFilter _dates = new();
     private readonly Label _emptyLabel = new();
 
     public override string Title => "Records";
@@ -431,8 +432,12 @@ public class RecordsView : ViewBase
         CueBanner.Set(_search, "Search by reference, resident, or document…");
         _search.TextChanged += (_, _) => RefreshData();
 
+        // Filters by the date the document was released.
+        _dates.Changed += (_, _) => RefreshData();
+
         wrap.Controls.Add(_search);
         bar.Controls.Add(wrap);
+        bar.Controls.Add(_dates);
         return bar;
     }
 
@@ -485,6 +490,7 @@ public class RecordsView : ViewBase
                      || r.GetReferenceNumber().IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0
                      || r.Resident.GetFullName().IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0
                      || r.GetDocumentName().IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0)
+            .Where(r => _dates.Matches(r.DateReleased ?? r.DateRequested))
             .OrderByDescending(r => r.DateReleased ?? r.DateRequested);
 
         _grid.DataSource = released
@@ -507,9 +513,11 @@ public class RecordsView : ViewBase
         if (_grid.Columns["OR"] is { } orColumn)
             orColumn.HeaderText = "O.R. No.";
 
-        _emptyLabel.Text = term.Length == 0
-            ? "No released documents yet — documents you release will be kept here"
-            : $"No records match \u201c{term}\u201d";
+        _emptyLabel.Text = _dates.Active
+            ? "No released documents in the selected dates"
+            : term.Length == 0
+                ? "No released documents yet — documents you release will be kept here"
+                : $"No records match \u201c{term}\u201d";
         _emptyLabel.Visible = _grid.Rows.Count == 0;
     }
 
@@ -534,6 +542,7 @@ public class OfficialReceiptsView : ViewBase
 {
     private readonly DataGridView _grid = new();
     private readonly TextBox _search = new();
+    private readonly DateRangeFilter _dates = new();
     private readonly Label _availability = new();
     private readonly Label _emptyLabel = new();
 
@@ -576,7 +585,7 @@ public class OfficialReceiptsView : ViewBase
         var wrap = new Panel
         {
             Dock = DockStyle.Left,
-            Width = 380,
+            Width = 340,
             BackColor = AppTheme.Surface,
             Padding = new Padding(0, 7, 0, 7)
         };
@@ -589,14 +598,11 @@ public class OfficialReceiptsView : ViewBase
         _search.TextChanged += (_, _) => RefreshData();
         wrap.Controls.Add(_search);
 
-        _availability.Dock = DockStyle.Right;
-        _availability.Width = 440;
-        _availability.TextAlign = ContentAlignment.MiddleRight;
-        _availability.Font = AppTheme.SmallFont;
-        _availability.ForeColor = AppTheme.TextSecondary;
+        // Filters by the date the payment was made.
+        _dates.Changed += (_, _) => RefreshData();
 
         bar.Controls.Add(wrap);
-        bar.Controls.Add(_availability);
+        bar.Controls.Add(_dates);
         return bar;
     }
 
@@ -637,7 +643,18 @@ public class OfficialReceiptsView : ViewBase
         view.Click += (_, _) => ViewReceipt();
 
         actions.Controls.Add(view);
-        return actions;
+
+        // The next O.R. number and the day's totals sit at the right of this row.
+        _availability.Dock = DockStyle.Right;
+        _availability.Width = 460;
+        _availability.TextAlign = ContentAlignment.MiddleRight;
+        _availability.Font = AppTheme.SmallFont;
+        _availability.ForeColor = AppTheme.TextSecondary;
+
+        var row = new Panel { Dock = DockStyle.Fill, BackColor = AppTheme.Background, Margin = new Padding(0) };
+        row.Controls.Add(actions);
+        row.Controls.Add(_availability);
+        return row;
     }
 
     private static bool HasReceipt(DocumentRequest r) =>
@@ -651,11 +668,14 @@ public class OfficialReceiptsView : ViewBase
 
         var today = DateTime.Today;
         var paidToday = paid.Where(r => r.DatePaid?.Date == today).ToList();
+        var inRange = paid.Where(r => _dates.Matches(r.DatePaid ?? r.DateRequested)).ToList();
         _availability.Text =
             $"Next available O.R.:  {Repository.GetNextOfficialReceiptNo()}\n" +
-            $"Issued today: {paidToday.Count}   ·   Collected today: ₱{paidToday.Sum(r => r.Fee):N2}";
+            (_dates.Active
+                ? $"In the selected dates: {inRange.Count} receipt(s)   ·   Collected: ₱{inRange.Sum(r => r.Fee):N2}"
+                : $"Issued today: {paidToday.Count}   ·   Collected today: ₱{paidToday.Sum(r => r.Fee):N2}");
 
-        var rows = paid
+        var rows = inRange
             .Where(r => term.Length == 0
                      || r.OfficialReceiptNo.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0
                      || r.Resident.GetFullName().IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0
@@ -683,9 +703,11 @@ public class OfficialReceiptsView : ViewBase
         if (_grid.Columns["DatePaid"] is { } dateColumn) dateColumn.HeaderText = "Date Paid";
         if (_grid.Columns["ReceivedBy"] is { } byColumn) byColumn.HeaderText = "Received By";
 
-        _emptyLabel.Text = term.Length == 0
-            ? "No payments recorded yet — payments you record on the Requests page appear here"
-            : $"No receipts match \u201c{term}\u201d";
+        _emptyLabel.Text = _dates.Active
+            ? "No receipts in the selected dates"
+            : term.Length == 0
+                ? "No payments recorded yet — payments you record on the Requests page appear here"
+                : $"No receipts match \u201c{term}\u201d";
         _emptyLabel.Visible = _grid.Rows.Count == 0;
     }
 
@@ -731,4 +753,106 @@ public class OfficialReceiptsView : ViewBase
             "This receipt is proof of payment of the fee above."
         });
     }
+}
+
+/// <summary>
+/// "Filter by date" strip for the toolbar: tick the box, pick From and To (both
+/// days included). Unticked means every date. The Today button selects today.
+/// </summary>
+internal sealed class DateRangeFilter : FlowLayoutPanel
+{
+    private readonly CheckBox _enable = new();
+    private readonly DateTimePicker _from = new();
+    private readonly DateTimePicker _to = new();
+
+    public event EventHandler? Changed;
+
+    /// <summary>True while a date range is being applied.</summary>
+    public bool Active => _enable.Checked;
+
+    public DateRangeFilter()
+    {
+        Dock = DockStyle.Right;
+        FlowDirection = FlowDirection.LeftToRight;
+        WrapContents = false;
+        BackColor = AppTheme.Surface;
+        Margin = new Padding(0);
+        Padding = new Padding(0);
+
+        // The toolbar leaves 52 px of height, so everything is centred in that.
+        _enable.Text = "Filter by date";
+        _enable.AutoSize = false;
+        _enable.Width = 130;
+        _enable.Height = 52;
+        _enable.Font = AppTheme.BodyFont;
+        _enable.Margin = new Padding(0);
+        _enable.CheckedChanged += (_, _) =>
+        {
+            _from.Enabled = _to.Enabled = _enable.Checked;
+            Changed?.Invoke(this, EventArgs.Empty);
+        };
+
+        ConfigurePicker(_from);
+        ConfigurePicker(_to);
+        _from.Margin = new Padding(0, 13, 10, 0);
+        _to.Margin = new Padding(0, 13, 12, 0);
+        _from.ValueChanged += (_, _) => { if (_enable.Checked) Changed?.Invoke(this, EventArgs.Empty); };
+        _to.ValueChanged += (_, _) => { if (_enable.Checked) Changed?.Invoke(this, EventArgs.Empty); };
+
+        var today = UiFactory.SecondaryButton("Today", 70);
+        today.Margin = new Padding(0, 13, 0, 0);
+        today.Height = _from.Height;   // same height as the date boxes so they line up
+        today.Click += (_, _) =>
+        {
+            _from.Value = DateTime.Today;
+            _to.Value = DateTime.Today;
+            _enable.Checked = true;
+            Changed?.Invoke(this, EventArgs.Empty);
+        };
+
+        Controls.Add(_enable);
+        Controls.Add(MakeLabel("From", 42));
+        Controls.Add(_from);
+        Controls.Add(MakeLabel("To", 26));
+        Controls.Add(_to);
+        Controls.Add(today);
+
+        // Wide enough for everything in the strip (the Today button grows with its text).
+        int total = 0;
+        foreach (Control c in Controls)
+            total += Math.Max(c.Width, c.PreferredSize.Width) + c.Margin.Horizontal;
+        Width = total + 8;
+    }
+
+    /// <summary>True when the date falls inside the chosen range, or when no range is applied.</summary>
+    public bool Matches(DateTime date)
+    {
+        if (!_enable.Checked) return true;
+
+        DateTime a = _from.Value.Date, b = _to.Value.Date;
+        if (a > b) { var t = a; a = b; b = t; }
+        return date.Date >= a && date.Date <= b;
+    }
+
+    private static void ConfigurePicker(DateTimePicker picker)
+    {
+        picker.Font = AppTheme.BodyFont;
+        picker.Format = DateTimePickerFormat.Custom;
+        picker.CustomFormat = "MMM d, yyyy";
+        picker.Width = 120;
+        picker.Value = DateTime.Today;
+        picker.Enabled = false;
+    }
+
+    private static Label MakeLabel(string text, int width) => new()
+    {
+        Text = text,
+        AutoSize = false,
+        Width = width,
+        Height = 52,
+        TextAlign = ContentAlignment.MiddleLeft,
+        Font = AppTheme.BodyFont,
+        ForeColor = AppTheme.TextSecondary,
+        Margin = new Padding(0)
+    };
 }

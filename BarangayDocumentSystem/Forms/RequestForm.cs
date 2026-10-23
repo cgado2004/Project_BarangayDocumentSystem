@@ -40,6 +40,7 @@ public partial class RequestForm : Form
     public RequestForm(Resident resident, FeeSchedule feeSchedule)
     {
         InitializeComponent();
+        UiFactory.MakeButtonsFlexible(this);
         _resident = resident ?? throw new ArgumentNullException(nameof(resident));
         _feeSchedule = feeSchedule ?? throw new ArgumentNullException(nameof(feeSchedule));
     }

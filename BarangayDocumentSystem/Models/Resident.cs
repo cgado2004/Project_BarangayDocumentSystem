@@ -9,6 +9,20 @@ namespace BarangayDocumentSystem.Models;
 /// A resident exists independently of any request, and requests are historical
 /// records that outlive changes to the resident's details.
 /// </summary>
+/// <summary>A person who depends on a resident (child, spouse, parent...).</summary>
+public record Dependent(string FullName, string Relationship, DateTime? DateOfBirth)
+{
+    /// <summary>Age in whole years, or null when no birth date was entered.</summary>
+    public int? GetAge()
+    {
+        if (DateOfBirth is null) return null;
+        var born = DateOfBirth.Value;
+        int age = DateTime.Today.Year - born.Year;
+        if (born.Date > DateTime.Today.AddYears(-age)) age--;
+        return Math.Max(0, age);
+    }
+}
+
 public class Resident
 {
     private readonly List<DocumentRequest> _requests = new();
@@ -58,6 +72,18 @@ public class Resident
     public string TransferReason { get; internal set; } = string.Empty;
 
     public IReadOnlyList<DocumentRequest> Requests => _requests.AsReadOnly();
+
+    // ---- Dependents --------------------------------------------------------
+    // Children, spouse, parents etc. who depend on this resident. Only the
+    // repository replaces the list.
+    private readonly List<Dependent> _dependents = new();
+    public IReadOnlyList<Dependent> Dependents => _dependents.AsReadOnly();
+
+    internal void SetDependents(IEnumerable<Dependent>? dependents)
+    {
+        _dependents.Clear();
+        if (dependents != null) _dependents.AddRange(dependents);
+    }
 
     public Resident(int residentId, string firstName, string lastName)
     {

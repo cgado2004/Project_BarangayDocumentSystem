@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
@@ -43,16 +44,57 @@ public static class UiFactory
         return b;
     }
 
-    private static Button BaseButton(string text, int width) => new Button
+    private static Button BaseButton(string text, int width)
     {
-        Text = text,
-        Width = width,
-        Height = AppTheme.ControlHeight,
-        FlatStyle = FlatStyle.Flat,
-        Cursor = Cursors.Hand,
-        UseVisualStyleBackColor = false,
-        Margin = new Padding(0, 0, 8, 0)
-    };
+        var b = new Button
+        {
+            Text = text,
+            Width = width,
+            Height = AppTheme.ControlHeight,
+            FlatStyle = FlatStyle.Flat,
+            Cursor = Cursors.Hand,
+            UseVisualStyleBackColor = false,
+            Margin = new Padding(0, 0, 8, 0)
+        };
+        MakeFlexible(b);
+        return b;
+    }
+
+    /// <summary>
+    /// Lets a button grow WIDER when its text needs more room, and never be
+    /// narrower than the width it was designed with. The height is left alone on
+    /// purpose: WinForms AutoSize also changes the height, which made buttons
+    /// taller than the boxes beside them.
+    /// </summary>
+    public static void MakeFlexible(Button button)
+    {
+        if (button.Tag is "flex") return;
+        button.Tag = "flex";
+
+        int designedWidth = button.Width;
+        button.AutoSize = false;
+
+        void Fit()
+        {
+            int textWidth = TextRenderer.MeasureText(button.Text, button.Font).Width;
+            int width = Math.Max(designedWidth, textWidth + 28);
+            if (button.Width != width) button.Width = width;
+        }
+
+        Fit();
+        button.TextChanged += (_, _) => Fit();
+        button.FontChanged += (_, _) => Fit();
+    }
+
+    /// <summary>Applies <see cref="MakeFlexible"/> to every button on a form or panel, including nested ones.</summary>
+    public static void MakeButtonsFlexible(Control root)
+    {
+        foreach (Control child in root.Controls)
+        {
+            if (child is Button button) MakeFlexible(button);
+            else if (child.HasChildren) MakeButtonsFlexible(child);
+        }
+    }
 
     public static Panel CardHost(Control inner)
     {

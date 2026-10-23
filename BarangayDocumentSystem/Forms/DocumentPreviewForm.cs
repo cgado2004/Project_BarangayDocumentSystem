@@ -24,6 +24,7 @@ public partial class DocumentPreviewForm : Form
     public DocumentPreviewForm(string title, string documentText)
     {
         InitializeComponent();
+        UiFactory.MakeButtonsFlexible(this);
         Text = $"Preview — {title}";
         _documentText = documentText;
     }
@@ -160,15 +161,121 @@ public static class DocumentPrinter
                             ex.Message, "Crystal Reports");
             }
         }
-        else
-        {
-            Dialog.Info($"The report file {ReportFolder}\\{ReportFileName} was not found next to the program, " +
-                        "so the plain preview is shown instead.\n\nSee Reports\\HOW-TO-MAKE-THE-REPORT.txt.",
-                        "Crystal Reports");
-        }
+        // No .rpt yet: fall through to the built-in formatted print preview.
 #endif
-        using var preview = new DocumentPreviewForm(request.GetDocumentName(), renderer.Render(request));
+        try
+        {
+            FormattedDocumentPrinter.ShowPreview(owner, request.GetDocumentName(),
+                                                 renderer.BuildReportData(request).Rows[0]);
+        }
+        catch (Exception ex)
+        {
+            // No printer installed, or drawing failed: show the plain text version.
+            Dialog.Warn("The formatted print preview could not be opened, so the plain preview is shown.\n\n" +
+                        ex.Message, "Print");
+            using var preview = new DocumentPreviewForm(request.GetDocumentName(), renderer.Render(request));
+            preview.ShowDialog(owner);
+        }
+    }
+}
+
+/// <summary>
+/// Built-in formatted document (letterhead, title, body, signature, O.R. line),
+/// drawn with System.Drawing and shown in the standard print preview, which has
+/// Print and zoom buttons. Used whenever there is no Crystal report file, so
+/// printing works without any designer step. Uses the same data row as Crystal.
+/// </summary>
+public static class FormattedDocumentPrinter
+{
+    public static void ShowPreview(IWin32Window owner, string title, DataRow row)
+    {
+        using var printDoc = new System.Drawing.Printing.PrintDocument();
+        printDoc.DocumentName = title;
+        printDoc.PrintPage += (s, e) => Draw(e, row);
+
+        using var preview = new PrintPreviewDialog
+        {
+            Document = printDoc,
+            Width = 900,
+            Height = 760,
+            StartPosition = FormStartPosition.CenterParent
+        };
         preview.ShowDialog(owner);
+    }
+
+    private static string F(DataRow row, string column) => Convert.ToString(row[column]) ?? string.Empty;
+
+    private static void Draw(System.Drawing.Printing.PrintPageEventArgs e, DataRow row)
+    {
+        var g = e.Graphics;
+        if (g is null) return;
+
+        var area = e.MarginBounds;
+        float y = area.Top;
+        var center = new StringFormat { Alignment = StringAlignment.Center };
+
+        using var small = new Font("Times New Roman", 11);
+        using var smallBold = new Font("Times New Roman", 12, FontStyle.Bold);
+        using var big = new Font("Times New Roman", 15, FontStyle.Bold);
+        using var titleFont = new Font("Times New Roman", 18, FontStyle.Bold);
+        using var bodyFont = new Font("Times New Roman", 12);
+
+        void Line(string text, Font font)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+            var r = new RectangleF(area.Left, y, area.Width, font.GetHeight(g) + 2);
+            g.DrawString(text, font, Brushes.Black, r, center);
+            y += font.GetHeight(g) + 2;
+        }
+
+        // Letterhead
+        Line("Republic of the Philippines", small);
+        Line("Province of " + F(row, "ProvinceName").Replace("Province of ", ""), small);
+        Line(F(row, "CityName"), small);
+        Line(F(row, "BarangayName"), big);
+        Line("OFFICE OF THE PUNONG BARANGAY", smallBold);
+        y += 6;
+        g.DrawLine(Pens.Black, area.Left, y, area.Right, y);
+        y += 24;
+
+        // Title
+        Line(F(row, "Title"), titleFont);
+        Line(F(row, "Subtitle"), small);
+        y += 18;
+
+        // Body (wraps; paragraphs separated by blank lines)
+        string body = F(row, "Body");
+        string oath = F(row, "Oath");
+        if (oath.Length > 0) body += "\n\n" + oath;
+        var bodyRect = new RectangleF(area.Left, y, area.Width, area.Bottom - y - 170);
+        g.DrawString(body, bodyFont, Brushes.Black, bodyRect);
+        float bodyHeight = g.MeasureString(body, bodyFont, (int)area.Width).Height;
+        y += Math.Min(bodyHeight, bodyRect.Height) + 24;
+
+        // Issued line and signature block, right aligned
+        var right = new StringFormat { Alignment = StringAlignment.Far };
+        float sy = Math.Max(y, area.Bottom - 150);
+        void RightLine(string text, Font font)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+            g.DrawString(text, font, Brushes.Black,
+                         new RectangleF(area.Left, sy, area.Width, font.GetHeight(g) + 2), right);
+            sy += font.GetHeight(g) + 4;
+        }
+        RightLine(F(row, "IssuedLine"), small);
+        sy += 20;
+        RightLine(F(row, "PunongBarangay").ToUpper(), smallBold);
+        RightLine("Punong Barangay", small);
+
+        // Footer: reference, fee and O.R.
+        string foot = "Ref. No.: " + F(row, "ReferenceNo");
+        string fee = F(row, "FeeText");
+        if (fee.Length > 0) foot += "     Fee: " + fee;
+        string orNo = F(row, "ORNo");
+        if (orNo.Length > 0) foot += "     O.R. No.: " + orNo;
+        g.DrawString(foot, small, Brushes.Black, area.Left, area.Bottom - small.GetHeight(g));
+
+        e.HasMorePages = false;
     }
 }
 

@@ -23,14 +23,14 @@
     </application>
   </compatibility>
 
-  <!-- Per-monitor DPI awareness so the UI stays sharp on high-DPI screens.
-       App.config's DpiAwareness setting is the .NET Framework 4.7+ way to
-       ask for this; these two entries are the manifest-level fallback that
-       Windows itself reads for older runtimes. -->
+  <!-- DPI-UNAWARE on purpose. The screens are laid out in fixed pixels, so on a PC
+       with 125% or 150% display scaling a DPI-aware app grows its text but not its
+       boxes, and search bars and buttons come out crooked. Declaring the app
+       unaware makes Windows scale the whole window as one picture, so it looks
+       the same on every PC (slightly softer text on high-DPI screens). -->
   <application xmlns="urn:schemas-microsoft-com:asm.v3">
     <windowsSettings>
-      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/PM</dpiAware>
-      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">false</dpiAware>
     </windowsSettings>
   </application>
 </assembly>

@@ -35,6 +35,11 @@ public class MySqlBarangayRepository : IBarangayRepository
     private const string SpRestoreResident = "sp_resident_restore";
     private const string SpAddRequest      = "sp_request_add";
     private const string SpSaveRequest     = "sp_request_save";
+    private const string SpGetDependents   = "sp_dependents_get_all";
+    private const string SpClearDependents = "sp_dependents_clear";
+    private const string SpAddDependent    = "sp_dependent_add";
+    private const string SpAddActivity     = "sp_activity_add";
+    private const string SpGetActivity     = "sp_activity_get_by_date";
 
     // state
     private readonly string _connectionString;
@@ -42,8 +47,15 @@ public class MySqlBarangayRepository : IBarangayRepository
     private readonly List<Resident> _residents = new();
     private readonly List<DocumentRequest> _requests = new();
 
+    // What each request looked like when last loaded or saved, so SaveRequest can
+    // tell the activity log what actually changed (payment, status...).
+    private readonly Dictionary<int, (RequestStatus Status, bool Paid)> _lastSaved = new();
+
     public IReadOnlyList<Resident> Residents => _residents.AsReadOnly();
     public IReadOnlyList<DocumentRequest> Requests => _requests.AsReadOnly();
+
+    /// <summary>Shown in the activity log. Program.cs sets it after sign-in.</summary>
+    public string CurrentUser { get; set; } = "System";
 
     
     /// The tables must already exist — call
@@ -80,6 +92,23 @@ public class MySqlBarangayRepository : IBarangayRepository
                 }
             }
 
+            var dependents = new Dictionary<int, List<Dependent>>();
+            using (var cmd = CreateCommand(conn, SpGetDependents))
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    int residentId = GetInt(reader, "resident_id");
+                    if (!dependents.TryGetValue(residentId, out var list))
+                        dependents[residentId] = list = new List<Dependent>();
+                    list.Add(new Dependent(GetString(reader, "full_name"),
+                                           GetString(reader, "relationship"),
+                                           GetNullableDate(reader, "date_of_birth")));
+                }
+            }
+            foreach (var pair in dependents)
+                if (byId.TryGetValue(pair.Key, out var owner)) owner.SetDependents(pair.Value);
+
             using (var cmd = CreateCommand(conn, SpGetRequests))
             using (var reader = cmd.ExecuteReader())
             {
@@ -100,6 +129,9 @@ public class MySqlBarangayRepository : IBarangayRepository
         _residents.AddRange(residents);
         _requests.Clear();
         _requests.AddRange(requests);
+
+        _lastSaved.Clear();
+        foreach (var r in requests) _lastSaved[r.RequestId] = (r.Status, r.IsPaid);
     }
 
     private static Resident ReadResident(DbDataReader r) =>
@@ -148,13 +180,16 @@ public class MySqlBarangayRepository : IBarangayRepository
         {
             using var cmd = CreateCommand(conn, SpAddResident);
             BindResident(cmd, d);
-            return Convert.ToInt32(cmd.ExecuteScalar());   // the procedure returns the new id
+            int newId = Convert.ToInt32(cmd.ExecuteScalar());   // the procedure returns the new id
+            SaveDependents(conn, newId, d.Dependents);
+            return newId;
         });
 
         // Database accepted it — now mirror it in memory.
         var resident = new Resident(id, d.FirstName, d.LastName);
         Apply(resident, d);
         _residents.Add(resident);
+        LogActivity("Resident added", $"{resident.GetFullName()} ({resident.Purok})");
         return resident;
     }
 
@@ -168,9 +203,33 @@ public class MySqlBarangayRepository : IBarangayRepository
             BindResident(cmd, d);
             AddParameter(cmd, "p_resident_id", resident.ResidentId);
             cmd.ExecuteNonQuery();
+            if (d.Dependents != null) SaveDependents(conn, resident.ResidentId, d.Dependents);
         });
 
         Apply(resident, d);
+        LogActivity("Resident edited", resident.GetFullName());
+    }
+
+    /// Replaces a resident's dependents: clear, then add each one.
+    private static void SaveDependents(DbConnection conn, int residentId, IReadOnlyList<Dependent>? dependents)
+    {
+        if (dependents is null) return;
+
+        using (var clear = CreateCommand(conn, SpClearDependents))
+        {
+            AddParameter(clear, "p_resident_id", residentId);
+            clear.ExecuteNonQuery();
+        }
+
+        foreach (var dependent in dependents)
+        {
+            using var add = CreateCommand(conn, SpAddDependent);
+            AddParameter(add, "p_full_name",     dependent.FullName);
+            AddParameter(add, "p_relationship",  dependent.Relationship ?? string.Empty);
+            AddParameter(add, "p_date_of_birth", dependent.DateOfBirth?.Date);
+            AddParameter(add, "p_resident_id",   residentId);
+            add.ExecuteNonQuery();
+        }
     }
 
     public void ArchiveResident(Resident resident, string destination, string reason)
@@ -194,6 +253,8 @@ public class MySqlBarangayRepository : IBarangayRepository
         resident.ArchivedOn = now;
         resident.TransferDestination = destination ?? string.Empty;
         resident.TransferReason = reason ?? string.Empty;
+        LogActivity("Resident transferred",
+            $"{resident.GetFullName()} moved to {(string.IsNullOrWhiteSpace(destination) ? "unknown" : destination)}");
     }
 
     public void RestoreResident(Resident resident)
@@ -211,6 +272,7 @@ public class MySqlBarangayRepository : IBarangayRepository
         resident.ArchivedOn = null;
         resident.TransferDestination = string.Empty;
         resident.TransferReason = string.Empty;
+        LogActivity("Resident restored", resident.GetFullName());
     }
 
     public IEnumerable<Resident> SearchResidents(string term) =>
@@ -252,6 +314,7 @@ public class MySqlBarangayRepository : IBarangayRepository
         r.DateOfResidency   = d.DateOfResidency;
         r.IsRegisteredVoter = d.IsRegisteredVoter;
         r.Classification    = d.Classification;
+        if (d.Dependents != null) r.SetDependents(d.Dependents);
     }
 
     /// Binds the fourteen editable fields — shared by INSERT and UPDATE.
@@ -305,6 +368,9 @@ public class MySqlBarangayRepository : IBarangayRepository
 
         _requests.Add(request);
         resident.AddRequest(request);
+        _lastSaved[request.RequestId] = (request.Status, request.IsPaid);
+        LogActivity("Request filed",
+            $"{request.GetReferenceNumber()} — {request.GetDocumentName()} for {resident.GetFullName()}");
         return request;
     }
 
@@ -330,6 +396,76 @@ public class MySqlBarangayRepository : IBarangayRepository
             AddParameter(cmd, "p_resident_id",         request.Resident.ResidentId);
             cmd.ExecuteNonQuery();
         });
+
+        LogRequestChange(request);
+    }
+
+    /// Writes what changed in a saved request: payment, release or another status change.
+    private void LogRequestChange(DocumentRequest request)
+    {
+        _lastSaved.TryGetValue(request.RequestId, out var before);
+        bool known = _lastSaved.ContainsKey(request.RequestId);
+        string subject = $"{request.GetReferenceNumber()} — {request.GetDocumentName()} for {request.Resident.GetFullName()}";
+        bool logged = false;
+
+        if (request.IsPaid && !(known && before.Paid))
+        {
+            LogActivity("Payment recorded",
+                $"{request.OfficialReceiptNo} — \u20b1{request.Fee:N2} for {subject}" +
+                (string.IsNullOrWhiteSpace(request.ReceivedBy) ? "" : $", received by {request.ReceivedBy}"));
+            logged = true;
+        }
+
+        if (!known || before.Status != request.Status)
+        {
+            if (request.Status == RequestStatus.Released)
+                LogActivity("Document released", subject);
+            else
+                LogActivity("Status changed", $"{subject}: {(known ? before.Status.ToString() : "?")} \u2192 {request.Status}");
+            logged = true;
+        }
+
+        if (!logged) LogActivity("Request updated", subject);
+        _lastSaved[request.RequestId] = (request.Status, request.IsPaid);
+    }
+
+    // activity log
+    public void LogActivity(string action, string details)
+    {
+        try
+        {
+            RunNoResult(conn =>
+            {
+                using var cmd = CreateCommand(conn, SpAddActivity);
+                AddParameter(cmd, "p_logged_on", DateTime.Now);
+                AddParameter(cmd, "p_username",  Trim(CurrentUser, 100));
+                AddParameter(cmd, "p_action",    Trim(action, 60));
+                AddParameter(cmd, "p_details",   Trim(details, 500));
+                cmd.ExecuteNonQuery();
+            });
+        }
+        catch (RepositoryException)
+        {
+            // A logging failure must never block the real work.
+        }
+    }
+
+    public IReadOnlyList<ActivityEntry> GetActivity(DateTime day) => Run(conn =>
+    {
+        var entries = new List<ActivityEntry>();
+        using var cmd = CreateCommand(conn, SpGetActivity);
+        AddParameter(cmd, "p_day", day.Date);
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+            entries.Add(new ActivityEntry(GetDate(reader, "logged_on"), GetString(reader, "username"),
+                                          GetString(reader, "action"), GetString(reader, "details")));
+        return (IReadOnlyList<ActivityEntry>)entries;
+    });
+
+    private static string Trim(string? text, int max)
+    {
+        text ??= string.Empty;
+        return text.Length <= max ? text : text.Substring(0, max);
     }
 
     private static bool ContainsIgnoreCase(string haystack, string needle) =>

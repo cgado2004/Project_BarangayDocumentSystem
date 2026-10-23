@@ -61,6 +61,9 @@ public static class Prompt
             Size = new Size(104, 38)
         };
 
+        UiFactory.MakeFlexible(ok);
+        UiFactory.MakeFlexible(cancel);
+
         // Controls.Add is what actually puts them on the form — forgetting it
         // is a classic WinForms bug: the control exists but never appears.
         form.Controls.Add(label);
@@ -481,7 +484,7 @@ public sealed class TransferForm : Form
 
 /// <summary>
 /// "Who is this document for?" — lists ACTIVE residents (archived ones are not
-/// offered) so the Requests page can start a new document.
+/// offered) so the Requests page can start a new request.
 /// </summary>
 public sealed class ResidentPickerForm : Form
 {
@@ -497,7 +500,7 @@ public sealed class ResidentPickerForm : Form
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
 
-        Text = "New document — choose a resident";
+        Text = "New request — choose a resident";
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition = FormStartPosition.CenterParent;
         MaximizeBox = false;
@@ -582,6 +585,131 @@ public sealed class ResidentPickerForm : Form
         SelectedResident = _repository.Residents.FirstOrDefault(r => r.ResidentId == id);
         if (SelectedResident is null) return;
 
+        DialogResult = DialogResult.OK;
+        Close();
+    }
+}
+
+/// <summary>
+/// Add or edit one dependent: name, relationship and an optional birth date.
+/// Used from the Dependents tab of the resident form.
+/// </summary>
+public sealed class DependentForm : Form
+{
+    private readonly TextBox _name = new();
+    private readonly ComboBox _relationship = new();
+    private readonly CheckBox _hasBirth = new();
+    private readonly DateTimePicker _birth = new();
+
+    /// <summary>The entered dependent; set only when the result is OK.</summary>
+    public Dependent? Result { get; private set; }
+
+    public DependentForm(Dependent? existing = null)
+    {
+        Text = existing is null ? "Add dependent" : "Edit dependent";
+        FormBorderStyle = FormBorderStyle.FixedDialog;
+        StartPosition = FormStartPosition.CenterParent;
+        MaximizeBox = false;
+        MinimizeBox = false;
+        BackColor = AppTheme.Background;
+        Font = AppTheme.BodyFont;
+        ClientSize = new Size(480, 372);
+
+        Controls.Add(Caption("Full name", 24));
+        _name.Location = new Point(24, 46);
+        _name.Size = new Size(432, 27);
+        _name.MaxLength = 150;
+        _name.BorderStyle = BorderStyle.FixedSingle;
+        _name.KeyPress += (_, e) => InputValidator.AllowNameCharsOnly(e);
+        Controls.Add(_name);
+
+        Controls.Add(Caption("Relationship to the resident", 96));
+        _relationship.Location = new Point(24, 118);
+        _relationship.Size = new Size(432, 27);
+        _relationship.DropDownStyle = ComboBoxStyle.DropDown;
+        _relationship.MaxLength = 50;
+        _relationship.Items.AddRange(new object[]
+        {
+            "Child", "Spouse", "Parent", "Sibling", "Grandchild", "Grandparent", "Other relative", "Other"
+        });
+        Controls.Add(_relationship);
+
+        Controls.Add(Caption("Date of birth (optional)", 168));
+        _hasBirth.Text = "Enter a date of birth";
+        _hasBirth.AutoSize = true;
+        _hasBirth.Location = new Point(24, 192);
+        _hasBirth.CheckedChanged += (_, _) => _birth.Enabled = _hasBirth.Checked;
+        Controls.Add(_hasBirth);
+
+        _birth.Location = new Point(24, 224);
+        _birth.Size = new Size(432, 27);
+        _birth.Format = DateTimePickerFormat.Short;
+        _birth.MinDate = new DateTime(1900, 1, 1);
+        _birth.MaxDate = DateTime.Today;
+        _birth.Value = DateTime.Today;
+        _birth.Enabled = false;
+        Controls.Add(_birth);
+
+        var ok = UiFactory.PrimaryButton(existing is null ? "Add dependent" : "Save", 150);
+        ok.Location = new Point(306, 300);
+        ok.Height = 36;
+        ok.Click += (_, _) => Submit();
+
+        var cancel = UiFactory.SecondaryButton("Cancel", 90);
+        cancel.Location = new Point(206, 300);
+        cancel.Height = 36;
+        cancel.DialogResult = DialogResult.Cancel;
+
+        Controls.Add(ok);
+        Controls.Add(cancel);
+        AcceptButton = ok;
+        CancelButton = cancel;
+
+        if (existing is not null)
+        {
+            _name.Text = existing.FullName;
+            _relationship.Text = existing.Relationship;
+            if (existing.DateOfBirth is { } born)
+            {
+                _hasBirth.Checked = true;
+                _birth.Value = born < _birth.MinDate ? _birth.MinDate : (born > _birth.MaxDate ? _birth.MaxDate : born);
+            }
+        }
+    }
+
+    private static Label Caption(string text, int top) => new()
+    {
+        Text = text,
+        Font = AppTheme.SmallBoldFont,
+        ForeColor = AppTheme.TextSecondary,
+        Location = new Point(24, top),
+        Size = new Size(432, 18)
+    };
+
+    private void Submit()
+    {
+        string name = _name.Text.Trim();
+        if (name.Length == 0)
+        {
+            Dialog.Warn("Please enter the dependent's full name.");
+            _name.Focus();
+            return;
+        }
+        if (!InputValidator.IsValidName(name))
+        {
+            Dialog.Warn("The name cannot contain special characters or numbers.");
+            _name.Focus();
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(_relationship.Text))
+        {
+            Dialog.Warn("Please choose or type how this person is related to the resident.");
+            _relationship.Focus();
+            return;
+        }
+
+        Result = new Dependent(name, _relationship.Text.Trim(),
+                               _hasBirth.Checked ? _birth.Value.Date : (DateTime?)null);
         DialogResult = DialogResult.OK;
         Close();
     }
