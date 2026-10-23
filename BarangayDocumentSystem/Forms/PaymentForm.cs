@@ -22,6 +22,7 @@ public partial class PaymentForm : Form
     public PaymentForm(DocumentRequest request, string officialReceiptNo)
     {
         InitializeComponent();
+        UiFactory.MakeButtonsFlexible(this);
         _request = request ?? throw new ArgumentNullException(nameof(request));
         _officialReceiptNo = officialReceiptNo ?? throw new ArgumentNullException(nameof(officialReceiptNo));
     }

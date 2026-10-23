@@ -1,3 +1,7 @@
+NOTE: this file is OPTIONAL. Without DocumentReport.rpt the app prints a ready-made
+formatted document (letterhead, title, body, signature, O.R. line) with Print and
+zoom buttons. Do the steps below only if you want a Crystal Reports layout.
+
 HOW TO MAKE THE CRYSTAL REPORT (one time, about 10 minutes)
 ============================================================
 
@@ -15,9 +19,12 @@ WHAT YOU NEED
 1. Visual Studio with "SAP Crystal Reports, developer version for Microsoft
    Visual Studio" installed (this adds the designer).
 2. The Crystal Reports runtime for .NET Framework (the 32-bit one is the
-   default and matches the project, which is set to x86). If you only have the
-   64-bit runtime, open BarangayDocumentSystem.csproj and change
-   <PlatformTarget>x86</PlatformTarget> to x64.
+   default). The project picks x86 or x64 by itself, depending on which one
+   it finds. If the build still says the CrystalDecisions references
+   "could not be found", the DLLs are not in SAP's usual folder: search your
+   PC for CrystalDecisions.CrystalReports.Engine.dll, then paste that folder
+   (ending with a backslash) between the <CrystalDir></CrystalDir> tags near
+   the top of BarangayDocumentSystem.csproj, and reload the project.
 
 With the runtime installed, the project turns Crystal printing on by itself
 (it adds the CRYSTAL symbol and the four CrystalDecisions references). Close and

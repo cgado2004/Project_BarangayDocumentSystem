@@ -237,3 +237,62 @@ BEGIN
     VALUES (p_username, p_full_name, p_password_hash, p_created_on);
 END
 $$
+
+-- ---------------------------------------------------------------- dependents
+
+DROP PROCEDURE IF EXISTS sp_dependents_get_all
+$$
+CREATE PROCEDURE sp_dependents_get_all()
+BEGIN
+    SELECT dependent_id, resident_id, full_name, relationship, date_of_birth
+    FROM dependents
+    ORDER BY resident_id, dependent_id;
+END
+$$
+
+DROP PROCEDURE IF EXISTS sp_dependents_clear
+$$
+CREATE PROCEDURE sp_dependents_clear(IN p_resident_id INT)
+BEGIN
+    DELETE FROM dependents WHERE resident_id = p_resident_id;
+END
+$$
+
+DROP PROCEDURE IF EXISTS sp_dependent_add
+$$
+CREATE PROCEDURE sp_dependent_add(
+    IN p_full_name     VARCHAR(150),
+    IN p_relationship  VARCHAR(50),
+    IN p_date_of_birth DATE,
+    IN p_resident_id   INT)
+BEGIN
+    INSERT INTO dependents (resident_id, full_name, relationship, date_of_birth)
+    VALUES (p_resident_id, p_full_name, p_relationship, p_date_of_birth);
+END
+$$
+
+-- -------------------------------------------------------------- activity log
+
+DROP PROCEDURE IF EXISTS sp_activity_add
+$$
+CREATE PROCEDURE sp_activity_add(
+    IN p_logged_on DATETIME,
+    IN p_username  VARCHAR(100),
+    IN p_action    VARCHAR(60),
+    IN p_details   VARCHAR(500))
+BEGIN
+    INSERT INTO activity_log (logged_on, username, action, details)
+    VALUES (p_logged_on, p_username, p_action, p_details);
+END
+$$
+
+DROP PROCEDURE IF EXISTS sp_activity_get_by_date
+$$
+CREATE PROCEDURE sp_activity_get_by_date(IN p_day DATE)
+BEGIN
+    SELECT logged_on, username, action, details
+    FROM activity_log
+    WHERE logged_on >= p_day AND logged_on < DATE_ADD(p_day, INTERVAL 1 DAY)
+    ORDER BY logged_on DESC, log_id DESC;
+END
+$$

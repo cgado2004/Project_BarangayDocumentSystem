@@ -89,7 +89,7 @@ it again to go back). On a brand-new database with no accounts, the sign-up
 panel opens by itself so the first account can be created. **Log out** is at
 the right of the status bar.
 
-Six destinations in the left sidebar.
+Seven destinations in the left sidebar.
 
 ### Residents
 Resident controls only: **Add Resident**, **Edit** and **Transfer**, plus
@@ -98,16 +98,20 @@ occupation, voter status, date of residency, and **classifications** (senior
 citizen, PWD, indigent, solo parent). Student is not a resident category: it is
 confirmed on each document request. Residents are never deleted:
 **Transfer** asks where they are moving to and moves them to the Archive.
+The resident form has two tabs: **Personal details**, and **Dependents**, where
+children, spouse, parents or others who depend on the resident are added, edited
+and removed (name, relationship and an optional birth date). Dependents are saved
+with the resident.
 
 ### Archive
 Residents who transferred out, with the destination, reason and date. Their
 record and request history are kept. **Edit** corrects an archived record, and
 **Restore to Residents** opens the edit form first so details can be updated, then
 brings the resident back. Archived residents are left out of the dashboard counts and cannot be
-picked for a new document.
+picked for a new request.
 
 ### Document Requests
-All document work happens here. **New Document** picks a resident, then the
+All document work happens here. **New Request** picks a resident, then the
 document and purpose, and files the request straight into Processing. Tick
 **Student** (school ID verified) to apply the student discount, 50% off by
 default (`FeeSchedule.StudentDiscountRate`, a placeholder like the other fees). Then
@@ -124,6 +128,13 @@ finished document.
 Every save asks for confirmation first: adding or editing a resident, filing a
 request, recording a payment, and transferring a resident. **Release** first
 opens a preview of the finished document, then asks you to confirm.
+
+### Activity Log
+Every action is recorded with the time and the signed-in staff member: sign in
+and out, residents added, edited, transferred or restored, requests filed,
+status changes, payments and releases. The page shows **one day at a time**: pick a
+date or use Prev / Today / Next, then narrow it by kind of activity or search the
+text. It is stored in the `activity_log` table.
 
 ### Printing documents with Crystal Reports
 View / Print, the preview before Release, and View / Print on the Records page
@@ -152,7 +163,9 @@ Receipt**. Documents with no fee have no receipt.
 ### Records
 Released documents. When a request is released it leaves the Requests page and
 is kept here as a permanent record: search it, and open **View / Print** to
-reprint the document. Records cannot be edited or deleted.
+reprint the document. Tick **Filter by date** to show only documents released
+between two dates (the Receipts page has the same filter, by payment date).
+Records cannot be edited or deleted.
 
 ### Dashboard
 Resident counts, request counts by status, revenue collected, documents issued

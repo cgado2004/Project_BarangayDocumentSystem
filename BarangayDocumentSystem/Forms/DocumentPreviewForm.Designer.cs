@@ -85,8 +85,7 @@ partial class DocumentPreviewForm
         this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
 
         this.CancelButton = this.btnClose;
-        this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
         this.ClientSize = new System.Drawing.Size(700, 620);
         this.Controls.Add(this.txtDocument);
         this.Controls.Add(this.pnlButtons);

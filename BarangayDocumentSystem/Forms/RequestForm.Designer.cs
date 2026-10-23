@@ -217,8 +217,8 @@ partial class RequestForm
         // ── form ────────────────────────────────────────────────────
         this.AcceptButton = this.btnSubmit;
         this.CancelButton = this.btnCancel;
-        this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
+        this.AutoScroll = true;
         this.BackColor = System.Drawing.Color.FromArgb(243, 239, 231);
         this.ClientSize = new System.Drawing.Size(820, 580);
         this.Controls.Add(this.btnCancel);
@@ -237,7 +237,7 @@ partial class RequestForm
         this.MinimizeBox = false;
         this.Name = "RequestForm";
         this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-        this.Text = "New Document Request";
+        this.Text = "New Request";
         this.Load += new System.EventHandler(this.RequestForm_Load);
         this.grpResident.ResumeLayout(false);
         this.grpResident.PerformLayout();

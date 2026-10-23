@@ -1,5 +1,6 @@
 using System.Windows.Forms;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using BarangayDocumentSystem.Interfaces;
 using BarangayDocumentSystem.Models;
@@ -10,6 +11,7 @@ namespace BarangayDocumentSystem.Forms;
 public partial class ResidentForm : Form
 {
     private readonly Resident? _editing;
+    private readonly List<Dependent> _dependents = new();
 
     public ResidentDetails Details { get; private set; } = null!;
 
@@ -21,11 +23,16 @@ public partial class ResidentForm : Form
     public ResidentForm(Resident? existing)
     {
         InitializeComponent();
+        UiFactory.MakeButtonsFlexible(this);
         _editing = existing;
     }
 
     private void ResidentForm_Load(object sender, EventArgs e)
     {
+        SetUpDependentsGrid();
+        if (_editing is not null) _dependents.AddRange(_editing.Dependents);
+        RefreshDependents();
+
         cmbPurok.Items.AddRange(new object[]
         {
             "Purok 1", "Purok 2", "Purok 3", "Purok 4", "Purok 5", "Purok 6", "Purok 7"
@@ -95,7 +102,8 @@ public partial class ResidentForm : Form
             Occupation: txtOccupation.Text.Trim(),
             DateOfResidency: dtpResidency.Value.Date,
             IsRegisteredVoter: chkVoter.Checked,
-            Classification: BuildClassification());
+            Classification: BuildClassification(),
+            Dependents: _dependents.ToList());
 
         if (ConfirmOnSave)
         {
@@ -185,6 +193,88 @@ public partial class ResidentForm : Form
 
     private void txtContact_KeyPress(object sender, KeyPressEventArgs e) =>
         InputValidator.AllowDigitsOnly(e);
+
+    // ---- Dependents tab ----------------------------------------------------
+
+    private void SetUpDependentsGrid()
+    {
+        UiFactory.StyleGrid(dgvDependents);
+        dgvDependents.Columns.Clear();
+        dgvDependents.Columns.Add("colName", "FULL NAME");
+        dgvDependents.Columns.Add("colRelationship", "RELATIONSHIP");
+        dgvDependents.Columns.Add("colBirth", "DATE OF BIRTH");
+        dgvDependents.Columns.Add("colAge", "AGE");
+        dgvDependents.Columns["colName"]!.FillWeight = 40;
+        dgvDependents.Columns["colRelationship"]!.FillWeight = 25;
+        dgvDependents.Columns["colBirth"]!.FillWeight = 22;
+        dgvDependents.Columns["colAge"]!.FillWeight = 13;
+    }
+
+    private void RefreshDependents(int selectIndex = -1)
+    {
+        dgvDependents.Rows.Clear();
+        foreach (var d in _dependents)
+        {
+            dgvDependents.Rows.Add(
+                d.FullName,
+                d.Relationship,
+                d.DateOfBirth is { } born ? born.ToString("MMM d, yyyy") : "\u2014",
+                d.GetAge()?.ToString() ?? "\u2014");
+        }
+
+        if (selectIndex >= 0 && selectIndex < dgvDependents.Rows.Count)
+        {
+            dgvDependents.ClearSelection();
+            dgvDependents.Rows[selectIndex].Selected = true;
+            dgvDependents.CurrentCell = dgvDependents.Rows[selectIndex].Cells[0];
+        }
+
+        tabDependents.Text = _dependents.Count == 0 ? "Dependents" : $"Dependents ({_dependents.Count})";
+    }
+
+    private int SelectedDependentIndex() =>
+        dgvDependents.CurrentRow is { } row && row.Index < _dependents.Count ? row.Index : -1;
+
+    private void btnAddDependent_Click(object sender, EventArgs e)
+    {
+        using var dialog = new DependentForm();
+        if (dialog.ShowDialog(this) != DialogResult.OK || dialog.Result is null) return;
+
+        _dependents.Add(dialog.Result);
+        RefreshDependents(_dependents.Count - 1);
+    }
+
+    private void btnEditDependent_Click(object sender, EventArgs e) => EditSelectedDependent();
+
+    private void dgvDependents_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+    {
+        if (e.RowIndex >= 0) EditSelectedDependent();
+    }
+
+    private void EditSelectedDependent()
+    {
+        int index = SelectedDependentIndex();
+        if (index < 0) { Dialog.SelectFirst("dependent"); return; }
+
+        using var dialog = new DependentForm(_dependents[index]);
+        if (dialog.ShowDialog(this) != DialogResult.OK || dialog.Result is null) return;
+
+        _dependents[index] = dialog.Result;
+        RefreshDependents(index);
+    }
+
+    private void btnRemoveDependent_Click(object sender, EventArgs e)
+    {
+        int index = SelectedDependentIndex();
+        if (index < 0) { Dialog.SelectFirst("dependent"); return; }
+
+        if (!Dialog.Confirm($"Remove {_dependents[index].FullName} from this resident's dependents?",
+                            "Remove dependent"))
+            return;
+
+        _dependents.RemoveAt(index);
+        RefreshDependents(Math.Min(index, _dependents.Count - 1));
+    }
 
     private void btnCancel_Click(object sender, EventArgs e)
     {

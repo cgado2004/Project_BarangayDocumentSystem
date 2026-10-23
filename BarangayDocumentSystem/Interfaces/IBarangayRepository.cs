@@ -63,7 +63,21 @@ public interface IBarangayRepository
     /// database does not have.
     /// </summary>
     void Reload();
+
+    // ---- Activity log ------------------------------------------------------
+
+    /// <summary>Name shown in the activity log for whatever is done next. Set after sign-in.</summary>
+    string CurrentUser { get; set; }
+
+    /// <summary>Adds a line to the activity log. Never throws: a logging problem must not block real work.</summary>
+    void LogActivity(string action, string details);
+
+    /// <summary>Every logged action on one calendar day, newest first.</summary>
+    IReadOnlyList<ActivityEntry> GetActivity(DateTime day);
 }
+
+/// <summary>One line of the activity log.</summary>
+public record ActivityEntry(DateTime LoggedOn, string Username, string Action, string Details);
 
 /// <summary>
 /// Carries the editable fields of a resident between the UI and the store.
@@ -90,7 +104,8 @@ public record ResidentDetails(
     string Occupation,
     DateTime DateOfResidency,
     bool IsRegisteredVoter,
-    ResidentClassification Classification);
+    ResidentClassification Classification,
+    IReadOnlyList<Dependent>? Dependents = null);
 
 /// <summary>
 /// Dashboard figures, computed in one place.

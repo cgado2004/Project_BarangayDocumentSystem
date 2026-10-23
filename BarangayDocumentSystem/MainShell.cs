@@ -30,7 +30,9 @@ public class MainShell : Form
         Text = "Barangay Resident & Document Management";
         StartPosition = FormStartPosition.CenterScreen;
         ClientSize = new Size(1366, 768);
-        MinimumSize = new Size(1180, 720);
+        MinimumSize = new Size(1000, 620);
+        // Open maximised so the window always fits the screen it is run on.
+        WindowState = FormWindowState.Maximized;
         BackColor = AppTheme.Background;
         Font = AppTheme.BodyFont;
         DoubleBuffered = true;

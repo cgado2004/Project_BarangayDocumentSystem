@@ -73,3 +73,26 @@ CREATE TABLE IF NOT EXISTS users (
     PRIMARY KEY (user_id),
     UNIQUE KEY uq_users_username (username)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS dependents (
+    dependent_id   INT           NOT NULL AUTO_INCREMENT,
+    resident_id    INT           NOT NULL,
+    full_name      VARCHAR(150)  NOT NULL,
+    relationship   VARCHAR(50)   NOT NULL DEFAULT '',
+    date_of_birth  DATE          NULL,
+    PRIMARY KEY (dependent_id),
+    INDEX idx_dependents_resident (resident_id),
+    CONSTRAINT fk_dependents_resident FOREIGN KEY (resident_id)
+        REFERENCES residents (resident_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Who did what and when. One row per action, shown on the Activity Log page by day.
+CREATE TABLE IF NOT EXISTS activity_log (
+    log_id      INT           NOT NULL AUTO_INCREMENT,
+    logged_on   DATETIME      NOT NULL,
+    username    VARCHAR(100)  NOT NULL DEFAULT '',
+    action      VARCHAR(60)   NOT NULL,
+    details     VARCHAR(500)  NOT NULL DEFAULT '',
+    PRIMARY KEY (log_id),
+    INDEX idx_activity_logged_on (logged_on)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

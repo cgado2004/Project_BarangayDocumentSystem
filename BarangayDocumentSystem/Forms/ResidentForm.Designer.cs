@@ -17,8 +17,15 @@ partial class ResidentForm
 
     #region Windows Form Designer generated code
 
+    // Layout: two tabs. "Personal details" holds the resident's own information in
+    // two evenly spaced columns plus the classification box. "Dependents" holds
+    // the list of people who depend on the resident. Save and Cancel stay visible
+    // below the tabs.
     private void InitializeComponent()
     {
+        this.tabs = new System.Windows.Forms.TabControl();
+        this.tabPersonal = new System.Windows.Forms.TabPage();
+        this.tabDependents = new System.Windows.Forms.TabPage();
         this.lblFirstName = new System.Windows.Forms.Label();
         this.txtFirstName = new System.Windows.Forms.TextBox();
         this.lblMiddleName = new System.Windows.Forms.Label();
@@ -51,154 +58,99 @@ partial class ResidentForm
         this.chkIndigent = new System.Windows.Forms.CheckBox();
         this.chkSoloParent = new System.Windows.Forms.CheckBox();
         this.lblNote = new System.Windows.Forms.Label();
+        this.dgvDependents = new System.Windows.Forms.DataGridView();
+        this.btnAddDependent = new System.Windows.Forms.Button();
+        this.btnEditDependent = new System.Windows.Forms.Button();
+        this.btnRemoveDependent = new System.Windows.Forms.Button();
+        this.lblDependentsHint = new System.Windows.Forms.Label();
         this.btnSave = new System.Windows.Forms.Button();
         this.btnCancel = new System.Windows.Forms.Button();
+        this.tabs.SuspendLayout();
+        this.tabPersonal.SuspendLayout();
+        this.tabDependents.SuspendLayout();
         this.grpClassification.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)(this.dgvDependents)).BeginInit();
         this.SuspendLayout();
 
         var labelFont = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular);
         var inputFont = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular);
         var buttonFont = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
+        var navy = System.Drawing.Color.FromArgb(11, 37, 69);
+        var line = System.Drawing.Color.FromArgb(200, 191, 168);
+        var ink = System.Drawing.Color.FromArgb(31, 39, 51);
 
-        const int L = 36;
-        const int LC = 180;
-        const int LW = 300;
-        const int R = 520;
-        const int RC = 650;
-        const int RW = 260;
+        // Column positions inside the "Personal details" tab, and the row pitch.
+        const int L = 32;     // left labels
+        const int LC = 190;   // left inputs
+        const int LW = 260;
+        const int R = 500;    // right labels
+        const int RC = 640;   // right inputs
+        const int RW = 250;
+        const int Y0 = 24;    // first row
+        const int P = 50;     // distance between rows
 
-        this.lblFirstName.AutoSize = true;
-        this.lblFirstName.Font = labelFont;
-        this.lblFirstName.Location = new System.Drawing.Point(L, 32);
-        this.lblFirstName.Name = "lblFirstName";
-        this.lblFirstName.Text = "First name";
+        // --- small local helpers so every row is built the same way ---------
+        void Caption(Label label, string name, string text, int x, int row)
+        {
+            label.AutoSize = true;
+            label.Font = labelFont;
+            label.Location = new System.Drawing.Point(x, Y0 + P * row + 4);
+            label.Name = name;
+            label.Text = text;
+        }
+        void Field(Control box, string name, int x, int row, int width, int tab)
+        {
+            box.Font = inputFont;
+            box.Location = new System.Drawing.Point(x, Y0 + P * row);
+            box.Name = name;
+            box.Size = new System.Drawing.Size(width, 30);
+            box.TabIndex = tab;
+        }
 
-        this.txtFirstName.Font = inputFont;
-        this.txtFirstName.Location = new System.Drawing.Point(LC, 28);
+        // ---- left column ----
+        Caption(this.lblFirstName, "lblFirstName", "First name", L, 0);
+        Field(this.txtFirstName, "txtFirstName", LC, 0, LW, 1);
         this.txtFirstName.MaxLength = 50;
-        this.txtFirstName.Name = "txtFirstName";
-        this.txtFirstName.Size = new System.Drawing.Size(LW, 30);
-        this.txtFirstName.TabIndex = 1;
 
-        this.lblLastName.AutoSize = true;
-        this.lblLastName.Font = labelFont;
-        this.lblLastName.Location = new System.Drawing.Point(L, 84);
-        this.lblLastName.Name = "lblLastName";
-        this.lblLastName.Text = "Last name";
-
-        this.txtLastName.Font = inputFont;
-        this.txtLastName.Location = new System.Drawing.Point(LC, 80);
+        Caption(this.lblLastName, "lblLastName", "Last name", L, 1);
+        Field(this.txtLastName, "txtLastName", LC, 1, LW, 3);
         this.txtLastName.MaxLength = 50;
-        this.txtLastName.Name = "txtLastName";
-        this.txtLastName.Size = new System.Drawing.Size(LW, 30);
-        this.txtLastName.TabIndex = 3;
 
-        this.lblBirth.AutoSize = true;
-        this.lblBirth.Font = labelFont;
-        this.lblBirth.Location = new System.Drawing.Point(L, 136);
-        this.lblBirth.Name = "lblBirth";
-        this.lblBirth.Text = "Date of birth";
-
-        this.dtpBirth.Font = inputFont;
+        Caption(this.lblBirth, "lblBirth", "Date of birth", L, 2);
+        Field(this.dtpBirth, "dtpBirth", LC, 2, LW, 5);
         this.dtpBirth.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-        this.dtpBirth.Location = new System.Drawing.Point(LC, 132);
         this.dtpBirth.MinDate = new System.DateTime(1900, 1, 1);
-        this.dtpBirth.Name = "dtpBirth";
-        this.dtpBirth.Size = new System.Drawing.Size(LW, 30);
-        this.dtpBirth.TabIndex = 5;
 
-        this.lblCivilStatus.AutoSize = true;
-        this.lblCivilStatus.Font = labelFont;
-        this.lblCivilStatus.Location = new System.Drawing.Point(L, 188);
-        this.lblCivilStatus.Name = "lblCivilStatus";
-        this.lblCivilStatus.Text = "Civil status";
-
+        Caption(this.lblCivilStatus, "lblCivilStatus", "Civil status", L, 3);
+        Field(this.cmbCivilStatus, "cmbCivilStatus", LC, 3, LW, 7);
         this.cmbCivilStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-        this.cmbCivilStatus.Font = inputFont;
-        this.cmbCivilStatus.Location = new System.Drawing.Point(LC, 184);
-        this.cmbCivilStatus.Name = "cmbCivilStatus";
-        this.cmbCivilStatus.Size = new System.Drawing.Size(LW, 30);
-        this.cmbCivilStatus.TabIndex = 7;
 
-        this.lblPurok.AutoSize = true;
-        this.lblPurok.Font = labelFont;
-        this.lblPurok.Location = new System.Drawing.Point(L, 240);
-        this.lblPurok.Name = "lblPurok";
-        this.lblPurok.Text = "Purok";
+        Caption(this.lblPurok, "lblPurok", "Purok", L, 4);
+        Field(this.cmbPurok, "cmbPurok", LC, 4, LW, 9);
 
-        this.cmbPurok.Font = inputFont;
-        this.cmbPurok.Location = new System.Drawing.Point(LC, 236);
-        this.cmbPurok.Name = "cmbPurok";
-        this.cmbPurok.Size = new System.Drawing.Size(LW, 30);
-        this.cmbPurok.TabIndex = 9;
-
-        this.lblContact.AutoSize = true;
-        this.lblContact.Font = labelFont;
-        this.lblContact.Location = new System.Drawing.Point(L, 292);
-        this.lblContact.Name = "lblContact";
-        this.lblContact.Text = "Contact number";
-
-        this.txtContact.Font = inputFont;
-        this.txtContact.Location = new System.Drawing.Point(LC, 288);
+        Caption(this.lblContact, "lblContact", "Contact number", L, 5);
+        Field(this.txtContact, "txtContact", LC, 5, LW, 11);
         this.txtContact.MaxLength = 15;
-        this.txtContact.Name = "txtContact";
         CueBanner.Set(this.txtContact, "09XXXXXXXXX");
-        this.txtContact.Size = new System.Drawing.Size(LW, 30);
-        this.txtContact.TabIndex = 11;
         this.txtContact.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.txtContact_KeyPress);
 
-        this.lblResidency.AutoSize = true;
-        this.lblResidency.Font = labelFont;
-        this.lblResidency.Location = new System.Drawing.Point(L, 344);
-        this.lblResidency.Name = "lblResidency";
-        this.lblResidency.Text = "Resident since";
-
-        this.dtpResidency.Font = inputFont;
-        this.dtpResidency.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-        this.dtpResidency.Location = new System.Drawing.Point(LC, 340);
-        this.dtpResidency.MinDate = new System.DateTime(1900, 1, 1);
-        this.dtpResidency.Name = "dtpResidency";
-        this.dtpResidency.Size = new System.Drawing.Size(LW, 30);
-        this.dtpResidency.TabIndex = 13;
-        this.lblMiddleName.AutoSize = true;
-        this.lblMiddleName.Font = labelFont;
-        this.lblMiddleName.Location = new System.Drawing.Point(R, 32);
-        this.lblMiddleName.Name = "lblMiddleName";
-        this.lblMiddleName.Text = "Middle name";
-
-        this.txtMiddleName.Font = inputFont;
-        this.txtMiddleName.Location = new System.Drawing.Point(RC, 28);
+        // ---- right column ----
+        Caption(this.lblMiddleName, "lblMiddleName", "Middle name", R, 0);
+        Field(this.txtMiddleName, "txtMiddleName", RC, 0, RW, 2);
         this.txtMiddleName.MaxLength = 50;
-        this.txtMiddleName.Name = "txtMiddleName";
-        this.txtMiddleName.Size = new System.Drawing.Size(RW, 30);
-        this.txtMiddleName.TabIndex = 2;
 
-        this.lblSuffix.AutoSize = true;
-        this.lblSuffix.Font = labelFont;
-        this.lblSuffix.Location = new System.Drawing.Point(R, 84);
-        this.lblSuffix.Name = "lblSuffix";
-        this.lblSuffix.Text = "Suffix";
-
-        this.txtSuffix.Font = inputFont;
-        this.txtSuffix.Location = new System.Drawing.Point(RC, 80);
+        Caption(this.lblSuffix, "lblSuffix", "Suffix", R, 1);
+        Field(this.txtSuffix, "txtSuffix", RC, 1, RW, 4);
         this.txtSuffix.MaxLength = 10;
-        this.txtSuffix.Name = "txtSuffix";
         CueBanner.Set(this.txtSuffix, "Jr., Sr., III");
-        this.txtSuffix.Size = new System.Drawing.Size(RW, 30);
-        this.txtSuffix.TabIndex = 4;
 
-        this.lblGender.AutoSize = true;
-        this.lblGender.Font = labelFont;
-        this.lblGender.Location = new System.Drawing.Point(R, 136);
-        this.lblGender.Name = "lblGender";
-        this.lblGender.Text = "Gender";
+        Caption(this.lblGender, "lblGender", "Gender", R, 2);
 
         this.radMale.AutoSize = true;
         this.radMale.Checked = true;
         this.radMale.Font = inputFont;
-        this.radMale.Location = new System.Drawing.Point(RC, 136);
+        this.radMale.Location = new System.Drawing.Point(RC, Y0 + P * 2 + 3);
         this.radMale.Name = "radMale";
-        this.radMale.Size = new System.Drawing.Size(65, 24);
         this.radMale.TabIndex = 0;
         this.radMale.TabStop = true;
         this.radMale.Text = "Male";
@@ -206,165 +158,198 @@ partial class ResidentForm
 
         this.radFemale.AutoSize = true;
         this.radFemale.Font = inputFont;
-        this.radFemale.Location = new System.Drawing.Point(RC + 72, 136);
+        this.radFemale.Location = new System.Drawing.Point(RC + 90, Y0 + P * 2 + 3);
         this.radFemale.Name = "radFemale";
-        this.radFemale.Size = new System.Drawing.Size(82, 24);
         this.radFemale.TabIndex = 1;
         this.radFemale.Text = "Female";
         this.radFemale.UseVisualStyleBackColor = true;
 
-        this.lblHouseNumber.AutoSize = true;
-        this.lblHouseNumber.Font = labelFont;
-        this.lblHouseNumber.Location = new System.Drawing.Point(R, 208);
-        this.lblHouseNumber.Name = "lblHouseNumber";
-        this.lblHouseNumber.Text = "House number";
-
-        this.txtHouseNumber.Font = inputFont;
-        this.txtHouseNumber.Location = new System.Drawing.Point(RC, 204);
-        this.txtHouseNumber.MaxLength = 30;
-        this.txtHouseNumber.Name = "txtHouseNumber";
-        CueBanner.Set(this.txtHouseNumber, "e.g. 123");
-        this.txtHouseNumber.Size = new System.Drawing.Size(RW, 30);
-        this.txtHouseNumber.TabIndex = 6;
-
-        this.lblOccupation.AutoSize = true;
-        this.lblOccupation.Font = labelFont;
-        this.lblOccupation.Location = new System.Drawing.Point(R, 256);
-        this.lblOccupation.Name = "lblOccupation";
-        this.lblOccupation.Text = "Occupation";
-
-        this.txtOccupation.Font = inputFont;
-        this.txtOccupation.Location = new System.Drawing.Point(RC, 252);
+        Caption(this.lblOccupation, "lblOccupation", "Occupation", R, 3);
+        Field(this.txtOccupation, "txtOccupation", RC, 3, RW, 8);
         this.txtOccupation.MaxLength = 60;
-        this.txtOccupation.Name = "txtOccupation";
-        this.txtOccupation.Size = new System.Drawing.Size(RW, 30);
-        this.txtOccupation.TabIndex = 8;
 
+        Caption(this.lblHouseNumber, "lblHouseNumber", "House number", R, 4);
+        Field(this.txtHouseNumber, "txtHouseNumber", RC, 4, RW, 6);
+        this.txtHouseNumber.MaxLength = 30;
+        CueBanner.Set(this.txtHouseNumber, "e.g. 123");
+
+        Caption(this.lblResidency, "lblResidency", "Resident since", R, 5);
+        Field(this.dtpResidency, "dtpResidency", RC, 5, RW, 12);
+        this.dtpResidency.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+        this.dtpResidency.MinDate = new System.DateTime(1900, 1, 1);
+
+        // ---- voter, classification, note ----
         this.chkVoter.AutoSize = true;
         this.chkVoter.Font = inputFont;
-        this.chkVoter.Location = new System.Drawing.Point(R, 296);
+        this.chkVoter.Location = new System.Drawing.Point(L, Y0 + P * 6 + 2);
         this.chkVoter.Name = "chkVoter";
-        this.chkVoter.Size = new System.Drawing.Size(160, 24);
-        this.chkVoter.TabIndex = 10;
+        this.chkVoter.TabIndex = 13;
         this.chkVoter.Text = "Registered voter";
         this.chkVoter.UseVisualStyleBackColor = true;
+
         this.grpClassification.Controls.Add(this.chkSoloParent);
         this.grpClassification.Controls.Add(this.chkIndigent);
         this.grpClassification.Controls.Add(this.chkPwd);
         this.grpClassification.Controls.Add(this.chkSenior);
         this.grpClassification.Font = labelFont;
-        this.grpClassification.Location = new System.Drawing.Point(36, 358);
+        this.grpClassification.Location = new System.Drawing.Point(L, Y0 + P * 6 + 44);
         this.grpClassification.Name = "grpClassification";
-        this.grpClassification.Size = new System.Drawing.Size(874, 106);
+        this.grpClassification.Size = new System.Drawing.Size(842, 84);
         this.grpClassification.TabIndex = 14;
         this.grpClassification.TabStop = false;
         this.grpClassification.Text = "Classification (affects document fees)";
 
-        this.chkSenior.AutoSize = true;
-        this.chkSenior.Font = inputFont;
-        this.chkSenior.Location = new System.Drawing.Point(20, 30);
-        this.chkSenior.Name = "chkSenior";
-        this.chkSenior.Size = new System.Drawing.Size(200, 24);
-        this.chkSenior.TabIndex = 0;
-        this.chkSenior.Text = "Senior Citizen (RA 9994)";
-        this.chkSenior.UseVisualStyleBackColor = true;
+        void Check(CheckBox box, string name, string text, int x, int tab)
+        {
+            box.AutoSize = true;
+            box.Font = inputFont;
+            box.Location = new System.Drawing.Point(x, 38);
+            box.Name = name;
+            box.TabIndex = tab;
+            box.Text = text;
+            box.UseVisualStyleBackColor = true;
+        }
+        Check(this.chkSenior, "chkSenior", "Senior Citizen (RA 9994)", 24, 0);
+        Check(this.chkPwd, "chkPwd", "PWD (RA 10754)", 280, 1);
+        Check(this.chkIndigent, "chkIndigent", "Indigent", 490, 2);
+        Check(this.chkSoloParent, "chkSoloParent", "Solo Parent", 660, 3);
 
-        this.chkPwd.AutoSize = true;
-        this.chkPwd.Font = inputFont;
-        this.chkPwd.Location = new System.Drawing.Point(260, 30);
-        this.chkPwd.Name = "chkPwd";
-        this.chkPwd.Size = new System.Drawing.Size(170, 24);
-        this.chkPwd.TabIndex = 1;
-        this.chkPwd.Text = "PWD (RA 10754)";
-        this.chkPwd.UseVisualStyleBackColor = true;
-
-        this.chkIndigent.AutoSize = true;
-        this.chkIndigent.Font = inputFont;
-        this.chkIndigent.Location = new System.Drawing.Point(470, 30);
-        this.chkIndigent.Name = "chkIndigent";
-        this.chkIndigent.Size = new System.Drawing.Size(100, 24);
-        this.chkIndigent.TabIndex = 2;
-        this.chkIndigent.Text = "Indigent";
-        this.chkIndigent.UseVisualStyleBackColor = true;
-
-        this.chkSoloParent.AutoSize = true;
-        this.chkSoloParent.Font = inputFont;
-        this.chkSoloParent.Location = new System.Drawing.Point(20, 64);
-        this.chkSoloParent.Name = "chkSoloParent";
-        this.chkSoloParent.Size = new System.Drawing.Size(120, 24);
-        this.chkSoloParent.TabIndex = 4;
-        this.chkSoloParent.Text = "Solo Parent";
-        this.chkSoloParent.UseVisualStyleBackColor = true;
         this.lblNote.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Italic);
         this.lblNote.ForeColor = System.Drawing.Color.FromArgb(107, 114, 128);
-        this.lblNote.Location = new System.Drawing.Point(36, 476);
+        this.lblNote.Location = new System.Drawing.Point(L, Y0 + P * 6 + 142);
         this.lblNote.Name = "lblNote";
-        this.lblNote.Size = new System.Drawing.Size(874, 46);
+        this.lblNote.Size = new System.Drawing.Size(842, 40);
         this.lblNote.TabIndex = 15;
         this.lblNote.Text = "\"Resident since\" drives the six month residency test required by RA 11261 " +
                             "for a first-time jobseeker certificate.";
 
-        this.btnSave.BackColor = System.Drawing.Color.FromArgb(11, 37, 69);
+        // ---- dependents tab ----
+        this.dgvDependents.Location = new System.Drawing.Point(24, 24);
+        this.dgvDependents.Name = "dgvDependents";
+        this.dgvDependents.Size = new System.Drawing.Size(716, 380);
+        this.dgvDependents.TabIndex = 0;
+        this.dgvDependents.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvDependents_CellDoubleClick);
+
+        void SideButton(Button button, string name, string text, int top, bool primary, int tab)
+        {
+            button.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            button.Font = buttonFont;
+            button.Location = new System.Drawing.Point(760, top);
+            button.Name = name;
+            button.Size = new System.Drawing.Size(114, 42);
+            button.TabIndex = tab;
+            button.Text = text;
+            button.UseVisualStyleBackColor = false;
+            button.BackColor = primary ? navy : System.Drawing.Color.White;
+            button.ForeColor = primary ? System.Drawing.Color.White : ink;
+            if (primary) button.FlatAppearance.BorderSize = 0;
+            else button.FlatAppearance.BorderColor = line;
+        }
+        SideButton(this.btnAddDependent, "btnAddDependent", "Add", 24, true, 1);
+        SideButton(this.btnEditDependent, "btnEditDependent", "Edit", 78, false, 2);
+        SideButton(this.btnRemoveDependent, "btnRemoveDependent", "Remove", 132, false, 3);
+        this.btnAddDependent.Click += new System.EventHandler(this.btnAddDependent_Click);
+        this.btnEditDependent.Click += new System.EventHandler(this.btnEditDependent_Click);
+        this.btnRemoveDependent.Click += new System.EventHandler(this.btnRemoveDependent_Click);
+
+        this.lblDependentsHint.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Italic);
+        this.lblDependentsHint.ForeColor = System.Drawing.Color.FromArgb(107, 114, 128);
+        this.lblDependentsHint.Location = new System.Drawing.Point(24, 418);
+        this.lblDependentsHint.Name = "lblDependentsHint";
+        this.lblDependentsHint.Size = new System.Drawing.Size(850, 40);
+        this.lblDependentsHint.TabIndex = 4;
+        this.lblDependentsHint.Text = "Dependents are the children, spouse, parents or others who depend on this resident. " +
+                                      "They are saved together with the resident when you press Save.";
+
+        // ---- tabs ----
+        this.tabPersonal.BackColor = System.Drawing.Color.FromArgb(243, 239, 231);
+        this.tabPersonal.Name = "tabPersonal";
+        this.tabPersonal.Text = "Personal details";
+        this.tabPersonal.Controls.Add(this.lblNote);
+        this.tabPersonal.Controls.Add(this.grpClassification);
+        this.tabPersonal.Controls.Add(this.chkVoter);
+        this.tabPersonal.Controls.Add(this.dtpResidency);
+        this.tabPersonal.Controls.Add(this.lblResidency);
+        this.tabPersonal.Controls.Add(this.txtContact);
+        this.tabPersonal.Controls.Add(this.lblContact);
+        this.tabPersonal.Controls.Add(this.txtHouseNumber);
+        this.tabPersonal.Controls.Add(this.lblHouseNumber);
+        this.tabPersonal.Controls.Add(this.cmbPurok);
+        this.tabPersonal.Controls.Add(this.lblPurok);
+        this.tabPersonal.Controls.Add(this.txtOccupation);
+        this.tabPersonal.Controls.Add(this.lblOccupation);
+        this.tabPersonal.Controls.Add(this.cmbCivilStatus);
+        this.tabPersonal.Controls.Add(this.lblCivilStatus);
+        this.tabPersonal.Controls.Add(this.radFemale);
+        this.tabPersonal.Controls.Add(this.radMale);
+        this.tabPersonal.Controls.Add(this.lblGender);
+        this.tabPersonal.Controls.Add(this.dtpBirth);
+        this.tabPersonal.Controls.Add(this.lblBirth);
+        this.tabPersonal.Controls.Add(this.txtSuffix);
+        this.tabPersonal.Controls.Add(this.lblSuffix);
+        this.tabPersonal.Controls.Add(this.txtLastName);
+        this.tabPersonal.Controls.Add(this.lblLastName);
+        this.tabPersonal.Controls.Add(this.txtMiddleName);
+        this.tabPersonal.Controls.Add(this.lblMiddleName);
+        this.tabPersonal.Controls.Add(this.txtFirstName);
+        this.tabPersonal.Controls.Add(this.lblFirstName);
+
+        this.tabDependents.BackColor = System.Drawing.Color.FromArgb(243, 239, 231);
+        this.tabDependents.Name = "tabDependents";
+        this.tabDependents.Text = "Dependents";
+        this.tabDependents.Controls.Add(this.lblDependentsHint);
+        this.tabDependents.Controls.Add(this.btnRemoveDependent);
+        this.tabDependents.Controls.Add(this.btnEditDependent);
+        this.tabDependents.Controls.Add(this.btnAddDependent);
+        this.tabDependents.Controls.Add(this.dgvDependents);
+
+        this.tabs.Controls.Add(this.tabPersonal);
+        this.tabs.Controls.Add(this.tabDependents);
+        this.tabs.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Regular);
+        this.tabs.ItemSize = new System.Drawing.Size(160, 32);
+        this.tabs.Location = new System.Drawing.Point(20, 16);
+        this.tabs.Name = "tabs";
+        this.tabs.SelectedIndex = 0;
+        this.tabs.Size = new System.Drawing.Size(906, 544);
+        this.tabs.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
+        this.tabs.TabIndex = 0;
+
+        // ---- Save / Cancel ----
+        this.btnSave.BackColor = navy;
         this.btnSave.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
         this.btnSave.Font = buttonFont;
         this.btnSave.ForeColor = System.Drawing.Color.White;
-        this.btnSave.Location = new System.Drawing.Point(690, 534);
+        this.btnSave.Location = new System.Drawing.Point(706, 576);
         this.btnSave.Name = "btnSave";
         this.btnSave.Size = new System.Drawing.Size(110, 42);
-        this.btnSave.TabIndex = 16;
+        this.btnSave.TabIndex = 1;
         this.btnSave.Text = "Save";
         this.btnSave.UseVisualStyleBackColor = false;
         this.btnSave.FlatAppearance.BorderSize = 0;
         this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
+
         this.btnCancel.BackColor = System.Drawing.Color.White;
         this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
         this.btnCancel.Font = buttonFont;
-        this.btnCancel.ForeColor = System.Drawing.Color.FromArgb(31, 39, 51);
-        this.btnCancel.Location = new System.Drawing.Point(810, 534);
+        this.btnCancel.ForeColor = ink;
+        this.btnCancel.Location = new System.Drawing.Point(826, 576);
         this.btnCancel.Name = "btnCancel";
         this.btnCancel.Size = new System.Drawing.Size(100, 42);
-        this.btnCancel.TabIndex = 17;
+        this.btnCancel.TabIndex = 2;
         this.btnCancel.Text = "Cancel";
         this.btnCancel.UseVisualStyleBackColor = false;
-        this.btnCancel.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(200, 191, 168);
+        this.btnCancel.FlatAppearance.BorderColor = line;
         this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
+
         this.AcceptButton = this.btnSave;
         this.CancelButton = this.btnCancel;
-        this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
+        this.AutoScroll = true;
         this.BackColor = System.Drawing.Color.FromArgb(243, 239, 231);
-        this.ClientSize = new System.Drawing.Size(946, 608);
+        this.ClientSize = new System.Drawing.Size(946, 636);
         this.Controls.Add(this.btnCancel);
         this.Controls.Add(this.btnSave);
-        this.Controls.Add(this.lblNote);
-        this.Controls.Add(this.grpClassification);
-        this.Controls.Add(this.chkVoter);
-        this.Controls.Add(this.txtOccupation);
-        this.Controls.Add(this.lblOccupation);
-        this.Controls.Add(this.txtHouseNumber);
-        this.Controls.Add(this.lblHouseNumber);
-        this.Controls.Add(this.radOther);
-        this.Controls.Add(this.radFemale);
-        this.Controls.Add(this.radMale);
-        this.Controls.Add(this.lblGender);
-        this.Controls.Add(this.txtSuffix);
-        this.Controls.Add(this.lblSuffix);
-        this.Controls.Add(this.txtMiddleName);
-        this.Controls.Add(this.lblMiddleName);
-        this.Controls.Add(this.dtpResidency);
-        this.Controls.Add(this.lblResidency);
-        this.Controls.Add(this.txtContact);
-        this.Controls.Add(this.lblContact);
-        this.Controls.Add(this.cmbPurok);
-        this.Controls.Add(this.lblPurok);
-        this.Controls.Add(this.cmbCivilStatus);
-        this.Controls.Add(this.lblCivilStatus);
-        this.Controls.Add(this.dtpBirth);
-        this.Controls.Add(this.lblBirth);
-        this.Controls.Add(this.txtLastName);
-        this.Controls.Add(this.lblLastName);
-        this.Controls.Add(this.txtFirstName);
-        this.Controls.Add(this.lblFirstName);
+        this.Controls.Add(this.tabs);
         this.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Regular);
         this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
         this.MaximizeBox = false;
@@ -373,14 +358,21 @@ partial class ResidentForm
         this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
         this.Text = "Register Resident";
         this.Load += new System.EventHandler(this.ResidentForm_Load);
+        ((System.ComponentModel.ISupportInitialize)(this.dgvDependents)).EndInit();
         this.grpClassification.ResumeLayout(false);
         this.grpClassification.PerformLayout();
+        this.tabDependents.ResumeLayout(false);
+        this.tabPersonal.ResumeLayout(false);
+        this.tabPersonal.PerformLayout();
+        this.tabs.ResumeLayout(false);
         this.ResumeLayout(false);
-        this.PerformLayout();
     }
 
     #endregion
 
+    private System.Windows.Forms.TabControl tabs;
+    private System.Windows.Forms.TabPage tabPersonal;
+    private System.Windows.Forms.TabPage tabDependents;
     private System.Windows.Forms.Label lblFirstName;
     private System.Windows.Forms.TextBox txtFirstName;
     private System.Windows.Forms.Label lblMiddleName;
@@ -394,7 +386,6 @@ partial class ResidentForm
     private System.Windows.Forms.Label lblGender;
     private System.Windows.Forms.RadioButton radMale;
     private System.Windows.Forms.RadioButton radFemale;
-    private System.Windows.Forms.RadioButton radOther;
     private System.Windows.Forms.Label lblCivilStatus;
     private System.Windows.Forms.ComboBox cmbCivilStatus;
     private System.Windows.Forms.Label lblPurok;
@@ -414,6 +405,11 @@ partial class ResidentForm
     private System.Windows.Forms.CheckBox chkIndigent;
     private System.Windows.Forms.CheckBox chkSoloParent;
     private System.Windows.Forms.Label lblNote;
+    private System.Windows.Forms.DataGridView dgvDependents;
+    private System.Windows.Forms.Button btnAddDependent;
+    private System.Windows.Forms.Button btnEditDependent;
+    private System.Windows.Forms.Button btnRemoveDependent;
+    private System.Windows.Forms.Label lblDependentsHint;
     private System.Windows.Forms.Button btnSave;
     private System.Windows.Forms.Button btnCancel;
 }
