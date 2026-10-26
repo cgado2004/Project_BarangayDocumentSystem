@@ -10,15 +10,6 @@ Uses **.NET Framework 4.8** and **MySQL**.
 - Gado, Clint Wood
 - Raborar, Frent Dhieniel
 
-## Run
-
-1. Install Visual Studio 2022 or newer with .NET desktop development and the .NET Framework 4.8 targeting pack.
-2. Start MySQL and set the connection in `BarangayDocumentSystem/App.config`. The `BARANGAY_DB_CONNECTION` environment variable overrides it; keep real credentials out of Git.
-3. Open `BarangayDocumentSystem.sln`, restore NuGet packages, build, and press F5.
-4. Sign in. An empty users table offers first-account setup; existing resident and request data stays in place.
-
-Startup creates missing tables and recreates the stored procedures. The configured database account needs the corresponding permissions. Sample records are added when `SeedSampleData` is enabled and no residents exist. Disable it for real data.
-
 ## Screens
 
 - **Dashboard:** resident, request, and collection totals.
@@ -28,14 +19,6 @@ Startup creates missing tables and recreates the stored procedures. The configur
 - **Settings:** staff profile, barangay details, and logout.
 
 Unreleased documents open as marked drafts with Copy, Save, and Print disabled. Complete release, then use **Records > View / Print**. Reprints use the stored release date.
-
-## Current limits
-
-Sign-in exists, but roles, account management, password recovery, persistent login throttling, audit logging, and idle locking still need team work. See [UI security notes](docs/UiSecurity.md).
-
-Fee rules are in `BusinessRules/FeeSchedule.cs`. Residency and good moral currently use PHP 100 base fees. Other rates, exemptions, and the 50% student discount still need barangay policy verification. Required-document checks are incomplete.
-
-The app caches database data and has no conflict protection for simultaneous editors. Released documents still use current resident/profile details when reprinted; immutable historical snapshots remain unfinished. Households, census, office-hour rules, and Crystal Reports are also unfinished in this branch. Existing printing uses `PrintDocument`.
 
 ## Code
 
