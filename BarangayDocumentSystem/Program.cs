@@ -1,39 +1,42 @@
+#nullable enable
 using System.Windows.Forms;
 using System;
 using BarangayDocumentSystem.BusinessRules;
 using BarangayDocumentSystem.BusinessRules.DocumentTemplates;
 using BarangayDocumentSystem.Database;
+using BarangayDocumentSystem.Forms;
 using BarangayDocumentSystem.Interfaces;
+using BarangayDocumentSystem.Models;
 using BarangayDocumentSystem.Views;
 
 namespace BarangayDocumentSystem;
 
 internal static class Program
 {
-    /// <summary>
-    /// Composition root — the ONE place that names concrete classes.
-    ///
-    /// Everywhere else depends on interfaces. All wiring happens here, by
-    /// hand, which keeps the dependency graph visible without pulling in a DI
-    /// container (and its NuGet package).
-    /// </summary>
+
+
+
+
+
+
+
     [STAThread]
     static void Main()
     {
-        // The .NET 6+ WinForms template generates this pair as
-        // ApplicationConfiguration.Initialize(); .NET Framework has no such
-        // generator, so it is written out by hand here. Per-monitor DPI
-        // awareness itself is declared in App.config, since .NET Framework
-        // reads that setting before Main() ever runs.
+
+
+
+
+
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        // ---- Business rules ----
+
         var feeSchedule = new FeeSchedule();
         var profile = BarangayProfile.MagugpoPoblacion;
 
-        // OCP: adding a document = adding a class + one line here.
-        // The renderer never changes.
+
+
         var renderer = new DocumentRenderer(new IDocumentTemplate[]
         {
             new ClearanceTemplate(),
@@ -45,59 +48,96 @@ internal static class Program
             new BarangayIdTemplate()
         }, profile);
 
-        // ---- Database ----
-        // If MySQL is not reachable there is nothing useful to show, so explain
-        // why and exit instead of opening an empty window or crashing.
+
+
+
         IBarangayRepository repository;
+        string connectionString;
         try
         {
-            repository = ConnectToDatabase(feeSchedule);
+            repository = ConnectToDatabase(feeSchedule, out connectionString);
         }
         catch (Exception ex) when (ex is RepositoryException or ArgumentException)
         {
             MessageBox.Show(
-                ex.Message + "\n\n" +
-                $"Check that the MySQL server is running, then check {"BarangayDocumentSystem.exe.config"} " +
-                "(next to the program) for the server, user name and password.",
-                "Cannot connect to the database",
+                "The system is unavailable. Contact the system administrator and try again later.",
+                "Cannot start the system",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
 
-        // ---- UI ----
+
+
+
+        var users = new MySqlUserRepository(connectionString);
+
+        while (true)
+        {
+            UserAccount? user;
+            using (var login = new LoginForm(users))
+            {
+                if (login.ShowDialog() != DialogResult.OK || login.User is null)
+                    return;
+                user = login.User;
+            }
+
+            using var shell = BuildShell(repository, users, renderer, feeSchedule, profile, user);
+            Application.Run(shell);
+
+            if (!shell.LoggedOut)
+                return;
+        }
+    }
+
+    private static MainShell BuildShell(
+        IBarangayRepository repository, IUserRepository users, DocumentRenderer renderer,
+        FeeSchedule feeSchedule, BarangayProfile profile, UserAccount user)
+    {
         var shell = new MainShell();
 
-        var residents = new ResidentsView(repository, feeSchedule);
-        var requests  = new RequestsView(repository, renderer);
-        var dashboard = new DashboardView(repository);
+        string staffName = string.IsNullOrWhiteSpace(user.FullName) ? user.Username : user.FullName;
+        repository.CurrentUser = staffName;
 
-        // Filing a request from the Residents page must update the other two.
-        residents.RequestFiled += (_, _) =>
-        {
-            requests.RefreshData();
-            dashboard.RefreshData();
-        };
+        var dashboard = new DashboardView(repository);
+        var residents = new ResidentsView(repository);
+        var requests  = new RequestsView(repository, renderer, feeSchedule, staffName);
+        var records   = new RecordsView(repository, renderer);
+        var receipts  = new OfficialReceiptsView(repository);
 
         shell.AddView("dashboard", "Dashboard", "▦", dashboard);
         shell.AddView("residents", "Residents", "●", residents);
         shell.AddView("requests",  "Requests",  "▤", requests);
+        shell.AddView("records",   "Records",   "▧", records);
+        shell.AddView("receipts",  "Receipts",  "₱", receipts);
+
+        if (user.Role == UserRole.Admin)
+        {
+            var archive   = new ArchiveView(repository);
+            var activity  = new ActivityLogView(repository);
+            shell.AddView("archive",   "Archive",   "▣", archive);
+            shell.AddView("activity",  "Activity",  "◷", activity);
+        }
+
+        var settings = new SettingsView(repository, users, profile, user);
+        settings.LogoutRequested += (_, _) => shell.LogOut();
+        shell.AddView("settings", "Settings", "⚙", settings);
 
         shell.Start("dashboard");
-        shell.SetStatus($"Connected to MySQL — {repository.Residents.Count} resident(s), " +
-                        $"{repository.Requests.Count} request(s) loaded.");
 
-        Application.Run(shell);
+        return shell;
     }
 
-    /// <summary>
-    /// Reads the settings, creates the database and tables if they are missing,
-    /// loads the data, and fills a brand-new database with sample data once.
-    /// </summary>
-    private static IBarangayRepository ConnectToDatabase(FeeSchedule feeSchedule)
+
+
+
+
+    private static IBarangayRepository ConnectToDatabase(FeeSchedule feeSchedule, out string connectionString)
     {
         var settings = DatabaseSettings.Load();
+        connectionString = settings.ConnectionString;
 
         DatabaseInitializer.EnsureCreated(settings.ConnectionString);
+        DatabaseInitializer.EnsureDefaultAdmin(settings.ConnectionString);
 
         var repository = new MySqlBarangayRepository(settings.ConnectionString, feeSchedule);
 

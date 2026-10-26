@@ -6,42 +6,51 @@ using BarangayDocumentSystem.UIHelpers;
 
 namespace BarangayDocumentSystem.Forms;
 
-/// <summary>
-/// Shows the rendered document and offers Copy / Save / Print.
-///
-/// Printing uses System.Drawing.Printing.PrintDocument, which is part of the
-/// framework — no third-party package needed.
-/// </summary>
+
+
+
+
+
+
 public partial class DocumentPreviewForm : Form
 {
     private readonly string _documentText;
+    private readonly bool _allowOutput;
     private string[] _linesToPrint = Array.Empty<string>();
     private int _lineIndex;
 
-    public DocumentPreviewForm(string title, string documentText)
+    public DocumentPreviewForm(string title, string documentText, bool allowOutput = false)
     {
         InitializeComponent();
         Text = $"Preview — {title}";
         _documentText = documentText;
+        _allowOutput = allowOutput;
+        btnCopy.Enabled = btnSave.Enabled = btnPrint.Enabled = allowOutput;
+        txtDocument.ShortcutsEnabled = allowOutput;
+        if (!allowOutput)
+            Text += " — Not released";
+        Shown += (_, _) => DialogLayout.FitToScreen(this);
     }
 
     private void DocumentPreviewForm_Load(object sender, EventArgs e)
     {
-        txtDocument.Text = _documentText;
+        txtDocument.Text = _allowOutput ? _documentText
+            : "DRAFT — NOT RELEASED\r\nComplete release, then print from Records.\r\n\r\n" + _documentText;
         txtDocument.SelectionStart = 0;
     }
 
     private void btnCopy_Click(object sender, EventArgs e)
     {
-        if (string.IsNullOrEmpty(_documentText)) return;
+        if (!_allowOutput || string.IsNullOrEmpty(_documentText)) return;
 
-        // Requires [STAThread] on Main — the clipboard is a COM API.
+
         Clipboard.SetText(_documentText);
         Dialog.Info("Document copied to the clipboard.", "Copied");
     }
 
     private void btnSave_Click(object sender, EventArgs e)
     {
+        if (!_allowOutput) return;
         using var dialog = new SaveFileDialog
         {
             Filter = "Text file (*.txt)|*.txt|All files (*.*)|*.*",
@@ -58,15 +67,16 @@ public partial class DocumentPreviewForm : Form
         }
         catch (Exception ex)
         {
-            // File I/O can fail for many reasons (permissions, disk full,
-            // path too long) — report rather than crash.
+
+
             Dialog.Error($"Could not save the file.\n\n{ex.Message}", "Save failed");
         }
     }
 
     private void btnPrint_Click(object sender, EventArgs e)
     {
-        // .NET Framework has no Split(string) overload -- only Split(string[], ...).
+        if (!_allowOutput) return;
+
         _linesToPrint = _documentText.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
         _lineIndex = 0;
 
@@ -93,10 +103,10 @@ public partial class DocumentPreviewForm : Form
         }
     }
 
-    /// <summary>
-    /// Draws one page. PrintPage fires repeatedly while HasMorePages is true,
-    /// so we track our position in the line array between calls.
-    /// </summary>
+
+
+
+
     private void PrintDoc_PrintPage(object sender, System.Drawing.Printing.PrintPageEventArgs e)
     {
         if (e.Graphics is null) return;
@@ -117,7 +127,7 @@ public partial class DocumentPreviewForm : Form
         }
 
         e.HasMorePages = _lineIndex < _linesToPrint.Length;
-        if (!e.HasMorePages) _lineIndex = 0;   // reset for a second preview
+        if (!e.HasMorePages) _lineIndex = 0;
     }
 
     private void btnClose_Click(object sender, EventArgs e) => Close();

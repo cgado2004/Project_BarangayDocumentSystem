@@ -5,14 +5,14 @@ using BarangayDocumentSystem.Models;
 
 namespace BarangayDocumentSystem.BusinessRules.DocumentTemplates;
 
-/// <summary>
-/// RA 11261 First-Time Jobseeker certificate.
-///
-/// The wording deliberately states the statute, the six-month residency
-/// finding, and first-time status, because NBI, PSA and BIR check for exactly
-/// those. The Oath of Undertaking is appended by the renderer when
-/// RequiresOath is honoured.
-/// </summary>
+
+
+
+
+
+
+
+
 public class JobseekerTemplate : IDocumentTemplate
 {
     public DocumentType DocumentType => DocumentType.FirstTimeJobseekerCertificate;

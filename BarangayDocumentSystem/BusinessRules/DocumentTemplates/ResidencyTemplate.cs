@@ -17,7 +17,7 @@ public class ResidencyTemplate : IDocumentTemplate
 
         yield return "TO WHOM IT MAY CONCERN:";
         yield return $"This is to certify that {r.GetFullName().ToUpper()}, {r.GetAge()} years " +
-                     $"old, is a bona fide resident of {r.AddressLine}, {r.Purok}, " +
+                     $"old, is a bona fide resident of {r.GetAddressText()}, " +
                      $"{profile.BarangayName}, {profile.CityName}, Davao del Norte.";
         yield return $"Records of this office show that the above-named person has been residing " +
                      $"in this barangay since {r.DateOfResidency:MMMM d, yyyy} " +

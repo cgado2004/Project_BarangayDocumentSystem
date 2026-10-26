@@ -78,5 +78,7 @@ Desktop.ini
 *.tmp
 *.cache
 
-# Local-only notes
-docs/CodeGuide.md
+# Internal documentation and notes (not for publication)
+docs/
+handoff.md
+LOCAL_REVIEW.md

@@ -1,8 +1,8 @@
-using System.Windows.Forms;
-using System.Drawing;
+#nullable enable
 using System;
+using System.Drawing;
 using System.Linq;
-using BarangayDocumentSystem.BusinessRules;
+using System.Windows.Forms;
 using BarangayDocumentSystem.Forms;
 using BarangayDocumentSystem.Interfaces;
 using BarangayDocumentSystem.Models;
@@ -10,114 +10,177 @@ using BarangayDocumentSystem.UIHelpers;
 
 namespace BarangayDocumentSystem.Views;
 
-/// <summary>
-/// Resident registry: search, list, and the actions on a selected resident.
-///
-/// ── SINGLE RESPONSIBILITY ───────────────────────────────────────────────
-/// v1's MainForm was 429 lines handling residents, requests, the dashboard,
-/// AND window chrome — four reasons to change in one file. This view has one:
-/// presenting residents.
-/// </summary>
 public class ResidentsView : ViewBase
 {
-    private readonly FeeSchedule _feeSchedule;
     private readonly DataGridView _grid = new();
     private readonly TextBox _search = new();
-
-    /// <summary>Raised when a request is filed, so the shell can refresh other views.</summary>
-    public event EventHandler? RequestFiled;
+    private readonly ComboBox _statusFilter = new();
+    private readonly Button _transferButton = UiFactory.SecondaryButton("Transfer", 110);
+    private readonly Label _emptyLabel = new();
 
     public override string Title => "Residents";
-    public override string Subtitle => "Registry of Barangay Magugpo Poblacion";
 
-    public ResidentsView(IBarangayRepository repository, FeeSchedule feeSchedule)
+    public ResidentsView(IBarangayRepository repository)
         : base(repository)
     {
-        _feeSchedule = feeSchedule ?? throw new ArgumentNullException(nameof(feeSchedule));
         BuildLayout();
     }
 
     private void BuildLayout()
     {
-        // --- action bar (bottom) ---
-        var actions = new FlowLayoutPanel
+        var root = new TableLayoutPanel
         {
-            Dock = DockStyle.Bottom,
-            Height = 56,
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 3,
             BackColor = AppTheme.Background,
-            Padding = new Padding(0, AppTheme.SpaceSm, 0, 0)
+            Margin = new Padding(0),
+            Padding = new Padding(0)
         };
+        root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 84F));
+        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-        // UiFactory keeps every button identical (DRY).
-        var register = UiFactory.SecondaryButton("Register Resident", 170);
-        register.Click += (_, _) => RegisterResident();
+        root.Controls.Add(BuildToolbar(), 0, 0);
+        root.Controls.Add(BuildGrid(), 0, 1);
+        root.Controls.Add(BuildActions(), 0, 2);
 
-        var edit = UiFactory.SecondaryButton("Edit", 110);
-        edit.Click += (_, _) => EditResident();
+        Controls.Add(root);
+    }
 
-        var delete = UiFactory.DangerButton("Delete", 110);
-        delete.Click += (_, _) => DeleteResident();
+    private Control BuildToolbar()
+    {
+        var bar = UiFactory.Toolbar();
+        bar.Margin = new Padding(0, 0, 0, 16);
 
-        var request = UiFactory.PrimaryButton("New Document Request", 220);
-        request.Click += (_, _) => FileRequest();
-
-        actions.Controls.AddRange(new Control[] { request, register, edit, delete });
-
-        // --- search bar (top) ---
-        var searchBar = new Panel
+        var wrap = new TableLayoutPanel
         {
-            Dock = DockStyle.Top,
-            Height = 52,
+            Dock = DockStyle.Fill,
             BackColor = AppTheme.Surface,
-            Padding = new Padding(AppTheme.SpaceMd, AppTheme.SpaceSm, AppTheme.SpaceMd, AppTheme.SpaceSm)
+            ColumnCount = 2,
+            RowCount = 1,
+            Margin = new Padding(0),
+            Padding = new Padding(0)
         };
+        wrap.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        wrap.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200F));
+        wrap.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
         _search.Dock = DockStyle.Fill;
         _search.Font = AppTheme.BodyFont;
         _search.BorderStyle = BorderStyle.FixedSingle;
+        _search.BackColor = AppTheme.Background;
+        _search.Margin = new Padding(0, 7, 12, 7);
         CueBanner.Set(_search, "Search by name, purok, or contact number…");
         _search.TextChanged += (_, _) => RefreshData();
-        searchBar.Controls.Add(_search);
 
-        // --- grid ---
+        _statusFilter.Dock = DockStyle.Fill;
+        _statusFilter.DropDownStyle = ComboBoxStyle.DropDownList;
+        _statusFilter.Font = AppTheme.BodyFont;
+        _statusFilter.Margin = new Padding(0, 7, 0, 7);
+        _statusFilter.Items.AddRange(new object[] { "All residents", "Active", "Archived" });
+        _statusFilter.SelectedIndex = 0;
+        _statusFilter.SelectedIndexChanged += (_, _) => RefreshData();
+
+        wrap.Controls.Add(_search, 0, 0);
+        wrap.Controls.Add(_statusFilter, 1, 0);
+        bar.Controls.Add(wrap);
+        return bar;
+    }
+
+    private Control BuildGrid()
+    {
         UiFactory.StyleGrid(_grid);
         _grid.Dock = DockStyle.Fill;
         _grid.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) EditResident(); };
 
-        var gridHost = new Panel
+        var host = UiFactory.CardHost(_grid);
+        host.Margin = new Padding(0, 0, 0, 16);
+
+        _emptyLabel.Dock = DockStyle.Fill;
+        _emptyLabel.TextAlign = ContentAlignment.MiddleCenter;
+        _emptyLabel.Font = AppTheme.BodyFont;
+        _emptyLabel.ForeColor = AppTheme.TextMuted;
+        _emptyLabel.BackColor = AppTheme.Surface;
+        _emptyLabel.Text = "No residents found";
+        _emptyLabel.Visible = false;
+
+        host.Controls.Add(_emptyLabel);
+        _emptyLabel.BringToFront();
+
+        return host;
+    }
+
+    private Control BuildActions()
+    {
+        var actions = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
-            BackColor = AppTheme.Surface,
-            Padding = new Padding(1)
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = true,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            BackColor = AppTheme.Background,
+            Margin = new Padding(0),
+            Padding = new Padding(0, 8, 0, 0)
         };
-        gridHost.Controls.Add(_grid);
 
-        Controls.Add(gridHost);
-        Controls.Add(actions);
-        Controls.Add(searchBar);
+
+
+        var register = UiFactory.PrimaryButton("Add Resident", 140);
+        register.Click += (_, _) => RegisterResident();
+
+        var edit = UiFactory.SecondaryButton("Edit", 90);
+        edit.Click += (_, _) => EditResident();
+
+        _transferButton.Click += (_, _) => TransferResident();
+
+        actions.Controls.Add(register);
+        actions.Controls.Add(edit);
+        actions.Controls.Add(_transferButton);
+        return actions;
     }
 
     public override void RefreshData()
     {
-        _grid.DataSource = Repository.SearchResidents(_search.Text.Trim())
-            .Select(r => new
-            {
-                ID             = r.ResidentId,
-                Name           = r.GetSortableName(),
-                Age            = r.GetAge(),
-                Gender         = r.Gender.ToString(),
-                r.Purok,
-                Contact        = r.ContactNumber,
-                Residency      = $"{r.GetMonthsOfResidency()} mo",
-                Voter          = r.IsRegisteredVoter ? "Yes" : "No",
-                Classification = r.GetClassificationText(),
-                Requests       = r.Requests.Count
-            })
-            .ToList();
+        string filter = _statusFilter.SelectedItem?.ToString() ?? "All residents";
+        string term = _search.Text.Trim();
+
+        var rows = new System.Collections.Generic.List<object>();
+        if (filter != "Archived")
+            rows.AddRange(Repository.SearchResidents(term).Select(r => Row(r, "Active")));
+        if (filter != "Active")
+            rows.AddRange(Repository.SearchArchivedResidents(term).Select(r => Row(r, "Archived")));
+
+        _grid.DataSource = rows;
 
         if (_grid.Columns["ID"] is { } idColumn)
             idColumn.Visible = false;
+        if (_grid.Columns["Residency"] is { } residencyColumn)
+            residencyColumn.MinimumWidth = 190;
+
+        _emptyLabel.Text = string.IsNullOrWhiteSpace(_search.Text)
+            ? filter == "Archived" ? "No archived residents yet" : "No residents found"
+            : $"No residents match \u201c{_search.Text.Trim()}\u201d";
+        _emptyLabel.Visible = _grid.Rows.Count == 0;
+        _transferButton.Enabled = filter != "Archived";
     }
+
+    private static object Row(Resident r, string status) => new
+    {
+        ID = r.ResidentId,
+        Name = r.GetSortableName(),
+        Age = r.GetAge(),
+        Gender = r.Gender.ToString(),
+        Purok = r.Purok,
+        Contact = r.ContactNumber,
+        Residency = ResidencyText.FormatDuration(r.GetMonthsOfResidency()),
+        Voter = r.IsRegisteredVoter ? "Yes" : "No",
+        Classification = r.GetClassificationText(),
+        Status = status,
+        Requests = r.Requests.Count
+    };
 
     private Resident? Selected()
     {
@@ -125,13 +188,11 @@ public class ResidentsView : ViewBase
         return Repository.Residents.FirstOrDefault(r => r.ResidentId == id);
     }
 
-    // -----------------------------------------------------------------
     private void RegisterResident()
     {
         using var dialog = new ResidentForm();
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
 
-        // One ResidentDetails object instead of fourteen positional arguments.
         var resident = AttemptGet(() => Repository.AddResident(dialog.Details));
         if (resident is null) return;
 
@@ -147,50 +208,215 @@ public class ResidentsView : ViewBase
         using var dialog = new ResidentForm(resident);
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
 
-        // v1 repeated all fourteen assignments here by hand. Now one call.
         if (!Attempt(() => Repository.UpdateResident(resident, dialog.Details))) return;
 
         RefreshData();
         SetStatus($"Updated the record for {resident.GetFullName()}.");
     }
 
-    private void DeleteResident()
+
+
+
+
+    private void TransferResident()
     {
         var resident = Selected();
         if (resident is null) { Dialog.SelectFirst("resident"); return; }
 
-        if (!Dialog.ConfirmDestructive(
-                $"Delete the record for {resident.GetFullName()}?\n\n" +
-                $"{resident.Requests.Count} document request(s) will also be removed.\n\n" +
-                "This cannot be undone.",
-                "Confirm deletion"))
+        using var dialog = new TransferForm(resident);
+        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+        string name = resident.GetFullName();
+        if (!Attempt(() => Repository.ArchiveResident(resident, dialog.Destination, dialog.Reason)))
+            return;
+
+        RefreshData();
+        SetStatus($"{name} transferred to {dialog.Destination} and moved to the Archive.");
+    }
+}
+
+
+
+
+
+
+public class ArchiveView : ViewBase
+{
+    private readonly DataGridView _grid = new();
+    private readonly TextBox _search = new();
+    private readonly Label _emptyLabel = new();
+
+    public override string Title => "Archived Residents";
+
+    public ArchiveView(IBarangayRepository repository) : base(repository)
+    {
+        BuildLayout();
+    }
+
+    private void BuildLayout()
+    {
+        var root = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 3,
+            BackColor = AppTheme.Background,
+            Margin = new Padding(0),
+            Padding = new Padding(0)
+        };
+        root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 84F));
+        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+        root.Controls.Add(BuildToolbar(), 0, 0);
+        root.Controls.Add(BuildGrid(), 0, 1);
+        root.Controls.Add(BuildActions(), 0, 2);
+
+        Controls.Add(root);
+    }
+
+    private Control BuildToolbar()
+    {
+        var bar = UiFactory.Toolbar();
+        bar.Margin = new Padding(0, 0, 0, 16);
+
+        var wrap = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = AppTheme.Surface,
+            Padding = new Padding(0, 7, 0, 7)
+        };
+
+        _search.Dock = DockStyle.Fill;
+        _search.Font = AppTheme.BodyFont;
+        _search.BorderStyle = BorderStyle.FixedSingle;
+        _search.BackColor = AppTheme.Background;
+        CueBanner.Set(_search, "Search archived residents by name, purok, or contact number…");
+        _search.TextChanged += (_, _) => RefreshData();
+
+        wrap.Controls.Add(_search);
+        bar.Controls.Add(wrap);
+        return bar;
+    }
+
+    private Control BuildGrid()
+    {
+        UiFactory.StyleGrid(_grid);
+        _grid.Dock = DockStyle.Fill;
+
+        var host = UiFactory.CardHost(_grid);
+        host.Margin = new Padding(0, 0, 0, 16);
+
+        _emptyLabel.Dock = DockStyle.Fill;
+        _emptyLabel.TextAlign = ContentAlignment.MiddleCenter;
+        _emptyLabel.Font = AppTheme.BodyFont;
+        _emptyLabel.ForeColor = AppTheme.TextMuted;
+        _emptyLabel.BackColor = AppTheme.Surface;
+        _emptyLabel.Visible = false;
+
+        host.Controls.Add(_emptyLabel);
+        _emptyLabel.BringToFront();
+        return host;
+    }
+
+    private Control BuildActions()
+    {
+        var actions = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = true,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            BackColor = AppTheme.Background,
+            Margin = new Padding(0),
+            Padding = new Padding(0, 8, 0, 0)
+        };
+
+        var edit = UiFactory.SecondaryButton("Edit", 90);
+        edit.Click += (_, _) => EditResident();
+
+        var restore = UiFactory.PrimaryButton("Restore to Residents", 180);
+        restore.Click += (_, _) => RestoreResident();
+
+        actions.Controls.Add(edit);
+        actions.Controls.Add(restore);
+        return actions;
+    }
+
+    public override void RefreshData()
+    {
+        _grid.DataSource = Repository.SearchArchivedResidents(_search.Text.Trim())
+            .Select(r => new
+            {
+                ID = r.ResidentId,
+                Name = r.GetSortableName(),
+                Age = r.GetAge(),
+                Purok = r.Purok,
+                TransferredTo = r.TransferDestination,
+                Reason = r.TransferReason,
+                Archived = r.ArchivedOn?.ToString("yyyy-MM-dd") ?? "",
+                Requests = r.Requests.Count
+            })
+            .ToList();
+
+        if (_grid.Columns["ID"] is { } idColumn)
+            idColumn.Visible = false;
+
+        _emptyLabel.Text = string.IsNullOrWhiteSpace(_search.Text)
+            ? "No archived residents — residents you transfer will appear here"
+            : $"No archived residents match \u201c{_search.Text.Trim()}\u201d";
+        _emptyLabel.Visible = _grid.Rows.Count == 0;
+    }
+
+    private Resident? Selected()
+    {
+        if (_grid.CurrentRow?.Cells["ID"].Value is not int id) return null;
+        return Repository.Residents.FirstOrDefault(r => r.ResidentId == id);
+    }
+
+
+    private void EditResident()
+    {
+        var resident = Selected();
+        if (resident is null) { Dialog.SelectFirst("resident"); return; }
+
+        using var dialog = new ResidentForm(resident);
+        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+        if (!Attempt(() => Repository.UpdateResident(resident, dialog.Details))) return;
+
+        RefreshData();
+        SetStatus($"Updated the archived record for {resident.GetFullName()}.");
+    }
+
+
+
+
+
+    private void RestoreResident()
+    {
+        var resident = Selected();
+        if (resident is null) { Dialog.SelectFirst("resident"); return; }
+
+        using var dialog = new ResidentForm(resident) { ConfirmOnSave = false };
+        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+        if (!Dialog.Confirm(
+                $"Save these details and move {resident.GetFullName()} back to the active Residents list?",
+                "Restore resident"))
             return;
 
         string name = resident.GetFullName();
-        if (!Attempt(() => Repository.RemoveResident(resident))) return;
+        if (!Attempt(() =>
+            {
+                Repository.UpdateResident(resident, dialog.Details);
+                Repository.RestoreResident(resident);
+            }))
+            return;
 
         RefreshData();
-        SetStatus($"Deleted the record for {name}.");
-    }
-
-    private void FileRequest()
-    {
-        var resident = Selected();
-        if (resident is null) { Dialog.SelectFirst("resident"); return; }
-
-        using var dialog = new RequestForm(resident, _feeSchedule);
-        if (dialog.ShowDialog(this) != DialogResult.OK) return;
-
-        var request = AttemptGet(() => Repository.CreateRequest(resident, dialog.DocumentType, dialog.Purpose));
-        if (request is null) return;
-
-        RefreshData();
-        RequestFiled?.Invoke(this, EventArgs.Empty);
-
-        string fee = request.Fee > 0
-            ? $"Fee: ₱{request.Fee:N2}"
-            : $"FREE — {request.FeeBasis}";
-
-        SetStatus($"Filed {request.GetReferenceNumber()} — {request.GetDocumentName()}. {fee}");
+        SetStatus($"{name} restored to the Residents list.");
     }
 }

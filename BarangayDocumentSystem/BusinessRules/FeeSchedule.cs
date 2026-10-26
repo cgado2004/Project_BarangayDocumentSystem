@@ -3,7 +3,7 @@ using BarangayDocumentSystem.Models;
 
 namespace BarangayDocumentSystem.BusinessRules;
 
-/// <summary>Outcome of assessing a fee, including WHY it came out that way.</summary>
+
 public class FeeAssessment
 {
     public decimal BaseFee { get; init; }
@@ -13,62 +13,69 @@ public class FeeAssessment
     public bool IsExempt { get; init; }
 }
 
-/// <summary>
-/// Fee rules for Barangay Magugpo Poblacion.
-///
-/// ─────────────────────────────────────────────────────────────────────────
-///  ⚠️ THE AMOUNTS BELOW ARE PLACEHOLDERS
-/// ─────────────────────────────────────────────────────────────────────────
-/// Under the Local Government Code (RA 7160, secs. 152–186) a barangay may
-/// only collect a fee that is fixed by a duly enacted barangay revenue
-/// ordinance. Collecting without an ordinance is illegal exaction.
-///
-/// The figures here are typical Philippine ranges used so the program runs.
-/// REPLACE THEM with the actual ordinance rates for Magugpo Poblacion before
-/// this is used for anything real — they are all in one place for exactly
-/// that reason.
-///
-/// ─────────────────────────────────────────────────────────────────────────
-///  STATUTORY EXEMPTIONS ENCODED HERE
-/// ─────────────────────────────────────────────────────────────────────────
-/// • RA 11261 (First Time Jobseekers Assistance Act) — barangay clearance and
-///   certification are FREE for a qualified first-time jobseeker. Conditions:
-///   Filipino citizen, at least 6 months' residency in the issuing barangay,
-///   and the benefit may be availed ONCE only.
-///
-/// • Certificate of Indigency — DILG has opined that charging more than ₱50
-///   "appears excessive", and ARTA treats refusal-to-issue-without-payment as
-///   a grave offence under RA 11032. Issued free here.
-///
-/// • RA 9994 (senior citizens) and RA 10754 (PWD) grant broad privileges;
-///   many barangays waive document fees for both. Implemented as a waiver,
-///   but CONFIRM against the local ordinance.
-/// </summary>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 public class FeeSchedule
 {
-    // --- Base rates (placeholders — see class remarks) ---
+
     public const decimal ClearanceFee        = 50m;
     public const decimal ResidencyFee        = 100m;
-    public const decimal IndigencyFee        = 0m;     // free by policy
+    public const decimal IndigencyFee        = 0m;
     public const decimal BusinessClearanceFee = 200m;
     public const decimal BarangayIdFee       = 100m;
     public const decimal GoodMoralFee        = 100m;
-    public const decimal JobseekerFee        = 0m;     // free by RA 11261
+    public const decimal JobseekerFee        = 0m;
 
-    /// <summary>Minimum residency for the RA 11261 certificate.</summary>
+
+
+
+
+
+    public const decimal StudentDiscountRate = 0.50m;
+
+
     public const int RequiredMonthsForJobseeker = 6;
 
-    /// <summary>
-    /// Works out what a resident should pay for a document, and records the
-    /// legal or policy basis for the answer.
-    /// </summary>
-    public FeeAssessment Assess(Resident resident, DocumentType documentType)
+
+
+
+
+    public FeeAssessment Assess(Resident resident, DocumentType documentType, bool isStudent = false)
     {
         if (resident is null) throw new ArgumentNullException(nameof(resident));
 
         decimal baseFee = GetBaseFee(documentType);
 
-        // --- Exemption 1: RA 11261, first-time jobseeker ---
+
         if (documentType == DocumentType.FirstTimeJobseekerCertificate)
         {
             return new FeeAssessment
@@ -80,7 +87,7 @@ public class FeeSchedule
             };
         }
 
-        // --- Exemption 2: certificate of indigency ---
+
         if (documentType == DocumentType.CertificateOfIndigency)
         {
             return new FeeAssessment
@@ -92,8 +99,8 @@ public class FeeSchedule
             };
         }
 
-        // Business clearance is a regulatory fee on an enterprise, not a
-        // personal document, so personal exemptions do NOT apply to it.
+
+
         if (documentType == DocumentType.BarangayBusinessClearance)
         {
             return new FeeAssessment
@@ -105,7 +112,7 @@ public class FeeSchedule
             };
         }
 
-        // --- Exemption 3: indigent resident ---
+
         if (resident.HasClassification(ResidentClassification.Indigent))
         {
             return new FeeAssessment
@@ -117,7 +124,7 @@ public class FeeSchedule
             };
         }
 
-        // --- Exemption 4: senior citizen (RA 9994) ---
+
         if (resident.HasClassification(ResidentClassification.SeniorCitizen))
         {
             return new FeeAssessment
@@ -129,7 +136,7 @@ public class FeeSchedule
             };
         }
 
-        // --- Exemption 5: PWD (RA 10754) ---
+
         if (resident.HasClassification(ResidentClassification.PWD))
         {
             return new FeeAssessment
@@ -141,7 +148,22 @@ public class FeeSchedule
             };
         }
 
-        // --- No exemption ---
+
+
+
+        if (isStudent && baseFee > 0)
+        {
+            decimal discounted = Math.Round(baseFee * (1m - StudentDiscountRate), 2);
+            return new FeeAssessment
+            {
+                BaseFee  = baseFee,
+                FinalFee = discounted,
+                Basis    = $"Student discount ({StudentDiscountRate:P0} off) — student eligibility confirmed",
+                IsExempt = true
+            };
+        }
+
+
         return new FeeAssessment
         {
             BaseFee  = baseFee,
@@ -163,10 +185,10 @@ public class FeeSchedule
         _                                          => 0m
     };
 
-    /// <summary>
-    /// Checks the RA 11261 preconditions. Returns false plus a reason when the
-    /// resident does not qualify, so the clerk can explain why.
-    /// </summary>
+
+
+
+
     public bool CanIssueJobseekerCertificate(Resident resident, out string reason)
     {
         if (resident is null) throw new ArgumentNullException(nameof(resident));

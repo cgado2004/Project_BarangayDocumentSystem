@@ -4,21 +4,21 @@ using System.Configuration;
 namespace BarangayDocumentSystem.Database;
 
 
-/// Where the MySQL server is and how to log in.
-///
-/// The environment variable <see cref="EnvironmentVariable"/>, if set, wins
-/// over the file — handy for keeping a real password out of source control.
+
+
+
+
 
 public sealed class DatabaseSettings
 {
-    /// A stock local MySQL / XAMPP install: user root, blank password.
+
     public const string DefaultConnectionString =
         "Server=localhost;Port=3306;Database=barangay_db;User ID=root;Password=;CharSet=utf8mb4;";
 
-    /// Name of the &lt;connectionStrings&gt; entry in App.config.
+
     public const string ConnectionStringName = "BarangayDb";
 
-    /// Name of the &lt;appSettings&gt; key that turns demo data on or off.
+
     public const string SeedSettingName = "SeedSampleData";
 
     public const string EnvironmentVariable = "BARANGAY_DB_CONNECTION";

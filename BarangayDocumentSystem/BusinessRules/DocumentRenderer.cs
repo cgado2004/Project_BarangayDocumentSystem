@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Text;
 using System.Linq;
 
@@ -8,24 +9,24 @@ using BarangayDocumentSystem.Models;
 
 namespace BarangayDocumentSystem.BusinessRules;
 
-/// <summary>
-/// Assembles a printable document: letterhead, title, body, footer.
-///
-/// ── DRY: the single biggest win in this refactor ────────────────────────
-/// The old DocumentPrinter repeated the letterhead, the "Issued this day…"
-/// closing, the signature block, the reference/fee footer and the dry-seal
-/// notice across SEVEN Append* methods. Changing the letterhead meant seven
-/// edits, and the seven had already drifted apart in small ways.
-///
-/// Here that scaffolding is written ONCE. Templates supply only their body.
-///
-/// ── OPEN/CLOSED ─────────────────────────────────────────────────────────
-/// This class has no switch and no knowledge of any specific document. Adding
-/// a certificate never touches this file.
-///
-/// ── SINGLE RESPONSIBILITY ───────────────────────────────────────────────
-/// One job: page layout. Wording lives in templates; fees live in FeeSchedule.
-/// </summary>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 public class DocumentRenderer
 {
     private const int PageWidth = 72;
@@ -33,10 +34,10 @@ public class DocumentRenderer
     private readonly IReadOnlyDictionary<DocumentType, IDocumentTemplate> _templates;
     private readonly BarangayProfile _profile;
 
-    /// <summary>
-    /// Templates are injected, not constructed here (DIP). The renderer never
-    /// names a concrete template class.
-    /// </summary>
+
+
+
+
     public DocumentRenderer(IEnumerable<IDocumentTemplate> templates, BarangayProfile profile)
     {
         if (templates is null) throw new ArgumentNullException(nameof(templates));
@@ -55,8 +56,8 @@ public class DocumentRenderer
 
         if (!_templates.TryGetValue(request.DocumentType, out var template))
         {
-            // Defensive: a document type with no registered template. Better a
-            // clear message than a silently blank certificate.
+
+
             sb.AppendLine(Centre($"[No template registered for {request.DocumentType}]"));
             return sb.ToString();
         }
@@ -64,7 +65,7 @@ public class DocumentRenderer
         AppendTitle(sb, template);
         AppendBody(sb, template, request);
 
-        // The RA 11261 certificate needs a signed undertaking; nothing else does.
+
         if (request.DocumentType == DocumentType.FirstTimeJobseekerCertificate)
             AppendOathOfUndertaking(sb);
 
@@ -72,9 +73,70 @@ public class DocumentRenderer
         return sb.ToString();
     }
 
-    // -----------------------------------------------------------------
-    //  Written once, used by every document
-    // -----------------------------------------------------------------
+
+
+
+
+    public static readonly string[] ReportColumns =
+    {
+        "BarangayName", "CityName", "ProvinceName", "PunongBarangay",
+        "Title", "Subtitle", "Body", "Oath",
+        "ReferenceNo", "ResidentName", "Purpose",
+        "IssuedLine", "DateIssued", "FeeText", "FeeBasis", "ORNo"
+    };
+
+
+
+
+
+
+
+    public DataTable BuildReportData(DocumentRequest request)
+    {
+        if (request is null) throw new ArgumentNullException(nameof(request));
+
+        var table = new DataTable("Document");
+        foreach (string column in ReportColumns)
+            table.Columns.Add(column, typeof(string));
+
+        _templates.TryGetValue(request.DocumentType, out var template);
+        string body = template is null
+            ? string.Empty
+            : string.Join("\r\n\r\n", template.BuildBody(request, _profile));
+
+        string oath = request.DocumentType == DocumentType.FirstTimeJobseekerCertificate
+            ? "I hereby declare under oath that I am a first time jobseeker, that the " +
+              "foregoing statements are true and correct, and that I am availing of the " +
+              "benefits under RA 11261 for the first time."
+            : string.Empty;
+
+        var issued = request.DateReleased ?? request.DateRequested;
+        string feeText = request.Fee > 0 ? $"₱{request.Fee:N2}" : "FREE OF CHARGE";
+
+        table.Rows.Add(
+            _profile.BarangayName,
+            _profile.CityName,
+            _profile.ProvinceName,
+            _profile.PunongBarangay,
+            template?.Title ?? string.Empty,
+            template?.Subtitle ?? string.Empty,
+            body,
+            oath,
+            request.GetReferenceNumber(),
+            request.Resident.GetFullName(),
+            request.Purpose,
+            $"Issued on {issued:MMMM d, yyyy} at {_profile.BarangayName}, {_profile.CityName}, Davao del Norte.",
+            issued.ToString("MMMM d, yyyy h:mm tt"),
+            feeText,
+            request.FeeBasis,
+            request.OfficialReceiptNo);
+
+        return table;
+    }
+
+
+
+
     private void AppendLetterhead(StringBuilder sb)
     {
         sb.AppendLine(Centre("Republic of the Philippines"));
@@ -102,9 +164,9 @@ public class DocumentRenderer
     {
         foreach (string paragraph in template.BuildBody(request, _profile))
         {
-            // Pre-formatted lines (the ID card's "Label : value" rows and the
-            // business clearance details) contain a colon at a fixed column and
-            // must not be re-wrapped, or the alignment is destroyed.
+
+
+
             sb.AppendLine(IsPreformatted(paragraph) ? paragraph : Wrap(paragraph));
             sb.AppendLine();
         }
@@ -129,7 +191,8 @@ public class DocumentRenderer
 
     private void AppendFooter(StringBuilder sb, DocumentRequest request)
     {
-        sb.AppendLine(Wrap($"Issued this {DateTime.Now:d} day of {DateTime.Now:MMMM, yyyy} at " +
+        var issued = request.DateReleased ?? request.DateRequested;
+        sb.AppendLine(Wrap($"Issued on {issued:MMMM d, yyyy} at " +
                            $"{_profile.BarangayName}, {_profile.CityName}, Davao del Norte."));
         sb.AppendLine();
         sb.AppendLine();
@@ -138,7 +201,7 @@ public class DocumentRenderer
         sb.AppendLine();
         sb.AppendLine(new string('-', PageWidth));
         sb.AppendLine($"Reference No. : {request.GetReferenceNumber()}");
-        sb.AppendLine($"Date Issued   : {DateTime.Now:MMMM d, yyyy  h:mm tt}");
+        sb.AppendLine($"Date Issued   : {issued:MMMM d, yyyy  h:mm tt}");
 
         if (request.Fee > 0)
         {
@@ -155,7 +218,7 @@ public class DocumentRenderer
         sb.AppendLine(Centre("NOT VALID WITHOUT OFFICIAL DRY SEAL"));
     }
 
-    // -----------------------------------------------------------------
+
     private static string Centre(string text)
     {
         if (text.Length >= PageWidth) return text;
@@ -164,8 +227,8 @@ public class DocumentRenderer
 
     private static string Wrap(string text)
     {
-        // .NET Framework has no Split(char, StringSplitOptions) overload -- only
-        // the char[] form (added as a convenience in .NET Core).
+
+
         var words = text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
         var sb = new StringBuilder();
         var line = new StringBuilder();

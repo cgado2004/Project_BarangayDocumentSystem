@@ -7,19 +7,13 @@ using BarangayDocumentSystem.UIHelpers;
 
 namespace BarangayDocumentSystem.Forms;
 
-/// <summary>
-/// Files a document request for a resident.
-///
-/// The fee is shown LIVE as the document type changes, including the legal
-/// basis for any waiver, so the clerk can tell the resident what is owed and
-/// why before anything is committed.
-/// </summary>
+
 public partial class RequestForm : Form
 {
     private readonly Resident _resident;
     private readonly FeeSchedule _feeSchedule;
 
-    // Parallel to the ComboBox items — index maps to enum value.
+
     private readonly DocumentType[] _types =
     {
         DocumentType.BarangayClearance,
@@ -34,9 +28,13 @@ public partial class RequestForm : Form
     public DocumentType DocumentType { get; private set; }
     public string Purpose { get; private set; } = string.Empty;
 
+
+    public bool IsStudent { get; private set; }
+
     public RequestForm(Resident resident, FeeSchedule feeSchedule)
     {
         InitializeComponent();
+        DialogLayout.MakeScrollable(this);
         _resident = resident ?? throw new ArgumentNullException(nameof(resident));
         _feeSchedule = feeSchedule ?? throw new ArgumentNullException(nameof(feeSchedule));
     }
@@ -48,8 +46,8 @@ public partial class RequestForm : Form
 
         lblClassValue.Text = _resident.GetClassificationText();
         lblResidencyValue.Text =
-            $"{_resident.GetMonthsOfResidency()} months " +
-            $"(since {_resident.DateOfResidency:MMM yyyy})";
+            $"{ResidencyText.FormatDuration(_resident.GetMonthsOfResidency())} " +
+            $"(since {_resident.DateOfResidency:MMM d, yyyy})";
 
         cmbDocument.Items.AddRange(new object[]
         {
@@ -79,17 +77,17 @@ public partial class RequestForm : Form
         cmbDocument.SelectedIndex = 0;
     }
 
-    /// <summary>
-    /// Re-assesses the fee whenever the document type changes, and warns
-    /// immediately if the resident cannot lawfully receive the RA 11261
-    /// certificate.
-    /// </summary>
+
+
+
+
+
     private void cmbDocument_SelectedIndexChanged(object sender, EventArgs e)
     {
         if (cmbDocument.SelectedIndex < 0) return;
 
         DocumentType type = _types[cmbDocument.SelectedIndex];
-        FeeAssessment assessment = _feeSchedule.Assess(_resident, type);
+        FeeAssessment assessment = _feeSchedule.Assess(_resident, type, chkStudent.Checked);
 
         if (assessment.IsWaived)
         {
@@ -102,9 +100,8 @@ public partial class RequestForm : Form
             lblFeeValue.ForeColor = SystemColors.ControlText;
         }
 
-        lblBasisValue.Text = assessment.Basis;
 
-        // RA 11261 has statutory preconditions beyond the fee itself.
+
         if (type == DocumentType.FirstTimeJobseekerCertificate)
         {
             if (!_feeSchedule.CanIssueJobseekerCertificate(_resident, out string reason))
@@ -126,6 +123,10 @@ public partial class RequestForm : Form
         btnSubmit.Enabled = true;
     }
 
+
+    private void chkStudent_CheckedChanged(object sender, EventArgs e) =>
+        cmbDocument_SelectedIndexChanged(sender, e);
+
     private void btnSubmit_Click(object sender, EventArgs e)
     {
         if (cmbDocument.SelectedIndex < 0)
@@ -144,15 +145,27 @@ public partial class RequestForm : Form
 
         DocumentType = _types[cmbDocument.SelectedIndex];
         Purpose = cmbPurpose.Text.Trim();
+        IsStudent = chkStudent.Checked;
 
-        // Re-check eligibility at submit time as well — belt and braces, in
-        // case the selection changed without firing the handler.
+
+
         if (DocumentType == DocumentType.FirstTimeJobseekerCertificate &&
             !_feeSchedule.CanIssueJobseekerCertificate(_resident, out string reason))
         {
             Dialog.Warn(reason, "Cannot issue this certificate");
             return;
         }
+
+        FeeAssessment fee = _feeSchedule.Assess(_resident, DocumentType, chkStudent.Checked);
+        string feeText = fee.IsWaived ? "FREE" : $"₱{fee.FinalFee:N2}";
+        if (!Dialog.Confirm(
+                $"File this request?\n\n" +
+                $"Resident:  {_resident.GetFullName()}\n" +
+                $"Document:  {cmbDocument.Text}\n" +
+                $"Purpose:   {Purpose}\n" +
+                $"Fee:       {feeText}" + (chkStudent.Checked ? "  (student discount)" : ""),
+                "Confirm request"))
+            return;
 
         DialogResult = DialogResult.OK;
         Close();

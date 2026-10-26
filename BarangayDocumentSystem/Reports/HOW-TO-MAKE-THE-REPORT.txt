@@ -1,0 +1,89 @@
+NOTE: this file is OPTIONAL. Without DocumentReport.rpt the app prints a
+ready-made formatted document (letterhead, title, body, signature, O.R. line)
+through System.Drawing.Printing with Print / Save / Copy buttons, so nothing
+breaks. Follow the steps below only if you want a Crystal Reports layout.
+
+HOW TO MAKE THE CRYSTAL REPORT (one time, ~10 minutes)
+======================================================
+
+The program prints every barangay document through a Crystal Reports file:
+
+    Reports\DocumentReport.rpt
+
+A .rpt file can only be designed inside the Crystal Reports designer, so it is
+not included in the project. Until you make it, the app shows its plain-text
+preview instead. The data plumbing is already done:
+
+  * DocumentRenderer.BuildReportData(request) returns a one-row "Document"
+    DataTable with exactly these columns (see DocumentRenderer.ReportColumns):
+
+      BarangayName, CityName, ProvinceName, PunongBarangay,
+      Title, Subtitle, Body, Oath,
+      ReferenceNo, ResidentName, Purpose,
+      IssuedLine, DateIssued, FeeText, FeeBasis, ORNo
+
+  * Reports\DocumentData.xsd describes that table so the Crystal designer can
+    read it as an ADO.NET (XML) data source.
+
+WHAT YOU NEED
+-------------
+1. Visual Studio with "SAP Crystal Reports, developer version for Microsoft
+   Visual Studio" installed (this adds the Crystal Reports designer).
+2. The Crystal Reports runtime for .NET Framework.
+
+STEP 1 - ADD THE REPORT
+-----------------------
+1. Solution Explorer > right-click the Reports folder > Add > New Item.
+2. Choose "Crystal Reports", name it  DocumentReport.rpt  > Add.
+3. Gallery: "As a Blank Report" > OK.
+
+STEP 2 - CONNECT THE DATA
+-------------------------
+1. Database Expert > Create New Connection > ADO.NET (XML).
+2. File path: browse to  Reports\DocumentData.xsd  > Finish.
+3. Select the table  Document  > move it to "Selected Tables" > OK.
+
+STEP 3 - LAY OUT THE PAGE
+-------------------------
+Open Field Explorer (View > Other Windows > Field Explorer) and drag fields
+into the DETAILS section. There is only one row of data, so everything goes in
+Details. Suggested layout, top to bottom:
+
+    (text)  Republic of the Philippines              centred
+    {Document.ProvinceName}                          centred
+    {Document.CityName}                              centred
+    {Document.BarangayName}                          centred, bold
+    (text)  OFFICE OF THE PUNONG BARANGAY            centred
+    ----------------------------------------------------------
+    {Document.Title}                                 centred, bold
+    {Document.Subtitle}                              centred
+    {Document.Body}                                  left, wrapped
+    {Document.Oath}                                  left, wrapped (jobseeker only)
+    ----------------------------------------------------------
+    {Document.IssuedLine}                            left
+    {Document.PunongBarangay}                        centred
+    (text)  Punong Barangay                          centred
+    ----------------------------------------------------------
+    Reference No.: {Document.ReferenceNo}            left
+    Date Issued  : {Document.DateIssued}             left
+    Fee          : {Document.FeeText}                left
+    O.R. Number  : {Document.ORNo}                   left
+    ==========================================================
+    (text)  NOT VALID WITHOUT OFFICIAL DRY SEAL      centred
+
+STEP 4 - POINT THE APP AT THE REPORT (optional wiring)
+------------------------------------------------------
+DocumentRenderer already builds the data; the remaining step is to load the
+.rpt in the print path when it exists. Because Crystal Reports is only present
+on machines with the SAP runtime installed, gate it behind the CRYSTAL
+preprocessor symbol and fall back to the plain-text preview otherwise, e.g.:
+
+    #if CRYSTAL
+        // load Reports\DocumentReport.rpt, set its data source to
+        // renderer.BuildReportData(request), and print it.
+    #else
+        // existing plain-text PrintPreviewDialog
+    #endif
+
+Keep Reports\DocumentData.xsd in sync with DocumentRenderer.ReportColumns if
+you ever add or rename a field.

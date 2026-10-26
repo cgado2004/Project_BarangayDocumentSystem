@@ -7,83 +7,54 @@ using MySql.Data.MySqlClient;
 using BarangayDocumentSystem.BusinessRules;
 using BarangayDocumentSystem.Interfaces;
 using BarangayDocumentSystem.Models;
+using System.Security.Cryptography;
 
 namespace BarangayDocumentSystem.Database;
 
 
-/// MySQL implementation of <see cref="IBarangayRepository"/>.
-///
-/// Every query is PARAMETERISED (@name) — user text is never pasted into SQL,
-/// which is what prevents SQL injection.
-///
-/// A connection is opened per operation and closed straight after; MySql.Data
-/// pools connections, so this is cheap and avoids a stale long-lived connection.
-///
-/// Limit of this design: it assumes ONE running copy of the app. Two clerks on
-/// two machines would not see each other's changes until Reload/restart.
+
+
+
+
+
+
+
+
+
+
 public class MySqlBarangayRepository : IBarangayRepository
 {
-    // ---------------------------------------------------------------- SQL
-    private const string ResidentColumns =
-        "resident_id, first_name, middle_name, last_name, suffix, date_of_birth, gender, " +
-        "civil_status, purok, address_line, contact_number, occupation, date_of_residency, " +
-        "is_registered_voter, classification, has_availed_jobseeker";
 
-    private const string SqlSelectResidents =
-        "SELECT " + ResidentColumns + " FROM residents ORDER BY resident_id";
 
-    private const string SqlSelectRequests =
-        "SELECT request_id, resident_id, document_type, purpose, date_requested, date_released, " +
-        "status, fee, fee_basis, is_paid, official_receipt_no, remarks " +
-        "FROM document_requests ORDER BY request_id";
 
-    private const string SqlInsertResident =
-        "INSERT INTO residents (first_name, middle_name, last_name, suffix, date_of_birth, gender, " +
-        "civil_status, purok, address_line, contact_number, occupation, date_of_residency, " +
-        "is_registered_voter, classification) " +
-        "VALUES (@first_name, @middle_name, @last_name, @suffix, @date_of_birth, @gender, " +
-        "@civil_status, @purok, @address_line, @contact_number, @occupation, @date_of_residency, " +
-        "@is_registered_voter, @classification)";
+    private const string SpGetResidents    = "sp_residents_get_all";
+    private const string SpGetRequests     = "sp_requests_get_all";
+    private const string SpAddResident     = "sp_resident_add";
+    private const string SpUpdateResident  = "sp_resident_update";
+    private const string SpArchiveResident = "sp_resident_archive";
+    private const string SpRestoreResident = "sp_resident_restore";
+    private const string SpAddRequest      = "sp_request_add";
+    private const string SpSaveRequest     = "sp_request_save";
+    private const string SpDependentsGetAll = "sp_dependents_get_all";
+    private const string SpDependentsClear  = "sp_dependents_clear";
+    private const string SpDependentAdd     = "sp_dependent_add";
+    private const string SpActivityAdd      = "sp_activity_add";
+    private const string SpActivityByDate   = "sp_activity_get_by_date";
 
-    private const string SqlUpdateResident =
-        "UPDATE residents SET first_name=@first_name, middle_name=@middle_name, last_name=@last_name, " +
-        "suffix=@suffix, date_of_birth=@date_of_birth, gender=@gender, civil_status=@civil_status, " +
-        "purok=@purok, address_line=@address_line, contact_number=@contact_number, " +
-        "occupation=@occupation, date_of_residency=@date_of_residency, " +
-        "is_registered_voter=@is_registered_voter, classification=@classification " +
-        "WHERE resident_id=@resident_id";
 
-    // Requests are removed by the database itself (ON DELETE CASCADE).
-    private const string SqlDeleteResident =
-        "DELETE FROM residents WHERE resident_id=@resident_id";
-
-    private const string SqlInsertRequest =
-        "INSERT INTO document_requests (resident_id, document_type, purpose, date_requested, status, " +
-        "fee, fee_basis, is_paid, official_receipt_no, remarks) " +
-        "VALUES (@resident_id, @document_type, @purpose, @date_requested, @status, " +
-        "@fee, @fee_basis, 0, '', '')";
-
-    private const string SqlUpdateRequest =
-        "UPDATE document_requests SET purpose=@purpose, status=@status, date_released=@date_released, " +
-        "is_paid=@is_paid, official_receipt_no=@official_receipt_no, remarks=@remarks " +
-        "WHERE request_id=@request_id";
-
-    private const string SqlUpdateJobseekerFlag =
-        "UPDATE residents SET has_availed_jobseeker=@has_availed WHERE resident_id=@resident_id";
-
-    // state
     private readonly string _connectionString;
     private readonly FeeSchedule _feeSchedule;
     private readonly List<Resident> _residents = new();
     private readonly List<DocumentRequest> _requests = new();
+    private string _currentUser = string.Empty;
 
     public IReadOnlyList<Resident> Residents => _residents.AsReadOnly();
     public IReadOnlyList<DocumentRequest> Requests => _requests.AsReadOnly();
 
-    
-    /// The tables must already exist — call
-    /// <see cref="DatabaseInitializer.EnsureCreated"/> first.
-   
+
+
+
+
     public MySqlBarangayRepository(string connectionString, FeeSchedule feeSchedule)
     {
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -94,7 +65,7 @@ public class MySqlBarangayRepository : IBarangayRepository
         Reload();
     }
 
-    // loading
+
     public void Reload()
     {
         var residents = new List<Resident>();
@@ -104,7 +75,7 @@ public class MySqlBarangayRepository : IBarangayRepository
         {
             var byId = new Dictionary<int, Resident>();
 
-            using (var cmd = CreateCommand(conn, SqlSelectResidents))
+            using (var cmd = CreateCommand(conn, SpGetResidents))
             using (var reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
@@ -115,22 +86,41 @@ public class MySqlBarangayRepository : IBarangayRepository
                 }
             }
 
-            using (var cmd = CreateCommand(conn, SqlSelectRequests))
+            using (var cmd = CreateCommand(conn, SpGetRequests))
             using (var reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
                 {
-                    // The foreign key guarantees the resident exists.
+
                     var resident = byId[GetInt(reader, "resident_id")];
                     var request = ReadRequest(reader, resident);
                     requests.Add(request);
                     resident.AddRequest(request);
                 }
             }
+
+            var dependentsByResident = new Dictionary<int, List<Dependent>>();
+            using (var cmd = CreateCommand(conn, SpDependentsGetAll))
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    int residentId = GetInt(reader, "resident_id");
+                    if (!byId.ContainsKey(residentId)) continue;
+                    if (!dependentsByResident.TryGetValue(residentId, out var list))
+                        dependentsByResident[residentId] = list = new List<Dependent>();
+                    list.Add(new Dependent(
+                        GetString(reader, "full_name"),
+                        GetString(reader, "relationship"),
+                        GetNullableDate(reader, "date_of_birth")));
+                }
+            }
+            foreach (var pair in dependentsByResident)
+                byId[pair.Key].SetDependents(pair.Value);
         });
 
-        // Swap only after BOTH queries succeeded, so a failed reload leaves the
-        // old data in place instead of an empty screen.
+
+
         _residents.Clear();
         _residents.AddRange(residents);
         _requests.Clear();
@@ -146,13 +136,17 @@ public class MySqlBarangayRepository : IBarangayRepository
             Gender            = (Gender)Enum.Parse(typeof(Gender), GetString(r, "gender")),
             CivilStatus       = (CivilStatus)Enum.Parse(typeof(CivilStatus), GetString(r, "civil_status")),
             Purok             = GetString(r, "purok"),
-            AddressLine       = GetString(r, "address_line"),
+            HouseNumber       = GetString(r, "house_number"),
             ContactNumber     = GetString(r, "contact_number"),
             Occupation        = GetString(r, "occupation"),
             DateOfResidency   = GetDate(r, "date_of_residency"),
             IsRegisteredVoter = GetBool(r, "is_registered_voter"),
             Classification    = (ResidentClassification)GetInt(r, "classification"),
-            HasAvailedFirstTimeJobseeker = GetBool(r, "has_availed_jobseeker")
+            HasAvailedFirstTimeJobseeker = GetBool(r, "has_availed_jobseeker"),
+            IsArchived          = GetBool(r, "is_archived"),
+            ArchivedOn          = GetNullableDate(r, "archived_on"),
+            TransferDestination = GetString(r, "transfer_destination"),
+            TransferReason      = GetString(r, "transfer_reason")
         };
 
     private static DocumentRequest ReadRequest(DbDataReader r, Resident resident) =>
@@ -168,25 +162,27 @@ public class MySqlBarangayRepository : IBarangayRepository
             feeBasis:          GetString(r, "fee_basis"),
             isPaid:            GetBool(r, "is_paid"),
             officialReceiptNo: GetString(r, "official_receipt_no"),
-            remarks:           GetString(r, "remarks"));
+            remarks:           GetString(r, "remarks"),
+            datePaid:          GetNullableDate(r, "date_paid"),
+            receivedBy:        GetString(r, "received_by"));
 
-    // residents
+
     public Resident AddResident(ResidentDetails d)
     {
         int id = Run(conn =>
         {
-            using (var cmd = CreateCommand(conn, SqlInsertResident))
-            {
-                BindResident(cmd, d);
-                cmd.ExecuteNonQuery();
-            }
-            return LastInsertId(conn);
+            using var cmd = CreateCommand(conn, SpAddResident);
+            BindResident(cmd, d);
+            return Convert.ToInt32(cmd.ExecuteScalar());
         });
 
-        // Database accepted it — now mirror it in memory.
+
         var resident = new Resident(id, d.FirstName, d.LastName);
         Apply(resident, d);
+        SaveDependents(id, d.Dependents);
+        resident.SetDependents(d.Dependents);
         _residents.Add(resident);
+        LogActivity("Resident added", resident.GetFullName());
         return resident;
     }
 
@@ -196,39 +192,75 @@ public class MySqlBarangayRepository : IBarangayRepository
 
         RunNoResult(conn =>
         {
-            using var cmd = CreateCommand(conn, SqlUpdateResident);
+            using var cmd = CreateCommand(conn, SpUpdateResident);
             BindResident(cmd, d);
-            AddParameter(cmd, "@resident_id", resident.ResidentId);
+            AddParameter(cmd, "p_resident_id", resident.ResidentId);
             cmd.ExecuteNonQuery();
         });
 
+        SaveDependents(resident.ResidentId, d.Dependents);
         Apply(resident, d);
+        resident.SetDependents(d.Dependents);
+        LogActivity("Resident updated", resident.GetFullName());
     }
 
-    public void RemoveResident(Resident resident)
+    public void ArchiveResident(Resident resident, string destination, string reason)
+    {
+        if (resident is null) throw new ArgumentNullException(nameof(resident));
+
+        var now = DateTime.Now;
+        now = new DateTime(now.Ticks - now.Ticks % TimeSpan.TicksPerSecond);
+
+        RunNoResult(conn =>
+        {
+            using var cmd = CreateCommand(conn, SpArchiveResident);
+            AddParameter(cmd, "p_archived_on", now);
+            AddParameter(cmd, "p_destination", destination ?? string.Empty);
+            AddParameter(cmd, "p_reason",      reason ?? string.Empty);
+            AddParameter(cmd, "p_resident_id", resident.ResidentId);
+            cmd.ExecuteNonQuery();
+        });
+
+        resident.IsArchived = true;
+        resident.ArchivedOn = now;
+        resident.TransferDestination = destination ?? string.Empty;
+        resident.TransferReason = reason ?? string.Empty;
+        LogActivity("Resident archived", resident.GetFullName());
+    }
+
+    public void RestoreResident(Resident resident)
     {
         if (resident is null) throw new ArgumentNullException(nameof(resident));
 
         RunNoResult(conn =>
         {
-            using var cmd = CreateCommand(conn, SqlDeleteResident);
-            AddParameter(cmd, "@resident_id", resident.ResidentId);
+            using var cmd = CreateCommand(conn, SpRestoreResident);
+            AddParameter(cmd, "p_resident_id", resident.ResidentId);
             cmd.ExecuteNonQuery();
         });
 
-        _requests.RemoveAll(r => r.Resident == resident);
-        _residents.Remove(resident);
+        resident.IsArchived = false;
+        resident.ArchivedOn = null;
+        resident.TransferDestination = string.Empty;
+        resident.TransferReason = string.Empty;
+        LogActivity("Resident restored", resident.GetFullName());
     }
 
-    public IEnumerable<Resident> SearchResidents(string term)
+    public IEnumerable<Resident> SearchResidents(string term) =>
+        Search(_residents.Where(r => !r.IsArchived), term);
+
+    public IEnumerable<Resident> SearchArchivedResidents(string term) =>
+        Search(_residents.Where(r => r.IsArchived), term);
+
+    private static IEnumerable<Resident> Search(IEnumerable<Resident> source, string term)
     {
         if (string.IsNullOrWhiteSpace(term))
-            return _residents.OrderBy(r => r.LastName).ThenBy(r => r.FirstName);
+            return source.OrderBy(r => r.LastName).ThenBy(r => r.FirstName);
 
-        return _residents
-            // .NET Framework's string.Contains has no StringComparison overload
-            // (added in .NET Core 2.0), so this does the same case-insensitive
-            // check with IndexOf instead.
+        return source
+
+
+
             .Where(r => ContainsIgnoreCase(r.GetFullName(), term)
                      || ContainsIgnoreCase(r.Purok, term)
                      || ContainsIgnoreCase(r.ContactNumber, term))
@@ -236,7 +268,7 @@ public class MySqlBarangayRepository : IBarangayRepository
             .ThenBy(r => r.FirstName);
     }
 
-    /// Copies the editable fields onto the in-memory resident.
+
     private static void Apply(Resident r, ResidentDetails d)
     {
         r.FirstName         = d.FirstName;
@@ -247,7 +279,7 @@ public class MySqlBarangayRepository : IBarangayRepository
         r.Gender            = d.Gender;
         r.CivilStatus       = d.CivilStatus;
         r.Purok             = d.Purok;
-        r.AddressLine       = d.AddressLine;
+        r.HouseNumber       = d.HouseNumber;
         r.ContactNumber     = d.ContactNumber;
         r.Occupation        = d.Occupation;
         r.DateOfResidency   = d.DateOfResidency;
@@ -255,51 +287,73 @@ public class MySqlBarangayRepository : IBarangayRepository
         r.Classification    = d.Classification;
     }
 
-    /// Binds the fourteen editable fields — shared by INSERT and UPDATE.
+
     private static void BindResident(DbCommand cmd, ResidentDetails d)
     {
-        AddParameter(cmd, "@first_name",          d.FirstName);
-        AddParameter(cmd, "@middle_name",         d.MiddleName ?? string.Empty);
-        AddParameter(cmd, "@last_name",           d.LastName);
-        AddParameter(cmd, "@suffix",              d.Suffix ?? string.Empty);
-        AddParameter(cmd, "@date_of_birth",       d.DateOfBirth.Date);
-        AddParameter(cmd, "@gender",              d.Gender.ToString());
-        AddParameter(cmd, "@civil_status",        d.CivilStatus.ToString());
-        AddParameter(cmd, "@purok",               d.Purok ?? string.Empty);
-        AddParameter(cmd, "@address_line",        d.AddressLine ?? string.Empty);
-        AddParameter(cmd, "@contact_number",      d.ContactNumber ?? string.Empty);
-        AddParameter(cmd, "@occupation",          d.Occupation ?? string.Empty);
-        AddParameter(cmd, "@date_of_residency",   d.DateOfResidency.Date);
-        AddParameter(cmd, "@is_registered_voter", d.IsRegisteredVoter);
-        AddParameter(cmd, "@classification",      (int)d.Classification);
+        AddParameter(cmd, "p_first_name",          d.FirstName);
+        AddParameter(cmd, "p_middle_name",         d.MiddleName ?? string.Empty);
+        AddParameter(cmd, "p_last_name",           d.LastName);
+        AddParameter(cmd, "p_suffix",              d.Suffix ?? string.Empty);
+        AddParameter(cmd, "p_date_of_birth",       d.DateOfBirth.Date);
+        AddParameter(cmd, "p_gender",              d.Gender.ToString());
+        AddParameter(cmd, "p_civil_status",        d.CivilStatus.ToString());
+        AddParameter(cmd, "p_purok",               d.Purok ?? string.Empty);
+        AddParameter(cmd, "p_house_number",        d.HouseNumber ?? string.Empty);
+        AddParameter(cmd, "p_contact_number",      d.ContactNumber ?? string.Empty);
+        AddParameter(cmd, "p_occupation",          d.Occupation ?? string.Empty);
+        AddParameter(cmd, "p_date_of_residency",   d.DateOfResidency.Date);
+        AddParameter(cmd, "p_is_registered_voter", d.IsRegisteredVoter);
+        AddParameter(cmd, "p_classification",      (int)d.Classification);
     }
 
-    // requests
-    public DocumentRequest CreateRequest(Resident resident, DocumentType type, string purpose)
+
+    private void SaveDependents(int residentId, IReadOnlyList<Dependent>? dependents)
+    {
+        if (dependents is null) return;
+
+        RunNoResult(conn =>
+        {
+            using (var clear = CreateCommand(conn, SpDependentsClear))
+            {
+                AddParameter(clear, "p_resident_id", residentId);
+                clear.ExecuteNonQuery();
+            }
+
+            foreach (var dep in dependents)
+            {
+                using var cmd = CreateCommand(conn, SpDependentAdd);
+                AddParameter(cmd, "p_full_name", dep.FullName);
+                AddParameter(cmd, "p_relationship", dep.Relationship ?? string.Empty);
+                AddParameter(cmd, "p_date_of_birth", dep.DateOfBirth);
+                AddParameter(cmd, "p_resident_id", residentId);
+                cmd.ExecuteNonQuery();
+            }
+        });
+    }
+
+
+    public DocumentRequest CreateRequest(Resident resident, DocumentType type, string purpose, bool isStudent = false)
     {
         if (resident is null) throw new ArgumentNullException(nameof(resident));
 
-        var assessment = _feeSchedule.Assess(resident, type);
+        var assessment = _feeSchedule.Assess(resident, type, isStudent);
 
-        // MySQL DATETIME has whole-second precision; trim now so the value in
-        // memory is exactly the value that was stored.
+
+
         var now = DateTime.Now;
         now = new DateTime(now.Ticks - now.Ticks % TimeSpan.TicksPerSecond);
 
         int id = Run(conn =>
         {
-            using (var cmd = CreateCommand(conn, SqlInsertRequest))
-            {
-                AddParameter(cmd, "@resident_id",    resident.ResidentId);
-                AddParameter(cmd, "@document_type",  type.ToString());
-                AddParameter(cmd, "@purpose",        purpose ?? string.Empty);
-                AddParameter(cmd, "@date_requested", now);
-                AddParameter(cmd, "@status",         RequestStatus.Pending.ToString());
-                AddParameter(cmd, "@fee",            assessment.FinalFee);
-                AddParameter(cmd, "@fee_basis",      assessment.Basis);
-                cmd.ExecuteNonQuery();
-            }
-            return LastInsertId(conn);
+            using var cmd = CreateCommand(conn, SpAddRequest);
+            AddParameter(cmd, "p_resident_id",    resident.ResidentId);
+            AddParameter(cmd, "p_document_type",  type.ToString());
+            AddParameter(cmd, "p_purpose",        purpose ?? string.Empty);
+            AddParameter(cmd, "p_date_requested", now);
+            AddParameter(cmd, "p_status",         RequestStatus.Pending.ToString());
+            AddParameter(cmd, "p_fee",            assessment.FinalFee);
+            AddParameter(cmd, "p_fee_basis",      assessment.Basis);
+            return Convert.ToInt32(cmd.ExecuteScalar());
         });
 
         var request = DocumentRequest.Restore(
@@ -309,6 +363,7 @@ public class MySqlBarangayRepository : IBarangayRepository
 
         _requests.Add(request);
         resident.AddRequest(request);
+        LogActivity("Request filed", $"{request.GetDocumentName()} for {resident.GetFullName()}");
         return request;
     }
 
@@ -316,48 +371,94 @@ public class MySqlBarangayRepository : IBarangayRepository
     {
         if (request is null) throw new ArgumentNullException(nameof(request));
 
+
+
         RunNoResult(conn =>
         {
-            // One transaction: the request row and the resident's RA 11261
-            // flag either both change or neither does.
-            using var tx = conn.BeginTransaction();
-
-            using (var cmd = CreateCommand(conn, SqlUpdateRequest, tx))
-            {
-                AddParameter(cmd, "@purpose",             request.Purpose ?? string.Empty);
-                AddParameter(cmd, "@status",              request.Status.ToString());
-                AddParameter(cmd, "@date_released",       request.DateReleased);
-                AddParameter(cmd, "@is_paid",             request.IsPaid);
-                AddParameter(cmd, "@official_receipt_no", request.OfficialReceiptNo);
-                AddParameter(cmd, "@remarks",             request.Remarks ?? string.Empty);
-                AddParameter(cmd, "@request_id",          request.RequestId);
-                cmd.ExecuteNonQuery();
-            }
-
-            using (var cmd = CreateCommand(conn, SqlUpdateJobseekerFlag, tx))
-            {
-                AddParameter(cmd, "@has_availed",  request.Resident.HasAvailedFirstTimeJobseeker);
-                AddParameter(cmd, "@resident_id",  request.Resident.ResidentId);
-                cmd.ExecuteNonQuery();
-            }
-
-            tx.Commit();
+            using var cmd = CreateCommand(conn, SpSaveRequest);
+            AddParameter(cmd, "p_purpose",             request.Purpose ?? string.Empty);
+            AddParameter(cmd, "p_status",              request.Status.ToString());
+            AddParameter(cmd, "p_date_released",       request.DateReleased);
+            AddParameter(cmd, "p_is_paid",             request.IsPaid);
+            AddParameter(cmd, "p_official_receipt_no", request.OfficialReceiptNo);
+            AddParameter(cmd, "p_date_paid",           request.DatePaid);
+            AddParameter(cmd, "p_received_by",         request.ReceivedBy);
+            AddParameter(cmd, "p_remarks",             request.Remarks ?? string.Empty);
+            AddParameter(cmd, "p_request_id",          request.RequestId);
+            AddParameter(cmd, "p_has_availed",         request.Resident.HasAvailedFirstTimeJobseeker);
+            AddParameter(cmd, "p_resident_id",         request.Resident.ResidentId);
+            cmd.ExecuteNonQuery();
         });
+        LogActivity("Request updated", $"{request.GetReferenceNumber()} — {request.Status}");
     }
 
     private static bool ContainsIgnoreCase(string haystack, string needle) =>
         haystack.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0;
+
+    public string GetNextOfficialReceiptNo() => OfficialReceiptNumber.Next(_requests, DateTime.Today);
 
     public IEnumerable<DocumentRequest> GetRequestsByStatus(RequestStatus? status) =>
         status is null
             ? _requests.OrderByDescending(r => r.DateRequested)
             : _requests.Where(r => r.Status == status).OrderByDescending(r => r.DateRequested);
 
-    // statistics
+
+    public string CurrentUser
+    {
+        get => _currentUser;
+        set => _currentUser = value ?? string.Empty;
+    }
+
+    public void LogActivity(string action, string details)
+    {
+
+        if (string.IsNullOrEmpty(_currentUser)) return;
+
+
+
+        try
+        {
+            var now = DateTime.Now;
+            now = new DateTime(now.Ticks - now.Ticks % TimeSpan.TicksPerSecond);
+            RunNoResult(conn =>
+            {
+                using var cmd = CreateCommand(conn, SpActivityAdd);
+                AddParameter(cmd, "p_logged_on", now);
+                AddParameter(cmd, "p_username", _currentUser);
+                AddParameter(cmd, "p_action", action ?? string.Empty);
+                AddParameter(cmd, "p_details", details ?? string.Empty);
+                cmd.ExecuteNonQuery();
+            });
+        }
+        catch (RepositoryException)
+        {
+
+        }
+    }
+
+    public IReadOnlyList<ActivityEntry> GetActivity(DateTime day)
+    {
+        var entries = new List<ActivityEntry>();
+        RunNoResult(conn =>
+        {
+            using var cmd = CreateCommand(conn, SpActivityByDate);
+            AddParameter(cmd, "p_day", day.Date);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                entries.Add(new ActivityEntry(
+                    GetDate(reader, "logged_on"),
+                    GetString(reader, "username"),
+                    GetString(reader, "action"),
+                    GetString(reader, "details")));
+        });
+        return entries;
+    }
+
+
     public BarangayStatistics GetStatistics() => new(
-        TotalResidents:   _residents.Count,
-        RegisteredVoters: _residents.Count(r => r.IsRegisteredVoter),
-        SeniorCitizens:   _residents.Count(r => r.HasClassification(ResidentClassification.SeniorCitizen)),
+        TotalResidents:   _residents.Count(r => !r.IsArchived),
+        RegisteredVoters: _residents.Count(r => !r.IsArchived && r.IsRegisteredVoter),
+        SeniorCitizens:   _residents.Count(r => !r.IsArchived && r.HasClassification(ResidentClassification.SeniorCitizen)),
         TotalRequests:    _requests.Count,
         Pending:          _requests.Count(r => r.Status == RequestStatus.Pending),
         Processing:       _requests.Count(r => r.Status == RequestStatus.Processing),
@@ -367,13 +468,13 @@ public class MySqlBarangayRepository : IBarangayRepository
         IssuedFreeOfCharge: _requests.Count(r => r.Fee == 0 && r.Status == RequestStatus.Released),
         RequestsByDocumentType: _requests.GroupBy(r => r.GetDocumentName())
                                          .ToDictionary(g => g.Key, g => g.Count()),
-        ResidentsByPurok: _residents.GroupBy(r => r.Purok)
+        ResidentsByPurok: _residents.Where(r => !r.IsArchived).GroupBy(r => r.Purok)
                                     .OrderBy(g => g.Key)
                                     .ToDictionary(g => g.Key, g => g.Count()));
 
-    // connection plumbing (ADO.NET)
 
-    /// Opens a connection, runs the work, returns its result.
+
+
     private T Run<T>(Func<DbConnection, T> work)
     {
         try
@@ -388,11 +489,11 @@ public class MySqlBarangayRepository : IBarangayRepository
         }
     }
 
-    /// Same as <see cref="Run{T}"/> for work that returns nothing.
+
     private void RunNoResult(Action<DbConnection> work) =>
         Run<object?>(conn => { work(conn); return null; });
 
-    /// Turns a MySQL error into a sentence a clerk can act on.
+
     private static string Describe(MySqlException ex) => ex.Number switch
     {
         1042 or 2002 or 2003 or 2013 =>
@@ -402,14 +503,17 @@ public class MySqlBarangayRepository : IBarangayRepository
             $"MySQL refused the user name or password. Check {"BarangayDocumentSystem.exe.config"}.",
         1049 =>
             "The database does not exist yet.",
+        1305 =>
+            "A stored procedure is missing. Close and reopen the app so it can be created again.",
         _ => "The database reported a problem: " + ex.Message
     };
 
-    private static DbCommand CreateCommand(DbConnection conn, string sql, DbTransaction? tx = null)
+
+    private static DbCommand CreateCommand(DbConnection conn, string procedure)
     {
         var cmd = conn.CreateCommand();
-        cmd.CommandText = sql;
-        cmd.Transaction = tx;
+        cmd.CommandText = procedure;
+        cmd.CommandType = System.Data.CommandType.StoredProcedure;
         return cmd;
     }
 
@@ -421,14 +525,7 @@ public class MySqlBarangayRepository : IBarangayRepository
         cmd.Parameters.Add(p);
     }
 
-    /// Id generated by the INSERT just run on THIS connection.
-    private static int LastInsertId(DbConnection conn)
-    {
-        using var cmd = CreateCommand(conn, "SELECT LAST_INSERT_ID()");
-        return Convert.ToInt32(cmd.ExecuteScalar());
-    }
 
-    // Small readers so the mapping code above stays one line per column.
     private static int GetInt(DbDataReader r, string col) => r.GetInt32(r.GetOrdinal(col));
     private static decimal GetDecimal(DbDataReader r, string col) => r.GetDecimal(r.GetOrdinal(col));
     private static DateTime GetDate(DbDataReader r, string col) => r.GetDateTime(r.GetOrdinal(col));
@@ -446,5 +543,191 @@ public class MySqlBarangayRepository : IBarangayRepository
     {
         int i = r.GetOrdinal(col);
         return r.IsDBNull(i) ? null : r.GetDateTime(i);
+    }
+}
+
+public sealed class MySqlUserRepository : IUserRepository
+{
+    private readonly string _connectionString;
+
+    public MySqlUserRepository(string connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new ArgumentException("A connection string is required.", nameof(connectionString));
+        _connectionString = connectionString;
+    }
+
+    public bool AnyUsers() => Run(conn =>
+    {
+        using var cmd = Procedure(conn, "sp_user_count");
+        return Convert.ToInt64(cmd.ExecuteScalar()) > 0;
+    });
+
+    public UserAccount? Find(string username) => Run(conn =>
+    {
+        using var cmd = Procedure(conn, "sp_user_find");
+        cmd.Parameters.AddWithValue("p_username", username);
+
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read()) return null;
+
+        return new UserAccount(
+            reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetString(3),
+            (UserRole)Enum.Parse(typeof(UserRole), reader.GetString(4)), reader.GetBoolean(5));
+    });
+
+    public UserAccount? GetById(int userId) => Run(conn =>
+    {
+        using var cmd = Procedure(conn, "sp_user_get");
+        cmd.Parameters.AddWithValue("p_user_id", userId);
+
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read()) return null;
+
+        return new UserAccount(
+            reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetString(3),
+            (UserRole)Enum.Parse(typeof(UserRole), reader.GetString(4)), reader.GetBoolean(5));
+    });
+
+    public void Create(string username, string fullName, string passwordHash, UserRole role) => Run<object?>(conn =>
+    {
+        using var cmd = Procedure(conn, "sp_user_add");
+        cmd.Parameters.AddWithValue("p_username", username);
+        cmd.Parameters.AddWithValue("p_full_name", fullName ?? string.Empty);
+        cmd.Parameters.AddWithValue("p_password_hash", passwordHash);
+        cmd.Parameters.AddWithValue("p_created_on", DateTime.Now);
+        cmd.Parameters.AddWithValue("p_role", role.ToString());
+        cmd.ExecuteNonQuery();
+        return null;
+    });
+
+    public IReadOnlyList<UserAccount> ListUsers() => Run(conn =>
+    {
+        var list = new List<UserAccount>();
+        using var cmd = Procedure(conn, "sp_user_list");
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+            list.Add(new UserAccount(
+                reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetString(3),
+                (UserRole)Enum.Parse(typeof(UserRole), reader.GetString(4)), reader.GetBoolean(5)));
+        return list;
+    });
+
+    public void Update(int userId, string username, string fullName, UserRole role) => Run<object?>(conn =>
+    {
+        using var cmd = Procedure(conn, "sp_user_update");
+        cmd.Parameters.AddWithValue("p_user_id", userId);
+        cmd.Parameters.AddWithValue("p_username", username);
+        cmd.Parameters.AddWithValue("p_full_name", fullName ?? string.Empty);
+        cmd.Parameters.AddWithValue("p_role", role.ToString());
+        cmd.ExecuteNonQuery();
+        return null;
+    });
+
+    public void ChangePassword(int userId, string passwordHash) => Run<object?>(conn =>
+    {
+        using var cmd = Procedure(conn, "sp_user_change_password");
+        cmd.Parameters.AddWithValue("p_user_id", userId);
+        cmd.Parameters.AddWithValue("p_password_hash", passwordHash);
+        cmd.ExecuteNonQuery();
+        return null;
+    });
+
+    public void SetArchived(int userId, bool archived) => Run<object?>(conn =>
+    {
+        using var cmd = Procedure(conn, "sp_user_set_archived");
+        cmd.Parameters.AddWithValue("p_user_id", userId);
+        cmd.Parameters.AddWithValue("p_archived", archived ? 1 : 0);
+        cmd.ExecuteNonQuery();
+        return null;
+    });
+
+    public void Delete(int userId) => Run<object?>(conn =>
+    {
+        using var cmd = Procedure(conn, "sp_user_delete");
+        cmd.Parameters.AddWithValue("p_user_id", userId);
+        cmd.ExecuteNonQuery();
+        return null;
+    });
+
+    private static MySqlCommand Procedure(MySqlConnection conn, string name) =>
+        new MySqlCommand(name, conn) { CommandType = System.Data.CommandType.StoredProcedure };
+
+    private T Run<T>(Func<MySqlConnection, T> work)
+    {
+        try
+        {
+            using var conn = new MySqlConnection(_connectionString);
+            conn.Open();
+            return work(conn);
+        }
+        catch (MySqlException ex) when (ex.Number == 1062)
+        {
+            throw new RepositoryException("That username is already taken.", ex);
+        }
+        catch (MySqlException ex)
+        {
+            throw new RepositoryException("The database reported a problem: " + ex.Message, ex);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+public static class PasswordHasher
+{
+    private const int Iterations = 600_000;
+    private const int SaltSize = 16;
+    private const int HashSize = 32;
+
+    public static string Hash(string password)
+    {
+        if (password is null) throw new ArgumentNullException(nameof(password));
+
+        var salt = new byte[SaltSize];
+        using (var rng = RandomNumberGenerator.Create())
+            rng.GetBytes(salt);
+
+        byte[] hash = Derive(password, salt, Iterations);
+        return $"{Iterations}.{Convert.ToBase64String(salt)}.{Convert.ToBase64String(hash)}";
+    }
+
+    public static bool Verify(string password, string stored)
+    {
+        if (password is null || string.IsNullOrEmpty(stored)) return false;
+
+        string[] parts = stored.Split('.');
+        if (parts.Length != 3 || !int.TryParse(parts[0], out int iterations)
+            || iterations < 100_000 || iterations > 2_000_000)
+            return false;
+
+        try
+        {
+            byte[] salt = Convert.FromBase64String(parts[1]);
+            byte[] expected = Convert.FromBase64String(parts[2]);
+            if (salt.Length != SaltSize || expected.Length != HashSize) return false;
+            byte[] actual = Derive(password, salt, iterations);
+
+
+            int diff = expected.Length ^ actual.Length;
+            for (int i = 0; i < expected.Length && i < actual.Length; i++)
+                diff |= expected[i] ^ actual[i];
+            return diff == 0;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
+    private static byte[] Derive(string password, byte[] salt, int iterations)
+    {
+        using var kdf = new Rfc2898DeriveBytes(password, salt, iterations, HashAlgorithmName.SHA256);
+        return kdf.GetBytes(HashSize);
     }
 }

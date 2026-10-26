@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS residents (
     gender                VARCHAR(20)   NOT NULL,
     civil_status          VARCHAR(20)   NOT NULL,
     purok                 VARCHAR(100)  NOT NULL DEFAULT '',
+    house_number          VARCHAR(30)   NOT NULL DEFAULT '',
     address_line          VARCHAR(255)  NOT NULL DEFAULT '',
     contact_number        VARCHAR(30)   NOT NULL DEFAULT '',
     occupation            VARCHAR(100)  NOT NULL DEFAULT '',
@@ -30,6 +31,11 @@ CREATE TABLE IF NOT EXISTS residents (
     classification        INT           NOT NULL DEFAULT 0,
     -- RA 11261 may be availed only once. Set when the certificate is released.
     has_availed_jobseeker TINYINT(1)    NOT NULL DEFAULT 0,
+    -- Residents who moved away are archived, never deleted. They keep their request history.
+    is_archived           TINYINT(1)    NOT NULL DEFAULT 0,
+    archived_on           DATETIME      NULL,
+    transfer_destination  VARCHAR(255)  NOT NULL DEFAULT '',
+    transfer_reason       VARCHAR(255)  NOT NULL DEFAULT '',
     PRIMARY KEY (resident_id),
     INDEX idx_residents_name (last_name, first_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -46,11 +52,50 @@ CREATE TABLE IF NOT EXISTS document_requests (
     fee_basis             VARCHAR(255)  NOT NULL DEFAULT '',
     is_paid               TINYINT(1)    NOT NULL DEFAULT 0,
     official_receipt_no   VARCHAR(50)   NOT NULL DEFAULT '',
+    date_paid             DATETIME      NULL,
+    received_by           VARCHAR(100)  NOT NULL DEFAULT '',
     remarks               VARCHAR(500)  NOT NULL DEFAULT '',
     PRIMARY KEY (request_id),
     INDEX idx_requests_status (status),
     
-    -- Deleting a resident deletes their requests (same rule the app showed before).
+    -- Residents are archived instead of deleted, so this cascade only fires on a manual delete in SQL.
     CONSTRAINT fk_requests_resident FOREIGN KEY (resident_id)
         REFERENCES residents (resident_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS users (
+    user_id        INT           NOT NULL AUTO_INCREMENT,
+    username       VARCHAR(50)   NOT NULL,
+    full_name      VARCHAR(100)  NOT NULL DEFAULT '',
+    -- PBKDF2 hash in the form iterations.salt.hash (Base64). Never the password itself.
+    password_hash  VARCHAR(255)  NOT NULL,
+    created_on     DATETIME      NOT NULL,
+    -- Staff (front-desk clerk) or Admin. Admin can create accounts and archive.
+    role           VARCHAR(20)   NOT NULL DEFAULT 'Staff',
+    is_archived    TINYINT(1)    NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id),
+    UNIQUE KEY uq_users_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS dependents (
+    dependent_id   INT           NOT NULL AUTO_INCREMENT,
+    resident_id    INT           NOT NULL,
+    full_name      VARCHAR(150)  NOT NULL,
+    relationship   VARCHAR(50)   NOT NULL DEFAULT '',
+    date_of_birth  DATE          NULL,
+    PRIMARY KEY (dependent_id),
+    INDEX idx_dependents_resident (resident_id),
+    CONSTRAINT fk_dependents_resident FOREIGN KEY (resident_id)
+        REFERENCES residents (resident_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Who did what and when. One row per action, shown on the Activity Log page by day.
+CREATE TABLE IF NOT EXISTS activity_log (
+    log_id      INT           NOT NULL AUTO_INCREMENT,
+    logged_on   DATETIME      NOT NULL,
+    username    VARCHAR(100)  NOT NULL DEFAULT '',
+    action      VARCHAR(60)   NOT NULL,
+    details     VARCHAR(500)  NOT NULL DEFAULT '',
+    PRIMARY KEY (log_id),
+    INDEX idx_activity_logged_on (logged_on)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

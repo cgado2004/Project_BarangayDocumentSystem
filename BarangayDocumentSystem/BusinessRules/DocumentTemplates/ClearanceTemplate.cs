@@ -5,7 +5,7 @@ using BarangayDocumentSystem.Models;
 
 namespace BarangayDocumentSystem.BusinessRules.DocumentTemplates;
 
-/// <summary>Barangay Clearance. One document, one class (SRP).</summary>
+
 public class ClearanceTemplate : IDocumentTemplate
 {
     public DocumentType DocumentType => DocumentType.BarangayClearance;

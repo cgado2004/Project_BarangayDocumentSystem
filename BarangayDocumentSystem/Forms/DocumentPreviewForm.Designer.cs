@@ -27,7 +27,7 @@ partial class DocumentPreviewForm
         this.pnlButtons.SuspendLayout();
         this.SuspendLayout();
 
-        // Consolas is monospaced so the certificate layout holds together.
+
         this.txtDocument.BackColor = System.Drawing.Color.White;
         this.txtDocument.Dock = System.Windows.Forms.DockStyle.Fill;
         this.txtDocument.Font = new System.Drawing.Font("Consolas", 10F);

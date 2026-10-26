@@ -5,11 +5,11 @@ using BarangayDocumentSystem.Models;
 namespace BarangayDocumentSystem.Database;
 
 
-/// Puts seven demonstration residents (and a few requests) into an EMPTY
-/// database so the app has something to show on first run.
-///
-/// The residents are chosen to exercise every fee rule and the RA 11261
-/// (First Time Jobseekers) test — see the README for the list.
+
+
+
+
+
 public static class SampleDataSeeder
 {
     public static void Seed(IBarangayRepository repository)
@@ -32,7 +32,7 @@ public static class SampleDataSeeder
             "09181234567", "Retired", new DateTime(1998, 1, 15), true,
             ResidentClassification.SeniorCitizen);
 
-        // 14 months' residency, never availed — qualifies under RA 11261.
+
         var jose = Add("Jose", "Cruz", "Bautista", "Jr.", new DateTime(2004, 2, 20),
             Gender.Male, CivilStatus.Single, "Purok 3", "78 Mabini Street",
             "09191234567", "Fresh Graduate", today.AddMonths(-14), true,
@@ -51,16 +51,16 @@ public static class SampleDataSeeder
         var liza = Add("Liza", "Garcia", "Torres", "", new DateTime(1999, 5, 30),
             Gender.Female, CivilStatus.Single, "Purok 2", "56 Del Pilar Street",
             "09221234567", "Student", new DateTime(2019, 6, 1), true,
-            ResidentClassification.Student | ResidentClassification.PWD);
+            ResidentClassification.PWD);
 
-        // Only 2 months — deliberately FAILS the RA 11261 six-month test.
+
         Add("Carlo", "Diaz", "Aquino", "", new DateTime(2003, 12, 5),
             Gender.Male, CivilStatus.Single, "Purok 1", "34 Luna Street",
             "09231234567", "Unemployed", today.AddMonths(-2), false,
             ResidentClassification.None);
 
-        // Workflow changes happen on the request object, so each one is
-        // followed by SaveRequest to store it.
+
+
         var r1 = repository.CreateRequest(juan, DocumentType.BarangayClearance, "Employment Requirement");
         r1.StartProcessing(); r1.MarkReadyForRelease();
         r1.RecordPayment("OR-2026-00101"); r1.Release();
