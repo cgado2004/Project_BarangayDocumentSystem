@@ -52,7 +52,7 @@ publish/
 *.azurePubxml
 PublishScripts/
 
-## Database — never commit credentials or dumps
+## Database 
 *.mdf
 *.ldf
 *.ndf
@@ -78,7 +78,7 @@ Desktop.ini
 *.tmp
 *.cache
 
-# Internal documentation and notes (not for publication)
+# Internal documentation and notes 
 docs/
 handoff.md
 LOCAL_REVIEW.md
