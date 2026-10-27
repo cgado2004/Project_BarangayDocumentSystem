@@ -70,15 +70,21 @@ public static class UiFactory
         return host;
     }
 
-    public static Panel Toolbar()
+    public static TableLayoutPanel Toolbar()
     {
-        var bar = new Panel
+        var bar = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             BackColor = AppTheme.Surface,
             Padding = new Padding(20, 10, 20, 10),
-            Margin = new Padding(0)
+            Margin = new Padding(0),
+            ColumnCount = 1,
+            RowCount = 1
         };
+        bar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        bar.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         bar.Paint += (s, e) =>
         {
             using var pen = new Pen(AppTheme.Border);
@@ -98,17 +104,6 @@ public static class UiFactory
         Width = 170,
         Font = AppTheme.BodyFont,
         AccessibleDescription = "Check to filter this date. Uncheck to show all dates."
-    };
-
-    public static FlowLayoutPanel FilterBar() => new()
-    {
-        Dock = DockStyle.Fill,
-        AutoSize = true,
-        AutoSizeMode = AutoSizeMode.GrowAndShrink,
-        WrapContents = true,
-        BackColor = AppTheme.Surface,
-        Margin = new Padding(0, 0, 0, 16),
-        Padding = new Padding(12)
     };
 
     public static Control FilterField(string caption, Control input) => FilterField(new Label

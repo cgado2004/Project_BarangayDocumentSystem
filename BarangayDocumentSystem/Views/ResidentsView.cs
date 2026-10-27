@@ -38,7 +38,7 @@ public class ResidentsView : ViewBase
             Padding = new Padding(0)
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 84F));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
@@ -57,6 +57,8 @@ public class ResidentsView : ViewBase
         var wrap = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             BackColor = AppTheme.Surface,
             ColumnCount = 2,
             RowCount = 1,
@@ -65,7 +67,7 @@ public class ResidentsView : ViewBase
         };
         wrap.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         wrap.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200F));
-        wrap.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        wrap.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         _search.Dock = DockStyle.Fill;
         _search.Font = AppTheme.BodyFont;
@@ -265,7 +267,7 @@ public class ArchiveView : ViewBase
             Padding = new Padding(0)
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 84F));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
@@ -281,21 +283,30 @@ public class ArchiveView : ViewBase
         var bar = UiFactory.Toolbar();
         bar.Margin = new Padding(0, 0, 0, 16);
 
-        var wrap = new Panel
+        var wrap = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             BackColor = AppTheme.Surface,
-            Padding = new Padding(0, 7, 0, 7)
+            ColumnCount = 2,
+            RowCount = 1,
+            Margin = new Padding(0),
+            Padding = new Padding(0)
         };
+        wrap.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        wrap.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        wrap.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         _search.Dock = DockStyle.Fill;
         _search.Font = AppTheme.BodyFont;
         _search.BorderStyle = BorderStyle.FixedSingle;
         _search.BackColor = AppTheme.Background;
+        _search.Margin = new Padding(0, 7, 12, 7);
         CueBanner.Set(_search, "Search archived residents by name, purok, or contact number…");
         _search.TextChanged += (_, _) => RefreshData();
 
-        wrap.Controls.Add(_search);
+        wrap.Controls.Add(_search, 0, 0);
         bar.Controls.Add(wrap);
         return bar;
     }

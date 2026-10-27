@@ -59,7 +59,20 @@ public class RequestsView : ViewBase
 
     private Control BuildToolbar()
     {
-        var bar = UiFactory.FilterBar();
+        var bar = UiFactory.Toolbar();
+        bar.Margin = new Padding(0, 0, 0, 16);
+
+        var wrap = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            BackColor = AppTheme.Surface,
+            Margin = new Padding(0),
+            Padding = new Padding(0)
+        };
 
         _statusFilter.DropDownStyle = ComboBoxStyle.DropDownList;
         _statusFilter.Font = AppTheme.BodyFont;
@@ -80,8 +93,9 @@ public class RequestsView : ViewBase
             _dateFilter.Enabled = _filterByDate.Checked;
             RefreshData();
         };
-        bar.Controls.Add(UiFactory.FilterField("Status", _statusFilter));
-        bar.Controls.Add(UiFactory.FilterField(_filterByDate, _dateFilter));
+        wrap.Controls.Add(UiFactory.FilterField("Status", _statusFilter));
+        wrap.Controls.Add(UiFactory.FilterField(_filterByDate, _dateFilter));
+        bar.Controls.Add(wrap);
         return bar;
     }
 
@@ -415,6 +429,8 @@ public class RecordsView : ViewBase
         var wrap = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             BackColor = AppTheme.Surface,
             ColumnCount = 2,
             RowCount = 1,
@@ -423,7 +439,7 @@ public class RecordsView : ViewBase
         };
         wrap.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         wrap.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        wrap.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        wrap.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         _search.Dock = DockStyle.Fill;
         _search.Name = "recordSearch";
@@ -565,6 +581,8 @@ public class OfficialReceiptsView : ViewBase
         var wrap = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             BackColor = AppTheme.Surface,
             ColumnCount = 2,
             RowCount = 1,
@@ -573,7 +591,7 @@ public class OfficialReceiptsView : ViewBase
         };
         wrap.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         wrap.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        wrap.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        wrap.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         _search.Dock = DockStyle.Fill;
         _search.Name = "receiptSearch";

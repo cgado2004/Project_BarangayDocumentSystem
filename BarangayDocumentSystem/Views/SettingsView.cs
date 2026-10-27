@@ -500,8 +500,21 @@ public class ActivityLogView : ViewBase
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-        var bar = UiFactory.FilterBar();
-        bar.Controls.Add(UiFactory.FilterField("Day", _day));
+        var bar = UiFactory.Toolbar();
+        bar.Margin = new Padding(0, 0, 0, 16);
+        var wrap = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            BackColor = AppTheme.Surface,
+            Margin = new Padding(0),
+            Padding = new Padding(0)
+        };
+        wrap.Controls.Add(UiFactory.FilterField("Day", _day));
+        bar.Controls.Add(wrap);
         root.Controls.Add(bar, 0, 0);
 
         UiFactory.StyleGrid(_grid);
