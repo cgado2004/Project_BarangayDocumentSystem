@@ -707,7 +707,7 @@ public sealed class ResetPasswordForm : Form
 public sealed class DependentForm : Form
 {
     private readonly TextBox _fullName = new();
-    private readonly TextBox _relationship = new();
+    private readonly ComboBox _relationship = new();
     private readonly DateTimePicker _dateOfBirth = new();
 
     public Dependent? Result { get; private set; }
@@ -725,7 +725,26 @@ public sealed class DependentForm : Form
 
         int top = 20;
         AddField("Full name", ref top, _fullName, 150);
-        AddField("Relationship (child, spouse, parent…)", ref top, _relationship, 50);
+
+        var relLabel = new Label
+        {
+            Text = "Relationship",
+            Font = AppTheme.SmallBoldFont,
+            ForeColor = AppTheme.TextSecondary,
+            Location = new Point(24, top),
+            Size = new Size(412, 18)
+        };
+        top += 20;
+        _relationship.Location = new Point(24, top);
+        _relationship.Size = new Size(412, 27);
+        _relationship.DropDownStyle = ComboBoxStyle.DropDownList;
+        _relationship.Items.AddRange(new object[]
+        {
+            "Child", "Spouse", "Parent", "Sibling", "Grandchild", "Grandparent", "Other"
+        });
+        Controls.Add(relLabel);
+        Controls.Add(_relationship);
+        top += 42;
 
         var dobLabel = new Label
         {
@@ -739,8 +758,6 @@ public sealed class DependentForm : Form
         _dateOfBirth.Location = new Point(24, top);
         _dateOfBirth.Size = new Size(412, 27);
         _dateOfBirth.Format = DateTimePickerFormat.Short;
-        _dateOfBirth.ShowCheckBox = true;
-        _dateOfBirth.Checked = false;
         _dateOfBirth.Value = new DateTime(2000, 1, 1);
         _dateOfBirth.MinDate = new DateTime(1900, 1, 1);
         Controls.Add(dobLabel);
@@ -791,9 +808,14 @@ public sealed class DependentForm : Form
             _fullName.Focus();
             return;
         }
+        if (_relationship.SelectedIndex < 0)
+        {
+            Dialog.Warn("Choose the dependent's relationship.");
+            _relationship.Focus();
+            return;
+        }
 
-        DateTime? dob = _dateOfBirth.Checked ? _dateOfBirth.Value.Date : (DateTime?)null;
-        Result = new Dependent(name, _relationship.Text.Trim(), dob);
+        Result = new Dependent(name, _relationship.SelectedItem?.ToString() ?? "Other", _dateOfBirth.Value.Date);
         DialogResult = DialogResult.OK;
         Close();
     }

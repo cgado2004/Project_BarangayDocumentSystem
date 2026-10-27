@@ -139,8 +139,9 @@ partial class PaymentForm
 
         this.AcceptButton = this.btnConfirm;
         this.CancelButton = this.btnCancel;
-        this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+        this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+        this.AcceptButton = this.btnConfirm;
         this.BackColor = System.Drawing.Color.FromArgb(243, 239, 231);
         this.ClientSize = new System.Drawing.Size(564, 392);
         this.Controls.Add(this.btnCancel);

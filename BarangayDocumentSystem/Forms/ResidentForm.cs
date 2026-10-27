@@ -206,7 +206,7 @@ public partial class ResidentForm : Form
         _dependentsGrid = new DataGridView { Name = "dependentsGrid" };
         UiFactory.StyleGrid(_dependentsGrid);
         _dependentsGrid.Location = new Point(16, 26);
-        _dependentsGrid.Size = new Size(842, 92);
+        _dependentsGrid.Size = new Size(1002, 92);
 
         var add = UiFactory.PrimaryButton("Add dependent", 150);
         add.AutoSize = false;
@@ -223,8 +223,8 @@ public partial class ResidentForm : Form
         var grp = new GroupBox
         {
             Text = "Dependents",
-            Location = new Point(36, 524),
-            Size = new Size(874, 168),
+            Location = new Point(16, 524),
+            Size = new Size(1048, 168),
             Font = new Font("Segoe UI", 11F)
         };
         grp.Controls.Add(_dependentsGrid);
@@ -232,10 +232,18 @@ public partial class ResidentForm : Form
         grp.Controls.Add(remove);
         Controls.Add(grp);
 
+        Load += (_, _) => AlignDependentsSection(grp);
+    }
 
-        btnSave.Location = new Point(690, 704);
-        btnCancel.Location = new Point(810, 704);
-        ClientSize = new Size(946, 772);
+    private void AlignDependentsSection(GroupBox grp)
+    {
+        grp.Location = new Point(grpClassification.Left, grpClassification.Bottom + 12);
+        btnSave.Location = new Point(846, grp.Bottom + 16);
+        btnCancel.Location = new Point(964, grp.Bottom + 16);
+
+        int neededW = Math.Max(grpName.Right, Math.Max(grpClassification.Right, grp.Right)) + 16;
+        int neededH = btnSave.Bottom + 20;
+        ClientSize = new Size(Math.Max(ClientSize.Width, neededW), Math.Max(ClientSize.Height, neededH));
     }
 
     private void AddDependent()

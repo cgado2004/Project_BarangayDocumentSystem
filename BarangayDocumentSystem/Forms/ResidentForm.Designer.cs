@@ -67,7 +67,7 @@ partial class ResidentForm
         const int LW = 300;
         const int R = 520;
         const int RC = 650;
-        const int RW = 260;
+        const int RW = 400;
 
         this.lblFirstName.AutoSize = true;
         this.lblFirstName.Font = labelFont;
@@ -142,7 +142,7 @@ partial class ResidentForm
 
         this.txtContact.Font = inputFont;
         this.txtContact.Location = new System.Drawing.Point(LC, 288);
-        this.txtContact.MaxLength = 15;
+        this.txtContact.MaxLength = 11;
         this.txtContact.Name = "txtContact";
         CueBanner.Set(this.txtContact, "09XXXXXXXXX");
         this.txtContact.Size = new System.Drawing.Size(LW, 30);
@@ -200,7 +200,6 @@ partial class ResidentForm
         this.radMale.Font = inputFont;
         this.radMale.Location = new System.Drawing.Point(RC, 136);
         this.radMale.Name = "radMale";
-        this.radMale.Size = new System.Drawing.Size(65, 24);
         this.radMale.TabIndex = 0;
         this.radMale.TabStop = true;
         this.radMale.Text = "Male";
@@ -210,7 +209,6 @@ partial class ResidentForm
         this.radFemale.Font = inputFont;
         this.radFemale.Location = new System.Drawing.Point(RC + 72, 136);
         this.radFemale.Name = "radFemale";
-        this.radFemale.Size = new System.Drawing.Size(82, 24);
         this.radFemale.TabIndex = 1;
         this.radFemale.Text = "Female";
         this.radFemale.UseVisualStyleBackColor = true;
@@ -234,34 +232,34 @@ partial class ResidentForm
         this.grpName.Font = labelFont;
         this.grpName.Location = new System.Drawing.Point(16, 8);
         this.grpName.Name = "grpName";
-        this.grpName.Size = new System.Drawing.Size(914, 112);
+        this.grpName.Size = new System.Drawing.Size(1048, 112);
         this.grpName.TabIndex = 0;
         this.grpName.TabStop = false;
         this.grpName.Text = "Name";
 
         this.lblAddress.AutoSize = true;
         this.lblAddress.Font = labelFont;
-        this.lblAddress.Location = new System.Drawing.Point(R, 204);
+        this.lblAddress.Location = new System.Drawing.Point(R, 188);
         this.lblAddress.Name = "lblAddress";
         this.lblAddress.Text = "House number";
 
         this.txtAddress.Font = inputFont;
-        this.txtAddress.Location = new System.Drawing.Point(RC, 200);
+        this.txtAddress.Location = new System.Drawing.Point(RC, 184);
         this.txtAddress.MaxLength = 30;
         this.txtAddress.Multiline = false;
         this.txtAddress.Name = "txtAddress";
         CueBanner.Set(this.txtAddress, "e.g. 123");
-        this.txtAddress.Size = new System.Drawing.Size(RW, 34);
+        this.txtAddress.Size = new System.Drawing.Size(RW, 30);
         this.txtAddress.TabIndex = 6;
 
         this.lblOccupation.AutoSize = true;
         this.lblOccupation.Font = labelFont;
-        this.lblOccupation.Location = new System.Drawing.Point(R, 308);
+        this.lblOccupation.Location = new System.Drawing.Point(R, 240);
         this.lblOccupation.Name = "lblOccupation";
         this.lblOccupation.Text = "Occupation";
 
         this.txtOccupation.Font = inputFont;
-        this.txtOccupation.Location = new System.Drawing.Point(RC, 304);
+        this.txtOccupation.Location = new System.Drawing.Point(RC, 236);
         this.txtOccupation.MaxLength = 60;
         this.txtOccupation.Name = "txtOccupation";
         this.txtOccupation.Size = new System.Drawing.Size(RW, 30);
@@ -269,7 +267,7 @@ partial class ResidentForm
 
         this.chkVoter.AutoSize = true;
         this.chkVoter.Font = inputFont;
-        this.chkVoter.Location = new System.Drawing.Point(R, 348);
+        this.chkVoter.Location = new System.Drawing.Point(R, 292);
         this.chkVoter.Name = "chkVoter";
         this.chkVoter.Size = new System.Drawing.Size(160, 24);
         this.chkVoter.TabIndex = 10;
@@ -280,9 +278,9 @@ partial class ResidentForm
         this.grpClassification.Controls.Add(this.chkPwd);
         this.grpClassification.Controls.Add(this.chkSenior);
         this.grpClassification.Font = labelFont;
-        this.grpClassification.Location = new System.Drawing.Point(36, 410);
+        this.grpClassification.Location = new System.Drawing.Point(16, 410);
         this.grpClassification.Name = "grpClassification";
-        this.grpClassification.Size = new System.Drawing.Size(874, 106);
+        this.grpClassification.Size = new System.Drawing.Size(1048, 106);
         this.grpClassification.TabIndex = 14;
         this.grpClassification.TabStop = false;
         this.grpClassification.Text = "Classification";
@@ -291,25 +289,22 @@ partial class ResidentForm
         this.chkSenior.Font = inputFont;
         this.chkSenior.Location = new System.Drawing.Point(20, 30);
         this.chkSenior.Name = "chkSenior";
-        this.chkSenior.Size = new System.Drawing.Size(200, 24);
         this.chkSenior.TabIndex = 0;
         this.chkSenior.Text = "Senior Citizen (RA 9994)";
         this.chkSenior.UseVisualStyleBackColor = true;
 
         this.chkPwd.AutoSize = true;
         this.chkPwd.Font = inputFont;
-        this.chkPwd.Location = new System.Drawing.Point(260, 30);
+        this.chkPwd.Location = new System.Drawing.Point(280, 30);
         this.chkPwd.Name = "chkPwd";
-        this.chkPwd.Size = new System.Drawing.Size(170, 24);
         this.chkPwd.TabIndex = 1;
         this.chkPwd.Text = "PWD (RA 10754)";
         this.chkPwd.UseVisualStyleBackColor = true;
 
         this.chkIndigent.AutoSize = true;
         this.chkIndigent.Font = inputFont;
-        this.chkIndigent.Location = new System.Drawing.Point(470, 30);
+        this.chkIndigent.Location = new System.Drawing.Point(540, 30);
         this.chkIndigent.Name = "chkIndigent";
-        this.chkIndigent.Size = new System.Drawing.Size(100, 24);
         this.chkIndigent.TabIndex = 2;
         this.chkIndigent.Text = "Indigent";
         this.chkIndigent.UseVisualStyleBackColor = true;
@@ -318,7 +313,6 @@ partial class ResidentForm
         this.chkSoloParent.Font = inputFont;
         this.chkSoloParent.Location = new System.Drawing.Point(20, 64);
         this.chkSoloParent.Name = "chkSoloParent";
-        this.chkSoloParent.Size = new System.Drawing.Size(120, 24);
         this.chkSoloParent.TabIndex = 4;
         this.chkSoloParent.Text = "Solo Parent";
         this.chkSoloParent.UseVisualStyleBackColor = true;
@@ -326,7 +320,7 @@ partial class ResidentForm
         this.btnSave.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
         this.btnSave.Font = buttonFont;
         this.btnSave.ForeColor = System.Drawing.Color.White;
-        this.btnSave.Location = new System.Drawing.Point(690, 586);
+        this.btnSave.Location = new System.Drawing.Point(846, 586);
         this.btnSave.Name = "btnSave";
         this.btnSave.Size = new System.Drawing.Size(110, 42);
         this.btnSave.TabIndex = 16;
@@ -338,7 +332,7 @@ partial class ResidentForm
         this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
         this.btnCancel.Font = buttonFont;
         this.btnCancel.ForeColor = System.Drawing.Color.FromArgb(31, 39, 51);
-        this.btnCancel.Location = new System.Drawing.Point(810, 586);
+        this.btnCancel.Location = new System.Drawing.Point(964, 586);
         this.btnCancel.Name = "btnCancel";
         this.btnCancel.Size = new System.Drawing.Size(100, 42);
         this.btnCancel.TabIndex = 17;
@@ -348,10 +342,11 @@ partial class ResidentForm
         this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
         this.AcceptButton = this.btnSave;
         this.CancelButton = this.btnCancel;
-        this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+        this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+        this.AcceptButton = this.btnSave;
         this.BackColor = System.Drawing.Color.FromArgb(243, 239, 231);
-        this.ClientSize = new System.Drawing.Size(946, 660);
+        this.ClientSize = new System.Drawing.Size(1080, 660);
         this.Controls.Add(this.btnCancel);
         this.Controls.Add(this.btnSave);
         this.Controls.Add(this.grpClassification);

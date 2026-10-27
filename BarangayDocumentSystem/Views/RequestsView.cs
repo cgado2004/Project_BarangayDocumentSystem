@@ -409,26 +409,42 @@ public class RecordsView : ViewBase
 
     private Control BuildToolbar()
     {
-        var bar = UiFactory.FilterBar();
+        var bar = UiFactory.Toolbar();
+        bar.Margin = new Padding(0, 0, 0, 16);
 
-        _search.Width = 280;
+        var wrap = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = AppTheme.Surface,
+            ColumnCount = 2,
+            RowCount = 1,
+            Margin = new Padding(0),
+            Padding = new Padding(0)
+        };
+        wrap.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        wrap.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        wrap.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+
+        _search.Dock = DockStyle.Fill;
         _search.Name = "recordSearch";
         _search.AccessibleName = "Search released records";
         _search.Font = AppTheme.BodyFont;
         _search.BorderStyle = BorderStyle.FixedSingle;
         _search.BackColor = AppTheme.Background;
+        _search.Margin = new Padding(0, 7, 12, 7);
         CueBanner.Set(_search, "Search by reference, resident, or document…");
         _search.TextChanged += (_, _) => RefreshData();
 
-        _search.Margin = new Padding(0, 2, 12, 4);
         _dateFilter.ValueChanged += (_, _) => RefreshData();
         _filterByDate.CheckedChanged += (_, _) =>
         {
             _dateFilter.Enabled = _filterByDate.Checked;
             RefreshData();
         };
-        bar.Controls.Add(_search);
-        bar.Controls.Add(UiFactory.FilterField(_filterByDate, _dateFilter));
+
+        wrap.Controls.Add(_search, 0, 0);
+        wrap.Controls.Add(UiFactory.FilterField(_filterByDate, _dateFilter), 1, 0);
+        bar.Controls.Add(wrap);
         return bar;
     }
 
@@ -530,6 +546,8 @@ public class OfficialReceiptsView : ViewBase
 {
     private readonly DataGridView _grid = new();
     private readonly TextBox _search = new();
+    private readonly DateTimePicker _dateFilter = UiFactory.DayFilter("paidDate");
+    private readonly CheckBox _filterByDate = new() { Name = "filterPaidDate", Text = "Paid on", AutoSize = true };
     private readonly Label _emptyLabel = new();
 
     public override string Title => "Receipts";
@@ -542,13 +560,41 @@ public class OfficialReceiptsView : ViewBase
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-        var toolbar = UiFactory.FilterBar();
-        _search.Width = 300;
+        var toolbar = UiFactory.Toolbar();
+        toolbar.Margin = new Padding(0, 0, 0, 16);
+        var wrap = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = AppTheme.Surface,
+            ColumnCount = 2,
+            RowCount = 1,
+            Margin = new Padding(0),
+            Padding = new Padding(0)
+        };
+        wrap.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        wrap.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        wrap.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+
+        _search.Dock = DockStyle.Fill;
+        _search.Name = "receiptSearch";
         _search.Font = AppTheme.BodyFont;
         _search.BorderStyle = BorderStyle.FixedSingle;
-        CueBanner.Set(_search, "Search receipts");
+        _search.BackColor = AppTheme.Background;
+        _search.Margin = new Padding(0, 7, 12, 7);
+        CueBanner.Set(_search, "Search by O.R. number, resident, or document…");
         _search.TextChanged += (_, _) => RefreshData();
-        toolbar.Controls.Add(_search);
+
+        _dateFilter.ValueChanged += (_, _) => RefreshData();
+        _filterByDate.CheckedChanged += (_, _) =>
+        {
+            _dateFilter.Enabled = _filterByDate.Checked;
+            RefreshData();
+        };
+
+        wrap.Controls.Add(_search, 0, 0);
+        wrap.Controls.Add(UiFactory.FilterField(_filterByDate, _dateFilter), 1, 0);
+        toolbar.Controls.Add(wrap);
+        root.Controls.Add(toolbar, 0, 0);
 
         UiFactory.StyleGrid(_grid);
         _grid.Dock = DockStyle.Fill;
@@ -568,7 +614,6 @@ public class OfficialReceiptsView : ViewBase
         viewButton.Click += (_, _) => ViewReceipt();
         actions.Controls.Add(viewButton);
 
-        root.Controls.Add(toolbar, 0, 0);
         root.Controls.Add(host, 0, 1);
         root.Controls.Add(actions, 0, 2);
         Controls.Add(root);
@@ -577,8 +622,10 @@ public class OfficialReceiptsView : ViewBase
     public override void RefreshData()
     {
         string term = _search.Text.Trim();
+        DateTime? date = _filterByDate.Checked ? _dateFilter.Value.Date : null;
         var payments = Repository.Requests
             .Where(r => r.IsPaid && !string.IsNullOrWhiteSpace(r.OfficialReceiptNo))
+            .Where(r => date is null || r.DatePaid?.Date == date.Value)
             .ToList();
 
         var visiblePayments = payments
@@ -597,7 +644,9 @@ public class OfficialReceiptsView : ViewBase
         if (_grid.Columns["OR"] is { } orColumn) orColumn.HeaderText = "O.R. Number";
         if (_grid.Columns["Date"] is { } dateColumn) dateColumn.HeaderText = "Date Paid";
         if (_grid.Columns["ReceivedBy"] is { } staffColumn) staffColumn.HeaderText = "Received By";
-        _emptyLabel.Text = term.Length == 0 ? "No payments recorded yet" : $"No receipts match “{term}”";
+        _emptyLabel.Text = term.Length == 0 && date is null
+            ? "No payments recorded yet"
+            : $"No receipts match this filter";
         _emptyLabel.Visible = visiblePayments.Count == 0;
     }
 

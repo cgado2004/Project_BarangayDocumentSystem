@@ -299,6 +299,65 @@ BEGIN
 END
 $$
 
+-- ------------------------------------------------------------ login throttling
+
+DROP PROCEDURE IF EXISTS sp_login_state
+$$
+CREATE PROCEDURE sp_login_state(IN p_username VARCHAR(50))
+BEGIN
+    SELECT failed_count, locked_until
+    FROM login_attempts
+    WHERE username COLLATE utf8mb4_unicode_ci = p_username COLLATE utf8mb4_unicode_ci;
+END
+$$
+
+DROP PROCEDURE IF EXISTS sp_login_fail
+$$
+CREATE PROCEDURE sp_login_fail(IN p_username VARCHAR(50))
+BEGIN
+    DECLARE v_count  INT;
+    DECLARE v_window DATETIME;
+
+    SELECT failed_count, window_start INTO v_count, v_window
+    FROM login_attempts
+    WHERE username COLLATE utf8mb4_unicode_ci = p_username COLLATE utf8mb4_unicode_ci;
+
+    IF v_count IS NULL THEN
+        INSERT INTO login_attempts (username, failed_count, window_start, locked_until)
+        VALUES (p_username, 1, NOW(), NULL);
+        SET v_count = 1;
+    ELSEIF TIMESTAMPDIFF(MINUTE, v_window, NOW()) > 15 THEN
+        UPDATE login_attempts
+        SET failed_count = 1, window_start = NOW(), locked_until = NULL
+        WHERE username COLLATE utf8mb4_unicode_ci = p_username COLLATE utf8mb4_unicode_ci;
+        SET v_count = 1;
+    ELSE
+        SET v_count = v_count + 1;
+        UPDATE login_attempts
+        SET failed_count = v_count
+        WHERE username COLLATE utf8mb4_unicode_ci = p_username COLLATE utf8mb4_unicode_ci;
+        IF v_count >= 5 THEN
+            UPDATE login_attempts
+            SET locked_until = DATE_ADD(NOW(), INTERVAL 30 SECOND)
+            WHERE username COLLATE utf8mb4_unicode_ci = p_username COLLATE utf8mb4_unicode_ci;
+        END IF;
+    END IF;
+
+    SELECT v_count AS failed_count,
+           (SELECT locked_until FROM login_attempts
+            WHERE username COLLATE utf8mb4_unicode_ci = p_username COLLATE utf8mb4_unicode_ci) AS locked_until;
+END
+$$
+
+DROP PROCEDURE IF EXISTS sp_login_clear
+$$
+CREATE PROCEDURE sp_login_clear(IN p_username VARCHAR(50))
+BEGIN
+    DELETE FROM login_attempts
+    WHERE username COLLATE utf8mb4_unicode_ci = p_username COLLATE utf8mb4_unicode_ci;
+END
+$$
+
 -- ---------------------------------------------------------------- dependents
 
 DROP PROCEDURE IF EXISTS sp_dependents_get_all

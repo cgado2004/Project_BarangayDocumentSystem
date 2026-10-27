@@ -202,8 +202,8 @@ partial class RequestForm
 
         this.AcceptButton = this.btnSubmit;
         this.CancelButton = this.btnCancel;
-        this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+        this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
         this.BackColor = System.Drawing.Color.FromArgb(243, 239, 231);
         this.ClientSize = new System.Drawing.Size(820, 580);
         this.Controls.Add(this.btnCancel);

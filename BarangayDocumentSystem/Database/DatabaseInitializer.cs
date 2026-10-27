@@ -41,6 +41,7 @@ public static class DatabaseInitializer
 
             using var conn = new MySqlConnection(connectionString);
             conn.Open();
+            MySqlBarangayRepository.NormalizeSession(conn);
             foreach (string statement in SplitStatements(ReadResource("schema.sql")))
                 Run(conn, statement);
 
@@ -59,9 +60,10 @@ public static class DatabaseInitializer
 
             Run(conn, "UPDATE users SET role = 'Admin' " +
                       "WHERE user_id = (SELECT m FROM (SELECT MIN(user_id) AS m FROM users) AS t) " +
-                      "AND NOT EXISTS (SELECT 1 FROM (SELECT role FROM users) AS r WHERE role = 'Admin')");
+                      "AND NOT EXISTS (SELECT 1 FROM (SELECT role FROM users) AS r " +
+                      "WHERE role COLLATE utf8mb4_unicode_ci = 'Admin' COLLATE utf8mb4_unicode_ci)");
             Run(conn, "UPDATE residents SET house_number = LEFT(address_line, 30) " +
-                      "WHERE house_number = '' AND address_line <> ''");
+                      "WHERE CHAR_LENGTH(house_number) = 0 AND CHAR_LENGTH(address_line) > 0");
 
 
 

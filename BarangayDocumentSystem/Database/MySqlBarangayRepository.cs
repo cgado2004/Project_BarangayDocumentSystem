@@ -11,22 +11,8 @@ using System.Security.Cryptography;
 
 namespace BarangayDocumentSystem.Database;
 
-
-
-
-
-
-
-
-
-
-
-
 public class MySqlBarangayRepository : IBarangayRepository
 {
-
-
-
     private const string SpGetResidents    = "sp_residents_get_all";
     private const string SpGetRequests     = "sp_requests_get_all";
     private const string SpAddResident     = "sp_resident_add";
@@ -51,10 +37,6 @@ public class MySqlBarangayRepository : IBarangayRepository
     public IReadOnlyList<Resident> Residents => _residents.AsReadOnly();
     public IReadOnlyList<DocumentRequest> Requests => _requests.AsReadOnly();
 
-
-
-
-
     public MySqlBarangayRepository(string connectionString, FeeSchedule feeSchedule)
     {
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -64,7 +46,6 @@ public class MySqlBarangayRepository : IBarangayRepository
         _feeSchedule = feeSchedule ?? throw new ArgumentNullException(nameof(feeSchedule));
         Reload();
     }
-
 
     public void Reload()
     {
@@ -481,6 +462,7 @@ public class MySqlBarangayRepository : IBarangayRepository
         {
             using var conn = new MySqlConnection(_connectionString);
             conn.Open();
+            NormalizeSession(conn);
             return work(conn);
         }
         catch (MySqlException ex)
@@ -492,6 +474,13 @@ public class MySqlBarangayRepository : IBarangayRepository
 
     private void RunNoResult(Action<DbConnection> work) =>
         Run<object?>(conn => { work(conn); return null; });
+
+
+    internal static void NormalizeSession(MySqlConnection conn)
+    {
+        using var cmd = new MySqlCommand("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci", conn);
+        cmd.ExecuteNonQuery();
+    }
 
 
     private static string Describe(MySqlException ex) => ex.Number switch
@@ -650,6 +639,32 @@ public sealed class MySqlUserRepository : IUserRepository
         return null;
     });
 
+    public LoginThrottle GetLoginThrottle(string username) => Run(conn =>
+    {
+        using var cmd = Procedure(conn, "sp_login_state");
+        cmd.Parameters.AddWithValue("p_username", username);
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read()) return new LoginThrottle(0, null);
+        return new LoginThrottle(reader.GetInt32(0), reader.IsDBNull(1) ? null : reader.GetDateTime(1));
+    });
+
+    public LoginThrottle RecordLoginFailure(string username) => Run(conn =>
+    {
+        using var cmd = Procedure(conn, "sp_login_fail");
+        cmd.Parameters.AddWithValue("p_username", username);
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read()) return new LoginThrottle(0, null);
+        return new LoginThrottle(reader.GetInt32(0), reader.IsDBNull(1) ? null : reader.GetDateTime(1));
+    });
+
+    public void ClearLoginFailures(string username) => Run<object?>(conn =>
+    {
+        using var cmd = Procedure(conn, "sp_login_clear");
+        cmd.Parameters.AddWithValue("p_username", username);
+        cmd.ExecuteNonQuery();
+        return null;
+    });
+
     private static MySqlCommand Procedure(MySqlConnection conn, string name) =>
         new MySqlCommand(name, conn) { CommandType = System.Data.CommandType.StoredProcedure };
 
@@ -659,6 +674,7 @@ public sealed class MySqlUserRepository : IUserRepository
         {
             using var conn = new MySqlConnection(_connectionString);
             conn.Open();
+            MySqlBarangayRepository.NormalizeSession(conn);
             return work(conn);
         }
         catch (MySqlException ex) when (ex.Number == 1062)
@@ -684,6 +700,15 @@ public static class PasswordHasher
     private const int Iterations = 600_000;
     private const int SaltSize = 16;
     private const int HashSize = 32;
+
+    private static readonly string DummyHash = BuildDummy();
+
+    private static string BuildDummy()
+    {
+        var salt = new byte[SaltSize];
+        var hash = new byte[HashSize];
+        return $"{Iterations}.{Convert.ToBase64String(salt)}.{Convert.ToBase64String(hash)}";
+    }
 
     public static string Hash(string password)
     {
@@ -723,6 +748,12 @@ public static class PasswordHasher
         {
             return false;
         }
+    }
+
+    public static bool VerifyDummy(string password)
+    {
+        Verify(password, DummyHash);
+        return false;
     }
 
     private static byte[] Derive(string password, byte[] salt, int iterations)

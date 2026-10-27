@@ -88,19 +88,6 @@ public static class UiFactory
         return bar;
     }
 
-    public static TextBox SearchBox(string cue)
-    {
-        var box = new TextBox
-        {
-            Dock = DockStyle.Fill,
-            Font = AppTheme.BodyFont,
-            BorderStyle = BorderStyle.FixedSingle,
-            BackColor = AppTheme.Background
-        };
-        CueBanner.Set(box, cue);
-        return box;
-    }
-
     public static DateTimePicker DayFilter(string name) => new()
     {
         Name = name,
@@ -137,11 +124,11 @@ public static class UiFactory
             AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink,
             WrapContents = false, Margin = new Padding(0, 0, 12, 0)
         };
-        caption.Margin = new Padding(0, 6, 8, 6);
+        caption.Margin = new Padding(0, 7, 8, 7);
         caption.Font = AppTheme.BodyFont;
         caption.ForeColor = AppTheme.TextSecondary;
         field.Controls.Add(caption);
-        input.Margin = new Padding(0, 2, 0, 4);
+        input.Margin = new Padding(0, 7, 0, 7);
         input.AccessibleName = caption.Text;
         field.Controls.Add(input);
         return field;

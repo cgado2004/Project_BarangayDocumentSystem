@@ -125,6 +125,8 @@ public record BarangayStatistics(
 
 public record UserAccount(int UserId, string Username, string FullName, string PasswordHash, UserRole Role, bool IsArchived);
 
+public record LoginThrottle(int FailedCount, DateTime? LockedUntil);
+
 public interface IUserRepository
 {
     bool AnyUsers();
@@ -144,4 +146,10 @@ public interface IUserRepository
     void Delete(int userId);
 
     IReadOnlyList<UserAccount> ListUsers();
+
+    LoginThrottle GetLoginThrottle(string username);
+
+    LoginThrottle RecordLoginFailure(string username);
+
+    void ClearLoginFailures(string username);
 }

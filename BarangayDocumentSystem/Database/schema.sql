@@ -99,3 +99,13 @@ CREATE TABLE IF NOT EXISTS activity_log (
     PRIMARY KEY (log_id),
     INDEX idx_activity_logged_on (logged_on)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Failed sign-in tracking so a restart does not clear the login throttle.
+-- Keyed by the attempted username, which also throttles guesses at unknown names.
+CREATE TABLE IF NOT EXISTS login_attempts (
+    username      VARCHAR(50)  NOT NULL,
+    failed_count  INT          NOT NULL DEFAULT 0,
+    window_start  DATETIME     NOT NULL,
+    locked_until  DATETIME     NULL,
+    PRIMARY KEY (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;

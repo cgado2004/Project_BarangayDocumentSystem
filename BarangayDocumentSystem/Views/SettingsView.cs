@@ -113,11 +113,9 @@ public sealed class SettingsView : ViewBase
             Padding = new Padding(0)
         };
         var edit = UiFactory.SecondaryButton("Edit my details", 150);
-        edit.AutoSize = false;
         edit.Margin = new Padding(0, 0, 8, 8);
         edit.Click += (_, _) => EditMyAccount();
         var password = UiFactory.SecondaryButton("Change my password", 180);
-        password.AutoSize = false;
         password.Margin = new Padding(0, 0, 8, 8);
         password.Click += (_, _) => ChangeMyPassword();
         actions.Controls.Add(edit);

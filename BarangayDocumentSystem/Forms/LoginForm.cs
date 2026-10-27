@@ -27,7 +27,6 @@ public sealed class LoginForm : Form
     private bool _setup;
     private bool _busy;
     private bool _available;
-    private int _failedAttempts;
     private DateTime _retryAfter;
 
     public UserAccount? User { get; private set; }
@@ -183,21 +182,34 @@ public sealed class LoginForm : Form
                 return;
             }
 
-            var account = await Task.Run(() =>
+            var result = await Task.Run(() =>
             {
+                var state = _users.GetLoginThrottle(username);
+                if (state.LockedUntil is { } lockUntil && lockUntil > DateTime.Now)
+                    return (Account: (UserAccount?)null, LockedUntil: (DateTime?)lockUntil);
+
                 var found = _users.Find(username);
-                return found is not null && PasswordHasher.Verify(password, found.PasswordHash) ? found : null;
+                bool ok = found is not null && PasswordHasher.Verify(password, found.PasswordHash);
+                if (!ok)
+                {
+                    if (found is null) PasswordHasher.VerifyDummy(password);
+                    var after = _users.RecordLoginFailure(username);
+                    if (after.LockedUntil is { } until && until > DateTime.Now)
+                        return (Account: (UserAccount?)null, LockedUntil: (DateTime?)until);
+                }
+                return (Account: ok ? found : null, LockedUntil: (DateTime?)null);
             });
+            if (result.LockedUntil is { } lockedFor)
+            {
+                _retryAfter = DateTime.UtcNow + (lockedFor - DateTime.Now);
+                _message.Text = "Too many failed attempts. Wait 30 seconds, then try again.";
+                _password.Focus();
+                return;
+            }
+            var account = result.Account;
             if (account is null)
             {
-                _failedAttempts++;
-                if (_failedAttempts >= 5)
-                {
-                    _failedAttempts = 0;
-                    _retryAfter = DateTime.UtcNow.AddSeconds(30);
-                    _message.Text = "Too many attempts. Wait 30 seconds, then try again.";
-                }
-                else _message.Text = "Incorrect username or password.";
+                _message.Text = "Incorrect username or password.";
                 _password.Focus();
                 return;
             }
@@ -207,6 +219,8 @@ public sealed class LoginForm : Form
                 _password.Focus();
                 return;
             }
+            try { await Task.Run(() => _users.ClearLoginFailures(username)); }
+            catch (RepositoryException) { }
             User = account;
             _busy = false;
             DialogResult = DialogResult.OK;
