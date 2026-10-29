@@ -262,6 +262,12 @@ public partial class ResidentForm : Form
             Dialog.SelectFirst("dependent");
             return;
         }
+
+        var dependent = _dependents[index];
+        if (!Dialog.ConfirmDestructive(
+            $"Remove {dependent.FullName} from the dependents list?\n\nThis cannot be undone."))
+            return;
+
         _dependents.RemoveAt(index);
         RefreshDependents();
     }
